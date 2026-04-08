@@ -192,8 +192,20 @@ textarea.form-input{resize:vertical;min-height:64px;line-height:1.5}
 .tog-btn:hover{border-color:var(--border2);color:var(--text)}
 .tog-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
 
-@keyframes slideIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-.task-card,.trash-item{animation:slideIn .16s ease both}
+/* Accordion nav */
+.nav-group{margin-bottom:2px}
+.nav-group-header{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:var(--r8);border:none;background:none;font-family:var(--font);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);cursor:pointer;transition:all .12s;text-align:left;user-select:none}
+.nav-group-header:hover{background:var(--surface2);color:var(--text2)}
+.nav-group-header svg{width:13px;height:13px;flex-shrink:0;transition:transform .2s}
+.nav-group-header.open svg.chevron{transform:rotate(90deg)}
+.nav-group-children{overflow:hidden;max-height:0;transition:max-height .25s ease}
+.nav-group-children.open{max-height:400px}
+.nav-child{display:flex;align-items:center;gap:7px;width:100%;padding:6px 10px 6px 22px;border-radius:var(--r8);border:none;background:none;font-family:var(--font);font-size:12.5px;color:var(--text2);cursor:pointer;transition:all .12s;text-align:left;margin-bottom:1px}
+.nav-child:hover{background:var(--surface2);color:var(--text)}
+.nav-child.active{background:var(--accent-bg);color:var(--accent);font-weight:500}
+.nav-child-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.nav-child-count{margin-left:auto;background:var(--border);color:var(--text2);font-size:10px;font-family:var(--mono);padding:1px 5px;border-radius:20px;font-weight:500;min-width:18px;text-align:center}
+.nav-child.active .nav-child-count{background:rgba(58,94,229,.18);color:var(--accent)}
 
 /* Detail modal */
 .detail-modal{width:520px}
@@ -222,26 +234,69 @@ textarea.form-input{resize:vertical;min-height:64px;line-height:1.5}
       <div class="brand-icon" id="brand-icon">✦</div>
       <span class="brand-name" id="brand-name">たいき Tasks</span>
     </div>
-    <div class="nav-sect-label">ビュー</div>
-    <button class="nav-btn active" data-view="all" onclick="switchView('all',this)">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
-      すべて <span class="nav-count" id="nav-all">0</span>
-    </button>
-    <button class="nav-btn" data-view="today" onclick="switchView('today',this)">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 3V1.5M11 3V1.5M2 7h12"/></svg>
-      今日期限 <span class="nav-count" id="nav-today">0</span>
-    </button>
-    <button class="nav-btn" data-view="high" onclick="switchView('high',this)">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4 7l4-5 4 5M4 13h8"/></svg>
-      高優先度 <span class="nav-count" id="nav-high">0</span>
-    </button>
-    <div class="nav-sect-label" style="margin-top:10px">カテゴリ</div>
-    <div id="cat-nav"></div>
-    <div class="nav-sect-label" style="margin-top:10px">その他</div>
-    <button class="nav-btn" data-view="trash" onclick="switchView('trash',this)">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg>
-      ゴミ箱 <span class="nav-count trash-cnt" id="nav-trash">0</span>
-    </button>
+
+    <!-- 期限 accordion -->
+    <div class="nav-group">
+      <button class="nav-group-header" onclick="toggleGroup('due-group',this)">
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+        📅 期限
+      </button>
+      <div class="nav-group-children" id="due-group">
+        <button class="nav-child active" data-view="all" onclick="switchView('all',this)">
+          <svg style="width:11px;height:11px;flex-shrink:0;opacity:.6" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
+          すべて <span class="nav-child-count" id="nav-all">0</span>
+        </button>
+        <button class="nav-child" data-view="today" onclick="switchView('today',this)">
+          <svg style="width:11px;height:11px;flex-shrink:0;opacity:.6" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 3V1.5M11 3V1.5M2 7h12"/></svg>
+          今日期限 <span class="nav-child-count" id="nav-today">0</span>
+        </button>
+        <button class="nav-child" data-view="high" onclick="switchView('high',this)">
+          <svg style="width:11px;height:11px;flex-shrink:0;opacity:.6" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4 7l4-5 4 5M4 13h8"/></svg>
+          高優先度 <span class="nav-child-count" id="nav-high">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- カテゴリ accordion -->
+    <div class="nav-group">
+      <button class="nav-group-header" onclick="toggleGroup('cat-group',this)">
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+        📁 カテゴリ
+      </button>
+      <div class="nav-group-children" id="cat-group">
+        <div id="cat-nav"></div>
+      </div>
+    </div>
+
+    <!-- 担当者 accordion -->
+    <div class="nav-group">
+      <button class="nav-group-header" onclick="toggleGroup('member-group',this)">
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+        👤 担当者
+      </button>
+      <div class="nav-group-children" id="member-group">
+        <button class="nav-child" data-member="中村" onclick="filterMember('中村',this)">
+          <span class="nav-child-dot" style="background:#3A5EE5"></span>
+          中村 <span class="nav-child-count" id="mc-中村">0</span>
+        </button>
+        <button class="nav-child" data-member="中" onclick="filterMember('中',this)">
+          <span class="nav-child-dot" style="background:#1A7A50"></span>
+          中 <span class="nav-child-count" id="mc-中">0</span>
+        </button>
+        <button class="nav-child" data-member="櫻井" onclick="filterMember('櫻井',this)">
+          <span class="nav-child-dot" style="background:#C0253A"></span>
+          櫻井 <span class="nav-child-count" id="mc-櫻井">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ゴミ箱 -->
+    <div style="margin-top:4px">
+      <button class="nav-btn" data-view="trash" onclick="switchView('trash',this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg>
+        ゴミ箱 <span class="nav-count trash-cnt" id="nav-trash">0</span>
+      </button>
+    </div>
   </div>
   <div class="sidebar-footer">
     <div class="today-box">
@@ -493,7 +548,7 @@ let tasks=[], trash=[], cats=[
 ];
 let cfg={dashName:'たいき Tasks',accent:'#3A5EE5',fontSize:14,defaultSort:'created'};
 
-let view='all',sortBy='created',priFilters=[],catFilter=null;
+let view='all',sortBy='created',priFilters=[],catFilter=null,memberFilter=null;
 let dragMode=false,dragSrcId=null;
 let tmpAccent=cfg.accent,tmpFont=cfg.fontSize,tmpDS=cfg.defaultSort;
 
@@ -563,22 +618,48 @@ function updateNav(){
   document.getElementById('nav-today').textContent=tasks.filter(t=>t.due&&t.due<=todayStr()).length;
   document.getElementById('nav-high').textContent=tasks.filter(t=>t.priority==='high').length;
   document.getElementById('nav-trash').textContent=trash.length;
+  ['中村','中','櫻井'].forEach(m=>{
+    const el=document.getElementById('mc-'+m);
+    if(el)el.textContent=tasks.filter(t=>t.assignee===m).length;
+  });
   renderCatNav();
 }
 function renderCatNav(){
   document.getElementById('cat-nav').innerHTML=cats.map(c=>{
     const cnt=tasks.filter(t=>t.cat===c.id).length;
-    return `<button class="nav-btn ${catFilter===c.id&&view==='all'?'active':''}" onclick="filterCat('${c.id}',this)">
-      <span style="width:8px;height:8px;border-radius:50%;background:${c.color};flex-shrink:0"></span>
-      ${esc(c.name)}<span class="nav-count">${cnt}</span>
+    return `<button class="nav-child ${catFilter===c.id&&memberFilter===null&&view==='all'?'active':''}" onclick="filterCat('${c.id}',this)">
+      <span class="nav-child-dot" style="background:${c.color}"></span>
+      ${esc(c.name)}<span class="nav-child-count">${cnt}</span>
     </button>`;
   }).join('');
 }
-function filterCat(id,el){
-  catFilter=catFilter===id?null:id;
+function toggleGroup(id,btn){
+  const el=document.getElementById(id);
+  const isOpen=el.classList.contains('open');
+  el.classList.toggle('open',!isOpen);
+  btn.classList.toggle('open',!isOpen);
+}
+function filterMember(name,el){
+  if(memberFilter===name){
+    memberFilter=null;
+    document.querySelectorAll('.nav-child[data-member]').forEach(b=>b.classList.remove('active'));
+  } else {
+    memberFilter=name;
+    document.querySelectorAll('.nav-child[data-member]').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+  }
+  catFilter=null;
   view='all';
   document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.classList.remove('active'));
-  document.querySelector('.nav-btn[data-view="all"]').classList.add('active');
+  document.getElementById('view-title').textContent=memberFilter?`👤 ${memberFilter}`:'すべてのタスク';
+  renderCatNav();updateStats();render();
+}
+function filterCat(id,el){
+  catFilter=catFilter===id?null:id;
+  memberFilter=null;
+  document.querySelectorAll('.nav-child[data-member]').forEach(b=>b.classList.remove('active'));
+  view='all';
+  document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.classList.remove('active'));
   document.getElementById('view-title').textContent=catFilter?cats.find(c=>c.id===id)?.name||'タスク':'すべてのタスク';
   renderCatNav();updateStats();render();
 }
@@ -593,6 +674,7 @@ function getList(){
   if(view==='today')l=l.filter(t=>t.due&&t.due<=todayStr());
   else if(view==='high')l=l.filter(t=>t.priority==='high');
   if(catFilter)l=l.filter(t=>t.cat===catFilter);
+  if(memberFilter)l=l.filter(t=>t.assignee===memberFilter);
   if(priFilters.length)l=l.filter(t=>priFilters.includes(t.priority));
   const po={high:0,mid:1,low:2,'':3};
   if(sortBy==='priority')l.sort((a,b)=>(po[a.priority]||3)-(po[b.priority]||3));
@@ -713,8 +795,10 @@ function refresh(){updateNav();updateStats();render();}
 
 const vTitles={all:'すべてのタスク',today:'今日期限',high:'高優先度',trash:'ゴミ箱'};
 function switchView(v,el){
-  view=v;catFilter=null;
+  view=v;catFilter=null;memberFilter=null;
+  document.querySelectorAll('.nav-child[data-view]').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-child[data-member]').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('view-title').textContent=vTitles[v];
   renderCatNav();updateStats();render();
