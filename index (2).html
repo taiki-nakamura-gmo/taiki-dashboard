@@ -192,7 +192,15 @@ textarea.form-input{resize:vertical;min-height:64px;line-height:1.5}
 .tog-btn:hover{border-color:var(--border2);color:var(--text)}
 .tog-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
 
-/* Accordion nav */
+/* Login screen */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:10000;display:flex;align-items:center;justify-content:center}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);box-shadow:var(--shadow-lg);padding:32px;width:360px;max-width:95vw}
+.login-logo{display:flex;align-items:center;gap:9px;margin-bottom:24px}
+.login-logo-icon{width:32px;height:32px;background:var(--accent);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.login-logo-name{font-size:17px;font-weight:600;letter-spacing:-.3px}
+.login-title{font-size:14px;color:var(--text2);margin-bottom:20px}
+.login-error{font-size:12.5px;color:var(--red);background:var(--red-bg);padding:8px 12px;border-radius:var(--r8);margin-bottom:14px;display:none}
+.login-error.show{display:block}
 .nav-group{margin-bottom:2px}
 .nav-group-header{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:var(--r8);border:none;background:none;font-family:var(--font);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);cursor:pointer;transition:all .12s;text-align:left;user-select:none}
 .nav-group-header:hover{background:var(--surface2);color:var(--text2)}
@@ -225,6 +233,27 @@ textarea.form-input{resize:vertical;min-height:64px;line-height:1.5}
 </style>
 </head>
 <body>
+<!-- Login Screen -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">✦</div>
+      <div class="login-logo-name">たいき Tasks</div>
+    </div>
+    <div class="login-title">ログインしてください</div>
+    <div class="login-error" id="login-error">IDまたはパスワードが違います</div>
+    <div class="form-row">
+      <label class="form-label">ID</label>
+      <input type="text" class="form-input" id="login-id" placeholder="IDを入力" autocomplete="username">
+    </div>
+    <div class="form-row">
+      <label class="form-label">パスワード</label>
+      <input type="password" class="form-input" id="login-pass" placeholder="パスワードを入力" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="doLogin()">ログイン</button>
+  </div>
+</div>
+
 <div class="layout">
 
 <!-- Sidebar -->
@@ -515,7 +544,28 @@ textarea.form-input{resize:vertical;min-height:64px;line-height:1.5}
       </div>
     </div>
 
+    <div class="s-section" id="s-pass-section">
+      <div class="s-section-title">パスワード変更</div>
+      <div class="s-row">
+        <div><div class="s-row-lbl">現在のパスワード</div></div>
+        <input type="password" class="form-input" id="s-pass-current" style="width:190px" placeholder="現在のPASS">
+      </div>
+      <div class="s-row">
+        <div><div class="s-row-lbl">新しいパスワード</div></div>
+        <input type="password" class="form-input" id="s-pass-new" style="width:190px" placeholder="新しいPASS">
+      </div>
+      <div class="s-row">
+        <div><div class="s-row-lbl">確認</div></div>
+        <input type="password" class="form-input" id="s-pass-confirm" style="width:190px" placeholder="もう一度入力">
+      </div>
+      <div style="padding:4px 14px 12px">
+        <div id="s-pass-msg" style="font-size:12px;margin-bottom:8px"></div>
+        <button class="btn btn-primary btn-sm" onclick="changePassword()">パスワードを変更</button>
+      </div>
+    </div>
+
     <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="doLogout()" style="margin-right:auto">ログアウト</button>
       <button class="btn btn-ghost" onclick="closeSettings()">キャンセル</button>
       <button class="btn btn-primary" onclick="applySettings()">保存して適用</button>
     </div>
@@ -537,7 +587,14 @@ const ACCENTS=[
   {h:'#BE185D',l:'ピンク'},{h:'#374151',l:'グレー'},
 ];
 
-let tasks=[], trash=[], cats=[
+// ── Default members & passwords (stored in Firebase) ──
+const DEFAULT_MEMBERS = [
+  {id:'nakamura', name:'中村', pass:'gmo123'},
+  {id:'naka',     name:'中',   pass:'gmo123'},
+  {id:'sakurai',  name:'櫻井', pass:'gmo123'},
+];
+
+let currentUser = null; // {id, name} of logged-in user
   {id:'doc',   name:'資料作成',          color:'#3A5EE5'},
   {id:'manga', name:'漫画資料作成',      color:'#BE185D'},
   {id:'est',   name:'見積書作成',        color:'#1A7A50'},
@@ -1034,6 +1091,11 @@ function initFirebase(){
     else if(val&&typeof val==='object')cats=Object.values(val);
     refresh();
   });
+  // Listen: membersPass
+  _onValue(_ref(_db,'membersPass'), snap=>{
+    const val=snap.val();
+    if(val&&typeof val==='object')membersPass=val;
+  });
   // Listen: cfg
   _onValue(_ref(_db,'cfg'), snap=>{
     const val=snap.val();
@@ -1048,11 +1110,63 @@ function initFirebase(){
   });
 }
 
+// ── Default members & passwords ──
+const DEFAULT_MEMBERS=[
+  {id:'nakamura',name:'中村',pass:'gmo123'},
+  {id:'naka',    name:'中',  pass:'gmo123'},
+  {id:'sakurai', name:'櫻井',pass:'gmo123'},
+];
+let membersPass={};
+let currentUser=null;
+
+function doLogin(){
+  const id=document.getElementById('login-id').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-error');
+  const member=DEFAULT_MEMBERS.find(m=>m.id===id);
+  if(!member){errEl.classList.add('show');document.getElementById('login-pass').value='';return;}
+  const validPass=membersPass[id]||member.pass;
+  if(pass!==validPass){errEl.classList.add('show');document.getElementById('login-pass').value='';return;}
+  errEl.classList.remove('show');
+  currentUser={id:member.id,name:member.name};
+  document.getElementById('login-screen').style.display='none';
+}
+
+function doLogout(){
+  currentUser=null;
+  document.getElementById('login-id').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('login-screen').style.display='flex';
+  closeSettings();
+}
+
+function changePassword(){
+  const current=document.getElementById('s-pass-current').value;
+  const newPass=document.getElementById('s-pass-new').value;
+  const confirm=document.getElementById('s-pass-confirm').value;
+  const msgEl=document.getElementById('s-pass-msg');
+  if(!currentUser)return;
+  const validPass=membersPass[currentUser.id]||DEFAULT_MEMBERS.find(m=>m.id===currentUser.id)?.pass;
+  if(current!==validPass){msgEl.style.color='var(--red)';msgEl.textContent='現在のパスワードが違います';return;}
+  if(newPass.length<4){msgEl.style.color='var(--red)';msgEl.textContent='4文字以上で設定してください';return;}
+  if(newPass!==confirm){msgEl.style.color='var(--red)';msgEl.textContent='パスワードが一致しません';return;}
+  membersPass[currentUser.id]=newPass;
+  fbSet('membersPass',membersPass);
+  msgEl.style.color='var(--green)';msgEl.textContent='パスワードを変更しました！';
+  ['s-pass-current','s-pass-new','s-pass-confirm'].forEach(id=>document.getElementById(id).value='');
+  setTimeout(()=>msgEl.textContent='',3000);
+}
+
 if(window._fbReady){
   initFirebase();
 } else {
   window.addEventListener('fb-ready',initFirebase);
 }
+
+// Enter key for login
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('login-id').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
 </script>
 </body>
 </html>
