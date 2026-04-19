@@ -192,7 +192,7 @@ textarea.form-input{resize:vertical;min-height:64px;line-height:1.5}
 .tog-btn:hover{border-color:var(--border2);color:var(--text)}
 .tog-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
 
-/* Accordion nav */
+/* Login screen */
 .nav-group{margin-bottom:2px}
 .nav-group-header{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:var(--r8);border:none;background:none;font-family:var(--font);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);cursor:pointer;transition:all .12s;text-align:left;user-select:none}
 .nav-group-header:hover{background:var(--surface2);color:var(--text2)}
@@ -537,9 +537,15 @@ const ACCENTS=[
   {h:'#BE185D',l:'ピンク'},{h:'#374151',l:'グレー'},
 ];
 
-let tasks=[], trash=[], cats=[
+// ── Default members & passwords (stored in Firebase) ──
+const DEFAULT_MEMBERS = [
+  {id:'nakamura', name:'中村', pass:'gmo123'},
+  {id:'naka',     name:'中',   pass:'gmo123'},
+  {id:'sakurai',  name:'櫻井', pass:'gmo123'},
+];
+
+let currentUser = null; // {id, name} of logged-in user
   {id:'doc',   name:'資料作成',          color:'#3A5EE5'},
-  {id:'manga', name:'漫画資料作成',      color:'#BE185D'},
   {id:'est',   name:'見積書作成',        color:'#1A7A50'},
   {id:'credit',name:'与信WF申請',        color:'#A05C00'},
   {id:'irreg', name:'イレギュラーWF申請',color:'#C0253A'},
@@ -1034,6 +1040,11 @@ function initFirebase(){
     else if(val&&typeof val==='object')cats=Object.values(val);
     refresh();
   });
+  // Listen: membersPass
+  _onValue(_ref(_db,'membersPass'), snap=>{
+    const val=snap.val();
+    if(val&&typeof val==='object')membersPass=val;
+  });
   // Listen: cfg
   _onValue(_ref(_db,'cfg'), snap=>{
     const val=snap.val();
@@ -1048,11 +1059,63 @@ function initFirebase(){
   });
 }
 
+// ── Default members & passwords ──
+const DEFAULT_MEMBERS=[
+  {id:'nakamura',name:'中村',pass:'gmo123'},
+  {id:'naka',    name:'中',  pass:'gmo123'},
+  {id:'sakurai', name:'櫻井',pass:'gmo123'},
+];
+let membersPass={};
+let currentUser=null;
+
+function doLogin(){
+  const id=document.getElementById('login-id').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-error');
+  const member=DEFAULT_MEMBERS.find(m=>m.id===id);
+  if(!member){errEl.classList.add('show');document.getElementById('login-pass').value='';return;}
+  const validPass=membersPass[id]||member.pass;
+  if(pass!==validPass){errEl.classList.add('show');document.getElementById('login-pass').value='';return;}
+  errEl.classList.remove('show');
+  currentUser={id:member.id,name:member.name};
+  document.getElementById('login-screen').style.display='none';
+}
+
+function doLogout(){
+  currentUser=null;
+  document.getElementById('login-id').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('login-screen').style.display='flex';
+  closeSettings();
+}
+
+function changePassword(){
+  const current=document.getElementById('s-pass-current').value;
+  const newPass=document.getElementById('s-pass-new').value;
+  const confirm=document.getElementById('s-pass-confirm').value;
+  const msgEl=document.getElementById('s-pass-msg');
+  if(!currentUser)return;
+  const validPass=membersPass[currentUser.id]||DEFAULT_MEMBERS.find(m=>m.id===currentUser.id)?.pass;
+  if(current!==validPass){msgEl.style.color='var(--red)';msgEl.textContent='現在のパスワードが違います';return;}
+  if(newPass.length<4){msgEl.style.color='var(--red)';msgEl.textContent='4文字以上で設定してください';return;}
+  if(newPass!==confirm){msgEl.style.color='var(--red)';msgEl.textContent='パスワードが一致しません';return;}
+  membersPass[currentUser.id]=newPass;
+  fbSet('membersPass',membersPass);
+  msgEl.style.color='var(--green)';msgEl.textContent='パスワードを変更しました！';
+  ['s-pass-current','s-pass-new','s-pass-confirm'].forEach(id=>document.getElementById(id).value='');
+  setTimeout(()=>msgEl.textContent='',3000);
+}
+
 if(window._fbReady){
   initFirebase();
 } else {
   window.addEventListener('fb-ready',initFirebase);
 }
+
+// Enter key for login
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('login-id').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
 </script>
 </body>
 </html>
