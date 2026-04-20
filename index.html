@@ -1033,8 +1033,6 @@ function initFirebase(){
     else if(val&&typeof val==='object')cats=Object.values(val);
     refresh();
   });
-    const val=snap.val();
-  });
   // Listen: cfg
   _onValue(_ref(_db,'cfg'), snap=>{
     const val=snap.val();
