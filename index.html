@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 const cfg = {
   apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
   authDomain: "taiki-tasks-933cc.firebaseapp.com",
@@ -19,7 +19,7 @@ const cfg = {
 };
 const app = initializeApp(cfg);
 const db = getDatabase(app);
-window._fb = { db, ref, set, remove, onValue };
+window._fb = { db, ref, set, remove, onValue, get };
 window._fbReady = true;
 window.dispatchEvent(new Event("fb-ready"));
 </script>
@@ -41,11 +41,44 @@ window.dispatchEvent(new Event("fb-ready"));
   --cn:#3A5EE5;--cm:#1A7A50;--cs:#C0253A;
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* ===== Auth Screen ===== */
+#auth-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-box{background:var(--surface);border-radius:var(--r16);box-shadow:var(--shadow-lg);width:100%;max-width:420px;padding:32px 28px 26px}
+.auth-brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:6px}
+.auth-brand-icon{width:38px;height:38px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.auth-brand-name{font-size:19px;font-weight:600}
+.auth-tagline{text-align:center;font-size:12px;color:var(--text3);margin-bottom:28px}
+.auth-sub{font-size:13px;color:var(--text2);text-align:center;margin-bottom:18px}
+.user-cards{display:flex;gap:10px;justify-content:center}
+.user-card{display:flex;flex-direction:column;align-items:center;gap:9px;padding:18px 10px 14px;border-radius:var(--r12);border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .15s;flex:1}
+.user-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.user-card .uav{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff}
+.user-card .un{font-size:13px;font-weight:600}
+.auth-back{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;padding:0;font-family:var(--font);margin-bottom:18px}
+.auth-back:hover{color:var(--text2)}
+.auth-user-row{display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--surface2);border-radius:var(--r8);margin-bottom:20px}
+.auth-user-row .uav{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.auth-user-row .aname{font-size:14px;font-weight:600}
+.auth-user-row .asub{font-size:11px;color:var(--text3);margin-top:2px}
+.auth-title{font-size:15px;font-weight:600;margin-bottom:16px}
+.auth-lbl{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.05em}
+.auth-inp{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:13.5px;color:var(--text);background:var(--surface);outline:none;transition:border-color .14s}
+.auth-inp:focus{border-color:var(--accent)}
+.auth-inp[readonly]{background:var(--surface2);color:var(--text2);cursor:default}
+.auth-row{margin-bottom:12px}
+.auth-err{font-size:12px;color:var(--red);min-height:18px;margin-top:8px}
+.auth-btn{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--r8);font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;margin-top:14px;transition:filter .14s}
+.auth-btn:hover{filter:brightness(1.1)}
+.auth-btn:disabled{opacity:.6;cursor:not-allowed;filter:none}
+
+/* ===== App ===== */
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 .brand{display:flex;align-items:center;gap:9px}
 .brand-icon{width:28px;height:28px;background:var(--accent);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
 .brand-name{font-size:15px;font-weight:600}
-.topbar-right{display:flex;gap:8px}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.user-badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600}
 .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--r8);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .14s}
 .btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{filter:brightness(1.1)}
 .btn-ghost{background:none;color:var(--text2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--surface2)}
@@ -146,12 +179,74 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 </head>
 <body>
 
+<!-- ===== Auth Screen ===== -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <div class="auth-brand-icon">&#10022;</div>
+      <div class="auth-brand-name">たいき Tasks</div>
+    </div>
+    <div class="auth-tagline">チームタスク管理</div>
+
+    <!-- Phase 1: ユーザー選択 -->
+    <div id="auth-select">
+      <div class="auth-sub">ログインするユーザーを選択してください</div>
+      <div class="user-cards">
+        <div class="user-card" onclick="authSelectUser('nakamura')">
+          <div class="uav" style="background:var(--cn)">中</div>
+          <div class="un">中村</div>
+        </div>
+        <div class="user-card" onclick="authSelectUser('naka')">
+          <div class="uav" style="background:var(--cm)">中</div>
+          <div class="un">中</div>
+        </div>
+        <div class="user-card" onclick="authSelectUser('sakurai')">
+          <div class="uav" style="background:var(--cs)">櫻</div>
+          <div class="un">櫻井</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2: パスワードフォーム -->
+    <div id="auth-form" style="display:none">
+      <button class="auth-back" onclick="authBack()">&#8592; 別のユーザー</button>
+      <div class="auth-user-row">
+        <div class="uav" id="auth-av" style="background:var(--cn)">中</div>
+        <div>
+          <div class="aname" id="auth-uname">中村さん</div>
+          <div class="asub" id="auth-usub">パスワードを入力してください</div>
+        </div>
+      </div>
+      <div class="auth-title" id="auth-title">ログイン</div>
+      <input type="hidden" id="auth-mode">
+      <div class="auth-row">
+        <label class="auth-lbl">ログインID</label>
+        <input type="text" class="auth-inp" id="auth-login-id" placeholder="ログインIDを入力" autocomplete="username">
+      </div>
+      <div class="auth-row">
+        <label class="auth-lbl">パスワード</label>
+        <input type="password" class="auth-inp" id="auth-password" placeholder="パスワードを入力" autocomplete="current-password">
+      </div>
+      <div class="auth-row" id="auth-confirm-row" style="display:none">
+        <label class="auth-lbl">パスワード（確認）</label>
+        <input type="password" class="auth-inp" id="auth-confirm" placeholder="もう一度入力" autocomplete="new-password">
+      </div>
+      <div class="auth-err" id="auth-err"></div>
+      <button class="auth-btn" id="auth-btn" onclick="authSubmit()">ログイン</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Main App（ログイン後に表示） ===== -->
+<div id="app" style="display:none">
+
 <div class="topbar">
   <div class="brand">
     <div class="brand-icon">&#10022;</div>
     <div class="brand-name">たいき Tasks</div>
   </div>
   <div class="topbar-right">
+    <div id="user-badge" class="user-badge"></div>
     <button class="btn btn-ghost btn-sm" onclick="toggleTrash()">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg>
       ゴミ箱 <span id="tbtn" style="font-family:monospace;font-size:11px;background:var(--red-bg);color:var(--red);padding:1px 6px;border-radius:20px;margin-left:2px">0</span>
@@ -159,6 +254,10 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
     <button class="btn btn-ghost btn-sm" onclick="openSettings()">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
       設定
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="doLogout()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6"/></svg>
+      ログアウト
     </button>
     <button class="btn btn-primary" onclick="openAdd()">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
@@ -296,12 +395,217 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
   </div>
 </div>
 
+</div><!-- /#app -->
+
 <script>
-// Loading
+// ローディング画面
 document.body.insertAdjacentHTML("beforeend","<div id=loading style='position:fixed;inset:0;background:#F0EFE9;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px'><div style='width:32px;height:32px;border:3px solid #E2DFD6;border-top-color:#3A5EE5;border-radius:50%;animation:spin .8s linear infinite'></div><div style='font-size:13px;color:#5C5A62'>接続中...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style></div>");
 
-const ACCENTS=["#3A5EE5","#1A7A50","#6B35C8","#C0253A","#A05C00","#0E7490","#BE185D","#374151"];
+// ===== AUTH =====
+const AUTH_USERS = [
+  {key:'nakamura', name:'中村', color:'#3A5EE5', initial:'中'},
+  {key:'naka',     name:'中',   color:'#1A7A50', initial:'中'},
+  {key:'sakurai',  name:'櫻井', color:'#C0253A', initial:'櫻'}
+];
+const SESS_KEY      = 'taiki_sess';
+const SESS_FRESH    = 7  * 24 * 60 * 60 * 1000; // 7日以内: 自動ログイン
+const SESS_REMEMBER = 90 * 24 * 60 * 60 * 1000; // 90日以内: ユーザー記憶で短縮ログイン
 
+let currentUser = null;
+let authSelectedUser = null;
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function genSalt() {
+  return [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function saveSess(key, loginId) {
+  localStorage.setItem(SESS_KEY, JSON.stringify({key, loginId, ts: Date.now()}));
+}
+function loadSess() {
+  try { return JSON.parse(localStorage.getItem(SESS_KEY) || 'null'); } catch { return null; }
+}
+
+async function checkAuth() {
+  const sess = loadSess();
+  if (sess && sess.key && sess.loginId) {
+    const age = Date.now() - (sess.ts || 0);
+    if (age < SESS_FRESH) {
+      // 7日以内: Firebase確認して自動ログイン
+      try {
+        const snap = await window._fb.get(window._fb.ref(window._fb.db, 'auth/' + sess.key));
+        const d = snap.val();
+        if (d && d.loginId === sess.loginId) {
+          currentUser = AUTH_USERS.find(u => u.key === sess.key);
+          enterApp();
+          return;
+        }
+      } catch(e) { /* ネットワークエラー時はログイン画面へ */ }
+    } else if (age < SESS_REMEMBER) {
+      // 7〜90日: ユーザーを記憶して短縮ログイン（パスワードのみ入力）
+      authSelectedUser = AUTH_USERS.find(u => u.key === sess.key);
+      if (authSelectedUser) {
+        showAuthForm(sess.loginId, false);
+        document.getElementById('loading').style.display = 'none';
+        return;
+      }
+    }
+    localStorage.removeItem(SESS_KEY);
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+async function authSelectUser(key) {
+  authSelectedUser = AUTH_USERS.find(u => u.key === key);
+  const snap = await window._fb.get(window._fb.ref(window._fb.db, 'auth/' + key));
+  const d = snap.val();
+  showAuthForm(d ? d.loginId : null, !d);
+}
+
+function showAuthForm(prefillLoginId, isFirstTime) {
+  document.getElementById('auth-select').style.display = 'none';
+  document.getElementById('auth-form').style.display   = 'block';
+  const u = authSelectedUser;
+
+  document.getElementById('auth-av').style.background = u.color;
+  document.getElementById('auth-av').textContent      = u.initial;
+  document.getElementById('auth-uname').textContent   = u.name + 'さん';
+
+  const loginIdEl  = document.getElementById('auth-login-id');
+  const confirmRow = document.getElementById('auth-confirm-row');
+  const btn        = document.getElementById('auth-btn');
+  document.getElementById('auth-err').textContent = '';
+  document.getElementById('auth-password').value  = '';
+  document.getElementById('auth-confirm').value   = '';
+
+  if (isFirstTime) {
+    document.getElementById('auth-title').textContent = '初回パスワード設定';
+    document.getElementById('auth-usub').textContent  = 'ログインIDとパスワードを設定してください';
+    document.getElementById('auth-mode').value = 'setup';
+    loginIdEl.value = '';
+    loginIdEl.removeAttribute('readonly');
+    confirmRow.style.display = '';
+    btn.textContent = '設定して始める';
+    setTimeout(() => loginIdEl.focus(), 100);
+  } else {
+    document.getElementById('auth-title').textContent = 'ログイン';
+    document.getElementById('auth-usub').textContent  = 'パスワードを入力してください';
+    document.getElementById('auth-mode').value = 'login';
+    loginIdEl.value = prefillLoginId || '';
+    if (prefillLoginId) {
+      loginIdEl.setAttribute('readonly', '');
+    } else {
+      loginIdEl.removeAttribute('readonly');
+    }
+    confirmRow.style.display = 'none';
+    btn.textContent = 'ログイン';
+    setTimeout(() => document.getElementById('auth-password').focus(), 100);
+  }
+}
+
+function authBack() {
+  document.getElementById('auth-form').style.display   = 'none';
+  document.getElementById('auth-select').style.display = 'block';
+  authSelectedUser = null;
+}
+
+async function authSubmit() {
+  const mode     = document.getElementById('auth-mode').value;
+  const loginId  = document.getElementById('auth-login-id').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const confirm  = document.getElementById('auth-confirm').value;
+  const errEl    = document.getElementById('auth-err');
+  const btn      = document.getElementById('auth-btn');
+  errEl.textContent = '';
+
+  // バリデーション（非同期処理前）
+  if (!loginId)  { errEl.textContent = 'ログインIDを入力してください'; return; }
+  if (!password) { errEl.textContent = 'パスワードを入力してください'; return; }
+  if (mode === 'setup') {
+    if (password.length < 4) { errEl.textContent = 'パスワードは4文字以上で設定してください'; return; }
+    if (password !== confirm) { errEl.textContent = 'パスワードが一致しません'; return; }
+  }
+
+  btn.disabled = true;
+  btn.textContent = '確認中...';
+
+  try {
+    if (mode === 'setup') {
+      // ログインIDの重複チェック
+      const snap = await window._fb.get(window._fb.ref(window._fb.db, 'auth'));
+      const all = snap.val() || {};
+      for (const [k, v] of Object.entries(all)) {
+        if (k !== authSelectedUser.key && v.loginId === loginId) {
+          errEl.textContent = 'そのログインIDは既に使用されています'; return;
+        }
+      }
+      const salt = genSalt();
+      const hash = await sha256(password + salt);
+      await window._fb.set(window._fb.ref(window._fb.db, 'auth/' + authSelectedUser.key), {loginId, hash, salt});
+    } else {
+      const snap = await window._fb.get(window._fb.ref(window._fb.db, 'auth/' + authSelectedUser.key));
+      const d = snap.val();
+      if (!d) { errEl.textContent = 'エラーが発生しました'; return; }
+      if (d.loginId !== loginId) { errEl.textContent = 'ログインIDまたはパスワードが違います'; return; }
+      const hash = await sha256(password + d.salt);
+      if (hash !== d.hash) { errEl.textContent = 'ログインIDまたはパスワードが違います'; return; }
+    }
+    currentUser = authSelectedUser;
+    saveSess(currentUser.key, loginId);
+    enterApp();
+  } catch(e) {
+    errEl.textContent = '通信エラーが発生しました。再度お試しください。';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = mode === 'setup' ? '設定して始める' : 'ログイン';
+  }
+}
+
+function enterApp() {
+  document.getElementById('loading').style.display     = 'none';
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display         = 'block';
+  const badge = document.getElementById('user-badge');
+  badge.style.cssText = `background:${currentUser.color}18;color:${currentUser.color}`;
+  badge.textContent   = '👤 ' + currentUser.name;
+  initFirebaseData();
+}
+
+function doLogout() {
+  if (!confirm('ログアウトしますか？')) return;
+  // tsを失効させてユーザー情報は残す（次回の短縮ログイン用）
+  const sess = loadSess();
+  if (sess) {
+    sess.ts = Date.now() - SESS_FRESH - 1000;
+    localStorage.setItem(SESS_KEY, JSON.stringify(sess));
+  }
+  currentUser = null;
+  document.getElementById('app').style.display         = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  // 同じユーザーで短縮ログイン画面へ
+  if (sess) {
+    authSelectedUser = AUTH_USERS.find(u => u.key === sess.key);
+    if (authSelectedUser) { showAuthForm(sess.loginId, false); return; }
+  }
+  document.getElementById('auth-form').style.display   = 'none';
+  document.getElementById('auth-select').style.display = 'block';
+}
+
+// Enterキー対応
+document.addEventListener('keydown', e => {
+  if (document.getElementById('auth-screen').style.display !== 'none') {
+    if (e.key === 'Enter' && document.getElementById('auth-form').style.display !== 'none') authSubmit();
+    return;
+  }
+  const inInput = ["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName);
+  if (!inInput && (e.key === 'n' || e.key === 'N')) openAdd();
+  if (e.key === 'Escape') { closeModal(); closeDetail(); closeSettings(); }
+});
+
+// ===== APP =====
+const ACCENTS=["#3A5EE5","#1A7A50","#6B35C8","#C0253A","#A05C00","#0E7490","#BE185D","#374151"];
 let tasks=[],trash=[],cats=[
   {id:"doc",name:"資料作成",color:"#3A5EE5"},
   {id:"est",name:"見積書作成",color:"#1A7A50"},
@@ -318,7 +622,7 @@ let _db,_ref,_set,_remove,_onValue;
 
 function fbSet(p,v){if(_db)_set(_ref(_db,p),v);}
 function fbDel(p){if(_db)_remove(_ref(_db,p));}
-function saveTask(t){fbSet("tasks/"+t.id,t);}
+window.saveTask=function(t){fbSet("tasks/"+t.id,t);};
 function delTask(id){fbDel("tasks/"+id);}
 function saveTrash(t){fbSet("trash/"+t.id,t);}
 function delTrash(id){fbDel("trash/"+id);}
@@ -333,9 +637,7 @@ function fmtDue(s,time){
   return{label,cls:diff<0?"over":diff===0?"today":""};
 }
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-
 function refresh(){updateStats();showTrash?renderTrash():renderKanban();}
-
 function updateStats(){
   document.getElementById("st0").textContent=tasks.length;
   document.getElementById("st1").textContent=tasks.filter(t=>t.assignee==="中村").length;
@@ -345,21 +647,18 @@ function updateStats(){
   document.getElementById("st5").textContent=tasks.filter(t=>t.due&&t.due<=today()).length;
   document.getElementById("tbtn").textContent=trash.length;
 }
-
 function setSort(col,sort,btn){
   colSort[col]=sort;
   btn.closest(".sort-bar").querySelectorAll(".sort-btn").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
   renderKanban();
 }
-
 const PO={high:0,mid:1,low:2,"":3};
 function sortTasks(list,sort){
   if(sort==="priority")return [...list].sort((a,b)=>(PO[a.priority]||3)-(PO[b.priority]||3));
   if(sort==="due")return [...list].sort((a,b)=>{if(!a.due&&!b.due)return 0;if(!a.due)return 1;if(!b.due)return-1;return a.due.localeCompare(b.due);});
   return [...list].sort((a,b)=>b.createdAt-a.createdAt);
 }
-
 function renderKanban(){
   document.getElementById("kanban").style.display="grid";
   const tv=document.getElementById("trash-container");if(tv)tv.remove();
@@ -372,7 +671,6 @@ function renderKanban(){
     el.innerHTML=list.map((t,i)=>cardHTML(t,i)).join("");
   });
 }
-
 function cardHTML(t,i){
   const cat=cats.find(c=>c.id===t.cat);
   const due=t.due?fmtDue(t.due,t.dueTime):null;
@@ -401,7 +699,6 @@ function cardHTML(t,i){
     </div>
   </div>`;
 }
-
 function renderTrash(){
   document.getElementById("kanban").style.display="none";
   let tc=document.getElementById("trash-container");
@@ -419,7 +716,6 @@ function renderTrash(){
       </div>`;
     }).join("");
 }
-
 function toggleTrash(){showTrash=!showTrash;refresh();}
 function complete(id){
   if(!confirm("このタスクを完了してゴミ箱に移動しますか？"))return;
@@ -458,7 +754,6 @@ function openDetail(id){
   document.getElementById("detail-modal").classList.add("open");
 }
 function closeDetail(){document.getElementById("detail-modal").classList.remove("open");}
-
 function fillCats(){document.getElementById("fc").innerHTML='<option value="">なし</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");}
 function openAdd(){
   document.getElementById("eid").value="";document.getElementById("mtitle").textContent="タスクを追加";
@@ -489,7 +784,6 @@ function saveTaskForm(){
   closeModal();
 }
 document.getElementById("fn").addEventListener("keydown",e=>{if(e.key==="Enter")saveTaskForm();});
-
 function openSettings(){
   document.getElementById("swatches").innerHTML=ACCENTS.map(a=>`<div class="sw ${appCfg.accent===a?"sel":""}" style="background:${a}" onclick="pickAccent('${a}',this)"></div>`).join("");
   renderCatList();document.getElementById("settings-modal").classList.add("open");
@@ -520,17 +814,7 @@ function delCat(id){
 function saveSettings(){fbSet("cfg",appCfg);applyAccent();closeSettings();refresh();}
 function applyAccent(){document.documentElement.style.setProperty("--accent",appCfg.accent);document.documentElement.style.setProperty("--accent-bg",appCfg.accent+"1f");}
 
-document.addEventListener("keydown",e=>{
-  const inInput=["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName);
-  if(!inInput&&(e.key==="n"||e.key==="N"))openAdd();
-  if(e.key==="Escape"){closeModal();closeDetail();closeSettings();}
-});
-
-function initFirebase(){
-  _db=window._fb.db;_ref=window._fb.ref;_set=window._fb.set;_remove=window._fb.remove;_onValue=window._fb.onValue;
-  // Override saveTask to use Firebase (avoid conflict with form save)
-  const _saveTask=function(t){fbSet("tasks/"+t.id,t);};
-  window.saveTask=_saveTask;
+function initFirebaseData(){
   _onValue(_ref(_db,"tasks"),snap=>{const val=snap.val();tasks=val?Object.values(val):[];refresh();});
   _onValue(_ref(_db,"trash"),snap=>{const val=snap.val();trash=val?Object.values(val):[];refresh();});
   _onValue(_ref(_db,"cats"),snap=>{
@@ -541,8 +825,12 @@ function initFirebase(){
   });
   _onValue(_ref(_db,"cfg"),snap=>{
     const val=snap.val();if(val)appCfg=Object.assign(appCfg,val);applyAccent();
-    document.getElementById("loading").style.display="none";
   });
+}
+
+function initFirebase(){
+  _db=window._fb.db;_ref=window._fb.ref;_set=window._fb.set;_remove=window._fb.remove;_onValue=window._fb.onValue;
+  checkAuth();
 }
 if(window._fbReady)initFirebase();
 else window.addEventListener("fb-ready",initFirebase);
