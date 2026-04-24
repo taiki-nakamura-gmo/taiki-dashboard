@@ -398,14 +398,13 @@ async function login(){
     if(!u)throw new Error("ログイン者を選択してください。");
     if(!pass)throw new Error("パスワードを入力してください。");
     try{
-      // Normal login first
-      await _signIn(_auth,u.email,pass);
+      // First: try initial setup (sign up). If already exists, fall back to login.
+      const cred=await _signUp(_auth,u.email,pass);
+      try{ await _updateProfile(cred.user,{ displayName:u.label }); }catch(_){}
     }catch(e){
       const code=e&&e.code?String(e.code):"";
-      if(code==="auth/user-not-found"){
-        // First time: create account with chosen password
-        const cred=await _signUp(_auth,u.email,pass);
-        try{ await _updateProfile(cred.user,{ displayName:u.label }); }catch(_){}
+      if(code==="auth/email-already-in-use"){
+        await _signIn(_auth,u.email,pass);
       }else{
         throw e;
       }
@@ -418,12 +417,15 @@ async function login(){
       setErr("ログインに失敗しました（使用者またはパスワードを確認してください）。");
     }else if(code==="auth/weak-password"){
       setErr("パスワードが弱すぎます。もう少し長く複雑なものにしてください。");
-    }else if(code==="auth/email-already-in-use"){
-      setErr("この使用者は既に初期設定済みです。パスワードでログインしてください。");
+    }else if(code==="auth/unauthorized-domain"){
+      setErr("このURL（ドメイン）がFirebase認証で許可されていません。Firebaseコンソールの Authentication → Settings → Authorized domains に、今開いているドメイン（例: *.github.io）を追加してください。");
     }else if(code==="auth/operation-not-allowed"){
       setErr("Firebase側でメール/パスワード認証が無効になっています（管理画面で有効化してください）。");
+    }else if(code==="auth/network-request-failed"){
+      setErr("ネットワークエラーでログインできませんでした。回線/プロキシ/VPN設定を確認して再度お試しください。");
     }else{
-      setErr(msg.includes("auth/")?"ログインに失敗しました。":msg);
+      // Show minimal debug info to help admin fix config quickly
+      setErr(msg.includes("auth/") ? `ログインに失敗しました（${code||"auth error"}）。` : msg);
     }
   }finally{
     btn.disabled=false;
