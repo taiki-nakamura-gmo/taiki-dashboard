@@ -142,9 +142,79 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 @keyframes si{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .card{animation:si .15s ease both}
+/* Login */
+.login-overlay{position:fixed;inset:0;background:#F0EFE9;z-index:9998;display:flex;align-items:center;justify-content:center}
+.login-overlay.hidden{display:none}
+.lcard{background:var(--surface);border-radius:20px;box-shadow:0 12px 40px rgba(0,0,0,.13),0 2px 8px rgba(0,0,0,.06);width:420px;max-width:94vw;padding:32px 28px}
+.lbrand{text-align:center;margin-bottom:26px}
+.lbrand-icon{width:46px;height:46px;background:var(--accent);border-radius:13px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:22px;margin-bottom:10px}
+.lbrand-name{font-size:19px;font-weight:700}
+.lbrand-sub{font-size:12px;color:var(--text3);margin-top:3px}
+.ugrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.ubtn{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r12);padding:14px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .14s;font-family:var(--font);text-align:left;width:100%}
+.ubtn:hover{border-color:var(--accent);background:var(--accent-bg);transform:translateY(-2px);box-shadow:var(--shadow)}
+.ubtn .uav{width:36px;height:36px;border-radius:50%;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ubtn-name{font-size:13.5px;font-weight:600}
+.ubtn-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.suc{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r12);padding:12px 14px;display:flex;align-items:center;gap:11px;margin-bottom:20px}
+.suc .uav{width:36px;height:36px;border-radius:50%;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.back-lnk{font-size:12.5px;color:var(--text3);cursor:pointer;margin-bottom:16px;display:inline-flex;align-items:center;gap:3px;transition:color .12s}
+.back-lnk:hover{color:var(--accent)}
+.ltitle{font-size:15px;font-weight:600;margin-bottom:14px}
+.full-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--r8);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:all .14s;margin-top:8px}
+.full-btn:hover{filter:brightness(1.1)}
+.lerr{font-size:12px;color:var(--red);background:var(--red-bg);padding:8px 11px;border-radius:var(--r8);margin-bottom:10px;display:none}
+.lwarn{font-size:12px;color:var(--amber);background:var(--amber-bg);padding:8px 11px;border-radius:var(--r8);margin-bottom:12px}
+.lfirst-info{font-size:12.5px;color:var(--text2);background:var(--accent-bg);padding:9px 12px;border-radius:var(--r8);margin-bottom:14px}
 </style>
 </head>
 <body>
+
+<!-- Login Screen -->
+<div class="login-overlay hidden" id="login-overlay">
+  <div id="ls-step1">
+    <div class="lcard">
+      <div class="lbrand">
+        <div class="lbrand-icon">&#10022;</div>
+        <div class="lbrand-name">渡部T Tasks</div>
+        <div class="lbrand-sub">チームタスク管理</div>
+      </div>
+      <div class="ugrid">
+        <button class="ubtn" onclick="lsSelectUser('渡部')"><div class="uav" style="background:var(--cn)">渡</div><div><div class="ubtn-name">渡部さん</div><div class="ubtn-sub">ログイン</div></div></button>
+        <button class="ubtn" onclick="lsSelectUser('横井')"><div class="uav" style="background:var(--cm)">横</div><div><div class="ubtn-name">横井さん</div><div class="ubtn-sub">ログイン</div></div></button>
+        <button class="ubtn" onclick="lsSelectUser('上浦')"><div class="uav" style="background:var(--cs)">上</div><div><div class="ubtn-name">上浦さん</div><div class="ubtn-sub">ログイン</div></div></button>
+        <button class="ubtn" onclick="lsSelectUser('太田')"><div class="uav" style="background:var(--ct)">太</div><div><div class="ubtn-name">太田さん</div><div class="ubtn-sub">ログイン</div></div></button>
+      </div>
+    </div>
+  </div>
+  <div id="ls-step2" style="display:none">
+    <div class="lcard">
+      <div class="lbrand">
+        <div class="lbrand-icon">&#10022;</div>
+        <div class="lbrand-name">渡部T Tasks</div>
+        <div class="lbrand-sub">チームタスク管理</div>
+      </div>
+      <div class="back-lnk" onclick="lsBack()">← 別のユーザー</div>
+      <div class="suc" id="ls-suc"></div>
+      <div id="ls-err" class="lerr"></div>
+      <div id="ls-form-login" style="display:none">
+        <div class="ltitle">ログイン</div>
+        <div id="ls-swarn" class="lwarn" style="display:none">⚠️ セッションの有効期限が切れました。再度ログインしてください</div>
+        <div class="form-row"><label class="lbl">ログインID</label><input type="text" class="inp" id="ls-lid" placeholder="ログインIDを入力" autocomplete="username"></div>
+        <div class="form-row"><label class="lbl">パスワード</label><input type="password" class="inp" id="ls-lpass" placeholder="パスワードを入力" autocomplete="current-password"></div>
+        <button class="full-btn" onclick="lsSubmitLogin()">ログイン</button>
+      </div>
+      <div id="ls-form-setup" style="display:none">
+        <div class="ltitle">初回設定</div>
+        <div class="lfirst-info">初めてのログインです。ログインIDとパスワードを設定してください。</div>
+        <div class="form-row"><label class="lbl">ログインID</label><input type="text" class="inp" id="ls-sid" placeholder="メールアドレスや任意のID" autocomplete="username"></div>
+        <div class="form-row"><label class="lbl">パスワード</label><input type="password" class="inp" id="ls-spass" placeholder="4文字以上" autocomplete="new-password"></div>
+        <div class="form-row" style="margin-bottom:0"><label class="lbl">パスワード（確認）</label><input type="password" class="inp" id="ls-spass2" placeholder="もう一度入力" autocomplete="new-password"></div>
+        <button class="full-btn" onclick="lsSubmitSetup()">設定して開始</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="topbar">
   <div class="brand">
@@ -555,11 +625,119 @@ function initFirebase(){
   });
   _onValue(_ref(_db,"team2/cfg"),snap=>{
     const val=snap.val();if(val)appCfg=Object.assign(appCfg,val);applyAccent();
-    document.getElementById("loading").style.display="none";
+    _cfgLoaded=true;_tryHideLoading();
+  });
+  _onValue(_ref(_db,"team2/auth"),snap=>{
+    const val=snap.val();if(val&&typeof val==="object")_authData=val;
+    if(!_authLoaded)_checkSession();
   });
 }
 if(window._fbReady)initFirebase();
 else window.addEventListener("fb-ready",initFirebase);
+</script>
+
+<script>
+// ===LOGIN SYSTEM===
+const LS_KEY='team2_auth_session';
+const SESSION_MS=7*24*60*60*1000;
+let _authData={};
+let _lsUser=null;
+let _authLoaded=false,_cfgLoaded=false;
+
+async function _sha256(s){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function _getSession(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'null');}catch{return null;}}
+function _setSession(uid,lid){localStorage.setItem(LS_KEY,JSON.stringify({userId:uid,loginId:lid,loginTime:Date.now()}));}
+function _tryHideLoading(){if(_authLoaded&&_cfgLoaded){const l=document.getElementById('loading');if(l)l.style.display='none';}}
+
+const _UC={渡部:{bg:'var(--cn)',ch:'渡'},横井:{bg:'var(--cm)',ch:'横'},上浦:{bg:'var(--cs)',ch:'上'},太田:{bg:'var(--ct)',ch:'太'}};
+
+function _checkSession(){
+  const s=_getSession();
+  const valid=s&&((Date.now()-s.loginTime)<SESSION_MS);
+  if(valid){
+    document.getElementById('login-overlay').classList.add('hidden');
+  }else if(s&&!valid){
+    document.getElementById('login-overlay').classList.remove('hidden');
+    lsSelectUser(s.userId,true);
+  }else{
+    document.getElementById('login-overlay').classList.remove('hidden');
+  }
+  _authLoaded=true;_tryHideLoading();
+}
+
+function lsSelectUser(uid,expired=false){
+  _lsUser=uid;
+  document.getElementById('ls-step1').style.display='none';
+  document.getElementById('ls-step2').style.display='';
+  document.getElementById('ls-err').style.display='none';
+  const uc=_UC[uid]||{bg:'#9B99A4',ch:uid[0]};
+  document.getElementById('ls-suc').innerHTML=`<div class="uav" style="background:${uc.bg}">${uc.ch}</div><div><div class="ubtn-name">${uid}さん</div><div class="ubtn-sub">パスワードを入力してください</div></div>`;
+  const hasAuth=_authData[uid]&&_authData[uid].passwordHash;
+  const s=_getSession();
+  if(!hasAuth){
+    document.getElementById('ls-form-login').style.display='none';
+    document.getElementById('ls-form-setup').style.display='';
+    document.getElementById('ls-sid').value='';
+    document.getElementById('ls-spass').value='';
+    document.getElementById('ls-spass2').value='';
+    setTimeout(()=>document.getElementById('ls-sid').focus(),100);
+  }else{
+    document.getElementById('ls-form-setup').style.display='none';
+    document.getElementById('ls-form-login').style.display='';
+    document.getElementById('ls-swarn').style.display=expired?'':'none';
+    const savedId=(s&&s.userId===uid)?s.loginId:'';
+    document.getElementById('ls-lid').value=savedId||'';
+    document.getElementById('ls-lpass').value='';
+    setTimeout(()=>{
+      const li=document.getElementById('ls-lid');
+      (li.value?document.getElementById('ls-lpass'):li).focus();
+    },100);
+  }
+}
+
+function lsBack(){
+  document.getElementById('ls-step2').style.display='none';
+  document.getElementById('ls-step1').style.display='';
+  _lsUser=null;
+}
+
+function _lsErr(msg){const e=document.getElementById('ls-err');e.textContent=msg;e.style.display='';setTimeout(()=>e.style.display='none',3500);}
+
+async function lsSubmitLogin(){
+  const lid=document.getElementById('ls-lid').value.trim();
+  const lp=document.getElementById('ls-lpass').value;
+  if(!lid||!lp){_lsErr('IDとパスワードを入力してください');return;}
+  const st=_authData[_lsUser];
+  if(!st){_lsErr('認証情報が見つかりません');return;}
+  if(lid!==st.loginId){_lsErr('ログインIDが正しくありません');return;}
+  const h=await _sha256(lp);
+  if(h!==st.passwordHash){_lsErr('パスワードが正しくありません');return;}
+  _setSession(_lsUser,lid);
+  document.getElementById('login-overlay').classList.add('hidden');
+}
+
+async function lsSubmitSetup(){
+  const sid=document.getElementById('ls-sid').value.trim();
+  const sp=document.getElementById('ls-spass').value;
+  const sp2=document.getElementById('ls-spass2').value;
+  if(!sid){_lsErr('ログインIDを入力してください');return;}
+  if(sp.length<4){_lsErr('パスワードは4文字以上で設定してください');return;}
+  if(sp!==sp2){_lsErr('パスワードが一致しません');return;}
+  const h=await _sha256(sp);
+  const entry={loginId:sid,passwordHash:h};
+  fbSet('team2/auth/'+_lsUser,entry);
+  _authData[_lsUser]=entry;
+  _setSession(_lsUser,sid);
+  document.getElementById('login-overlay').classList.add('hidden');
+}
+
+document.getElementById('ls-lid').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ls-lpass').focus();});
+document.getElementById('ls-lpass').addEventListener('keydown',e=>{if(e.key==='Enter')lsSubmitLogin();});
+document.getElementById('ls-spass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ls-spass2').focus();});
+document.getElementById('ls-spass2').addEventListener('keydown',e=>{if(e.key==='Enter')lsSubmitSetup();});
 </script>
 </body>
 </html>
