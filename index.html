@@ -8,6 +8,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const cfg = {
   apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
   authDomain: "taiki-tasks-933cc.firebaseapp.com",
@@ -19,7 +20,8 @@ const cfg = {
 };
 const app = initializeApp(cfg);
 const db = getDatabase(app);
-window._fb = { db, ref, set, remove, onValue };
+const auth = getAuth(app);
+window._fb = { db, ref, set, remove, onValue, auth, onAuthStateChanged, signInWithEmailAndPassword, signOut };
 window._fbReady = true;
 window.dispatchEvent(new Event("fb-ready"));
 </script>
@@ -142,9 +144,43 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 @keyframes si{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .card{animation:si .15s ease both}
+
+/* Auth */
+.auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+.auth-card{width:420px;max-width:95vw;background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);box-shadow:var(--shadow-lg);padding:22px}
+.auth-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.auth-sub{font-size:12.5px;color:var(--text2);margin-bottom:16px;line-height:1.6}
+.auth-err{display:none;margin-top:10px;background:var(--red-bg);color:var(--red);border:1px solid #f5c6cc;padding:9px 10px;border-radius:var(--r8);font-size:12.5px;line-height:1.5}
+.muted{color:var(--text3);font-size:12px}
 </style>
 </head>
 <body>
+
+<!-- Auth Screen -->
+<div class="auth" id="auth-screen" style="display:none">
+  <div class="auth-card">
+    <div class="auth-title">ログイン</div>
+    <div class="auth-sub">ログイン者を選択し、パスワードを入力してください。</div>
+
+    <div class="form-row">
+      <label class="lbl">ログイン者</label>
+      <div class="sel-w">
+        <select id="login-user"></select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label class="lbl">パスワード</label>
+      <input type="password" class="inp" id="login-pass" placeholder="パスワード" autocomplete="current-password">
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;align-items:center;margin-top:10px">
+      <button class="btn btn-primary" id="login-btn">ログイン</button>
+    </div>
+
+    <div class="auth-err" id="login-err"></div>
+  </div>
+</div>
 
 <div class="topbar">
   <div class="brand">
@@ -152,6 +188,10 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
     <div class="brand-name">中村T タスク管理表</div>
   </div>
   <div class="topbar-right">
+    <button class="btn btn-ghost btn-sm" id="logout-btn" style="display:none" onclick="logout()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3H3.8A1.8 1.8 0 002 4.8v6.4A1.8 1.8 0 003.8 13H6"/><path d="M10 11l3-3-3-3"/><path d="M13 8H6"/></svg>
+      ログアウト
+    </button>
     <button class="btn btn-ghost btn-sm" onclick="toggleTrash()">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg>
       ゴミ箱 <span id="tbtn" style="font-family:monospace;font-size:11px;background:var(--red-bg);color:var(--red);padding:1px 6px;border-radius:20px;margin-left:2px">0</span>
@@ -315,6 +355,60 @@ let appCfg={accent:"#3A5EE5"};
 let showTrash=false;
 let colSort={n:"created",m:"created",s:"created"};
 let _db,_ref,_set,_remove,_onValue;
+let _auth,_onAuthStateChanged,_signIn,_signOut;
+
+// Login users (Firebase Auth email/password accounts)
+const LOGIN_USERS=[
+  { id:"nakamuraT", label:"中村T", email:"nakamura.t@example.com" },
+  { id:"naka", label:"中", email:"naka@example.com" },
+  { id:"sakurii", label:"櫻井", email:"sakurii@example.com" },
+];
+let authUser=null;
+let firebaseInited=false;
+
+function setErr(msg){
+  const el=document.getElementById("login-err");
+  if(!msg){el.style.display="none";el.textContent="";return;}
+  el.style.display="block";
+  el.textContent=msg;
+}
+function showAuthUI(show){
+  document.getElementById("auth-screen").style.display=show?"flex":"none";
+  document.getElementById("main").style.display=show?"none":"";
+  document.querySelector(".stats-bar").style.display=show?"none":"flex";
+  document.querySelector(".topbar").style.display=show?"none":"flex";
+}
+function fillLoginUsers(){
+  const sel=document.getElementById("login-user");
+  sel.innerHTML=LOGIN_USERS.map(u=>`<option value="${u.id}">${esc(u.label)}</option>`).join("");
+  const saved=localStorage.getItem("loginUserId");
+  if(saved&&LOGIN_USERS.some(u=>u.id===saved))sel.value=saved;
+  localStorage.setItem("loginUserId",sel.value);
+}
+async function login(){
+  setErr("");
+  const btn=document.getElementById("login-btn");
+  btn.disabled=true;
+  btn.textContent="ログイン中...";
+  try{
+    const id=document.getElementById("login-user").value;
+    const u=LOGIN_USERS.find(x=>x.id===id);
+    const pass=document.getElementById("login-pass").value;
+    if(!u)throw new Error("ログイン者を選択してください。");
+    if(!pass)throw new Error("パスワードを入力してください。");
+    await _signIn(_auth,u.email,pass);
+    document.getElementById("login-pass").value="";
+  }catch(e){
+    const msg=String(e&&e.message?e.message:e);
+    setErr(msg.includes("auth/")?"ログインに失敗しました（IDまたはパスワードを確認してください）。":msg);
+  }finally{
+    btn.disabled=false;
+    btn.textContent="ログイン";
+  }
+}
+async function logout(){
+  try{await _signOut(_auth);}catch(_){}
+}
 
 function fbSet(p,v){if(_db)_set(_ref(_db,p),v);}
 function fbDel(p){if(_db)_remove(_ref(_db,p));}
@@ -528,6 +622,33 @@ document.addEventListener("keydown",e=>{
 
 function initFirebase(){
   _db=window._fb.db;_ref=window._fb.ref;_set=window._fb.set;_remove=window._fb.remove;_onValue=window._fb.onValue;
+  _auth=window._fb.auth;_onAuthStateChanged=window._fb.onAuthStateChanged;_signIn=window._fb.signInWithEmailAndPassword;_signOut=window._fb.signOut;
+
+  fillLoginUsers();
+  document.getElementById("login-user").addEventListener("change",()=>localStorage.setItem("loginUserId",document.getElementById("login-user").value));
+  document.getElementById("login-btn").addEventListener("click",login);
+  document.getElementById("login-pass").addEventListener("keydown",e=>{if(e.key==="Enter")login();});
+
+  _onAuthStateChanged(_auth,(u)=>{
+    authUser=u||null;
+    const lb=document.getElementById("logout-btn");
+    if(authUser){
+      showAuthUI(false);
+      lb.style.display="";
+      if(!firebaseInited){
+        firebaseInited=true;
+        startRealtime();
+      }
+    }else{
+      lb.style.display="none";
+      showAuthUI(true);
+      // Keep loading hidden on auth screen
+      const l=document.getElementById("loading");if(l)l.style.display="none";
+    }
+  });
+}
+
+function startRealtime(){
   // Override saveTask to use Firebase (avoid conflict with form save)
   const _saveTask=function(t){fbSet("tasks/"+t.id,t);};
   window.saveTask=_saveTask;
