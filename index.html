@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>たいき Tasks</title>
+<title id="page-title">たいき Tasks</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, push, remove, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
   authDomain: "taiki-tasks-933cc.firebaseapp.com",
@@ -17,16 +18,19 @@ const firebaseConfig = {
   messagingSenderId: "679381676234",
   appId: "1:679381676234:web:20b54086cd302494c0c433"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-window._fb = { db, ref, set, remove, onValue };
+
+// Expose Firebase helpers to global scope
+window._fb = { db, ref, set, push, remove, onValue, update };
 window._fbReady = true;
-window.dispatchEvent(new Event("fb-ready"));
-<\/script>
+window.dispatchEvent(new Event('fb-ready'));
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F0EFE9;--surface:#FFFFFF;--surface2:#EFEDE6;
+  --bg:#F5F4EF;--surface:#FFFFFF;--surface2:#EFEDE6;
   --border:#E2DFD6;--border2:#C9C6BC;
   --text:#18171A;--text2:#5C5A62;--text3:#9B99A4;
   --accent:#3A5EE5;--accent-bg:#EDF0FC;
@@ -35,16 +39,42 @@ window.dispatchEvent(new Event("fb-ready"));
   --red:#C0253A;--red-bg:#FDEAED;
   --purple:#6B35C8;
   --r8:8px;--r12:12px;--r16:16px;
+  --font-size-base:14px;
   --shadow:0 1px 4px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06);
   --shadow-lg:0 8px 24px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05);
-  --font:"Instrument Sans",sans-serif;--mono:"DM Mono",monospace;
-  --cn:#3A5EE5;--cm:#1A7A50;--cs:#C0253A;
+  --font:'Instrument Sans',sans-serif;--mono:'DM Mono',monospace;
 }
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
-.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.topbar-left{display:flex;align-items:center;gap:10px}
-.brand-icon{width:28px;height:28px;background:var(--accent);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
-.brand-name{font-size:15px;font-weight:600;letter-spacing:-.3px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:var(--font-size-base);line-height:1.5}
+.layout{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:200px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.sidebar-top{padding:20px 14px 14px;flex:1;overflow-y:auto}
+.brand{font-size:15px;font-weight:600;letter-spacing:-.3px;margin-bottom:22px;display:flex;align-items:center;gap:7px}
+.brand-icon{width:26px;height:26px;background:var(--accent);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;flex-shrink:0;transition:background .3s}
+.brand-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-sect-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:6px 8px 3px}
+.nav-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:var(--r8);border:none;background:none;font-family:var(--font);font-size:13px;color:var(--text2);cursor:pointer;transition:all .12s;text-align:left;margin-bottom:1px}
+.nav-btn:hover{background:var(--surface2);color:var(--text)}
+.nav-btn.active{background:var(--accent-bg);color:var(--accent);font-weight:500}
+.nav-btn svg{width:14px;height:14px;flex-shrink:0;opacity:.65}
+.nav-btn.active svg{opacity:1}
+.nav-count{margin-left:auto;background:var(--border);color:var(--text2);font-size:10px;font-family:var(--mono);padding:1px 6px;border-radius:20px;font-weight:500;min-width:20px;text-align:center}
+.nav-btn.active .nav-count{background:rgba(58,94,229,.18);color:var(--accent)}
+.trash-cnt{background:var(--red-bg)!important;color:var(--red)!important}
+.sidebar-footer{padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.today-box{background:var(--surface2);border-radius:var(--r12);padding:9px 12px}
+.today-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.today-date{font-size:12.5px;font-weight:600;margin-top:1px}
+.today-day{font-size:11px;color:var(--text2);margin-top:1px}
+.settings-btn{display:flex;align-items:center;gap:7px;width:100%;padding:8px 10px;border-radius:var(--r8);border:1px solid var(--border);background:var(--surface);font-family:var(--font);font-size:12.5px;color:var(--text2);cursor:pointer;transition:all .12s}
+.settings-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.settings-btn svg{width:13px;height:13px;opacity:.7;flex-shrink:0}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15.5px;font-weight:600;letter-spacing:-.3px}
 .topbar-right{display:flex;gap:8px;align-items:center}
 .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--r8);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .14s;white-space:nowrap}
 .btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{filter:brightness(1.1)}
@@ -52,64 +82,87 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .btn-danger{background:none;color:var(--red);border:1px solid #f5c6cc}.btn-danger:hover{background:var(--red-bg)}
 .btn-sm{padding:5px 10px;font-size:12px}
 .btn svg{width:13px;height:13px}
-.stats-bar{padding:10px 20px;display:flex;gap:16px;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
-.stat-chip{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--text2)}
-.stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.stat-num{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--text)}
-.stats-sep{width:1px;height:16px;background:var(--border)}
-.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 20px;align-items:start}
-.col{background:var(--surface2);border-radius:var(--r16);overflow:hidden;border:1px solid var(--border)}
-.col-header{padding:13px 14px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid transparent}
-.col-nakamura .col-header{border-color:var(--cn);background:linear-gradient(135deg,#EDF0FC,#f5f7ff)}
-.col-naka .col-header{border-color:var(--cm);background:linear-gradient(135deg,#E8F5EE,#f0faf4)}
-.col-sakurai .col-header{border-color:var(--cs);background:linear-gradient(135deg,#FDEAED,#fff5f6)}
-.col-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
-.col-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
-.col-count{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;font-weight:600}
-.col-nakamura .col-count{background:#c7d7ff;color:var(--cn)}
-.col-naka .col-count{background:#a7f3d0;color:var(--cm)}
-.col-sakurai .col-count{background:#fecdd3;color:var(--cs)}
-.col-body{padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px}
-.col-empty{padding:24px 10px;text-align:center;color:var(--text3);font-size:12.5px}
-.sort-btn{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text3);transition:all .12s;white-space:nowrap}
-.sort-btn:hover{border-color:var(--border2);color:var(--text2)}
-.sort-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
-.col-sort-bar{display:flex;gap:4px;padding:6px 10px 2px;flex-wrap:wrap}
-.task-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);overflow:hidden;transition:box-shadow .14s,transform .14s;cursor:pointer;position:relative}
+
+/* Filter bar */
+.filterbar{padding:11px 22px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.fl-label{font-size:11.5px;color:var(--text3)}
+.fl-sep{width:1px;height:14px;background:var(--border);margin:0 2px}
+.filter-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);transition:all .12s;user-select:none}
+.filter-chip:hover{border-color:var(--border2);color:var(--text)}
+.filter-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.filter-chip.on-red{background:var(--red);border-color:var(--red);color:#fff}
+.filter-chip.on-amber{background:var(--amber);border-color:var(--amber);color:#fff}
+.filter-chip.on-green{background:var(--green);border-color:var(--green);color:#fff}
+.filter-chip.on-drag{background:var(--purple);border-color:var(--purple);color:#fff}
+.chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.drag-mode-hint{display:none;align-items:center;gap:6px;font-size:11.5px;color:var(--accent);background:var(--accent-bg);padding:4px 10px;border-radius:20px;border:1px solid rgba(58,94,229,.2)}
+.drag-mode .drag-mode-hint{display:flex}
+
+/* Stats */
+.stats-bar{padding:10px 22px 0;display:flex;gap:14px;flex-shrink:0}
+.stat{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)}
+.stat-dot{width:7px;height:7px;border-radius:50%}
+.stat-num{font-family:var(--mono);font-weight:500}
+
+/* Content */
+.content{flex:1;padding:16px 22px 24px;overflow-y:auto}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* Empty */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;gap:12px;color:var(--text3);text-align:center}
+.empty-icon{width:52px;height:52px;border-radius:var(--r16);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:22px}
+.empty-title{font-size:14.5px;font-weight:600;color:var(--text2)}
+.empty-sub{font-size:12.5px;max-width:240px;line-height:1.6}
+.kbd{display:inline-block;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:11px;color:var(--text2)}
+
+/* Task card */
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);margin-bottom:5px;display:flex;align-items:stretch;transition:box-shadow .15s,transform .15s,opacity .32s;overflow:hidden}
 .task-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
-.task-card.completing{opacity:0;transform:translateX(16px) scale(.97);transition:all .32s ease;pointer-events:none}
-.pri-bar{height:3px;width:100%}
-.pb-high{background:var(--red)}.pb-mid{background:var(--amber)}.pb-low{background:var(--green)}.pb-none{background:var(--border)}
-.card-inner{padding:10px 12px}
-.card-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:5px}
-.card-check{width:17px;height:17px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .14s;margin-top:1px;background:none;cursor:pointer}
-.card-check:hover{border-color:var(--green);background:var(--green-bg)}
-.card-check.checked{background:var(--green);border-color:var(--green);animation:ck .2s ease}
-@keyframes ck{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
-.ck-svg{width:9px;height:9px;stroke:#fff;stroke-width:2.5;fill:none;display:none}
-.card-check.checked .ck-svg{display:block}
-.card-name{font-size:13px;font-weight:500;flex:1;line-height:1.4}
-.card-memo{font-size:11.5px;color:var(--text2);margin-bottom:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.card-tags{display:flex;flex-wrap:wrap;gap:4px}
-.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10.5px;font-weight:500}
+.task-card.completing{opacity:0!important;transform:translateX(18px) scale(.97)!important;pointer-events:none}
+.pri-bar{width:3px;flex-shrink:0}
+.pb-high{background:var(--red)}.pb-mid{background:var(--amber)}.pb-low{background:var(--green)}.pb-none{background:transparent}
+.check-wrap{padding:13px 11px 13px 13px;flex-shrink:0;display:flex;align-items:center}
+.checkbox{width:18px;height:18px;border-radius:50%;border:2px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .14s;flex-shrink:0;background:none}
+.checkbox:hover{border-color:var(--accent);background:var(--accent-bg)}
+.checkbox.checked{background:var(--green);border-color:var(--green);animation:ck .2s ease}
+@keyframes ck{0%{transform:scale(1)}50%{transform:scale(1.28)}100%{transform:scale(1)}}
+.ck-svg{width:10px;height:10px;stroke:#fff;stroke-width:2.5;fill:none;display:none}
+.checkbox.checked .ck-svg{display:block}
+.task-body{flex:1;padding:11px 10px 11px 0;min-width:0}
+.task-name{font-size:13.5px;font-weight:500;margin-bottom:4px}
+.task-tags{display:flex;flex-wrap:wrap;gap:5px}
+.tag{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:500}
 .tag-ph{background:var(--red-bg);color:var(--red)}.tag-pm{background:var(--amber-bg);color:var(--amber)}.tag-pl{background:var(--green-bg);color:var(--green)}
 .tag-due{background:var(--surface2);color:var(--text2)}.tag-due.overdue{background:var(--red-bg);color:var(--red)}.tag-due.today{background:var(--amber-bg);color:var(--amber)}
-.card-actions{position:absolute;top:7px;right:7px;display:flex;gap:3px;opacity:0;transition:opacity .13s}
-.task-card:hover .card-actions{opacity:1}
-.icon-btn{width:24px;height:24px;border-radius:var(--r8);border:none;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .12s}
-.icon-btn:hover{background:var(--border);color:var(--text2)}
+.task-memo{font-size:12px;color:var(--text2);margin-bottom:4px;line-height:1.45}
+.task-actions{padding:9px 11px;display:flex;align-items:center;gap:3px;opacity:0;transition:opacity .14s}
+.task-card:hover .task-actions{opacity:1}
+.icon-btn{width:27px;height:27px;border-radius:var(--r8);border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .12s}
+.icon-btn:hover{background:var(--surface2);color:var(--text2)}
 .icon-btn.del:hover{background:var(--red-bg);color:var(--red)}
-.icon-btn svg{width:12px;height:12px}
-.trash-view{padding:16px 20px}
-.trash-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);padding:11px 14px;display:flex;align-items:center;gap:11px;margin-bottom:6px}
+.icon-btn svg{width:13px;height:13px}
+
+/* Drag */
+.drag-handle{width:28px;flex-shrink:0;display:none;align-items:center;justify-content:center;cursor:grab;color:var(--border2);transition:color .12s}
+.drag-handle:hover{color:var(--text3)}.drag-handle:active{cursor:grabbing}
+.drag-handle svg{width:12px;height:12px}
+.drag-mode .drag-handle{display:flex}
+.drag-mode .task-card{user-select:none}
+.task-card.dragging{opacity:.4;transform:scale(.98);box-shadow:none!important}
+.task-card.drag-over{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg)}
+
+/* Trash */
+.trash-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);padding:11px 14px;display:flex;align-items:center;gap:11px;margin-bottom:5px}
 .trash-name{flex:1;font-size:13px;color:var(--text2);text-decoration:line-through;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .trash-meta{font-size:11px;color:var(--text3);font-family:var(--mono);flex-shrink:0}
 .trash-acts{display:flex;gap:6px;flex-shrink:0}
+
+/* Modal */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .18s;backdrop-filter:blur(2px)}
 .overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--surface);border-radius:var(--r16);box-shadow:var(--shadow-lg);width:460px;max-width:95vw;padding:22px;transform:translateY(8px) scale(.98);transition:transform .18s;max-height:92vh;overflow-y:auto}
+.modal{background:var(--surface);border-radius:var(--r16);box-shadow:var(--shadow-lg);width:450px;max-width:95vw;padding:22px;transform:translateY(8px) scale(.98);transition:transform .18s;max-height:92vh;overflow-y:auto}
 .overlay.open .modal{transform:translateY(0) scale(1)}
-.modal-title{font-size:15.5px;font-weight:600;letter-spacing:-.3px;margin-bottom:18px}
+.modal-title{font-size:15.5px;font-weight:600;letter-spacing:-.3px;margin-bottom:18px;display:flex;align-items:center;gap:8px}
 .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
 .form-row{margin-bottom:13px}
 .form-label{font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.05em}
@@ -121,492 +174,884 @@ textarea.form-input{resize:vertical;min-height:64px;line-height:1.5}
 .sel-wrap{position:relative}
 .sel-wrap select{width:100%;padding:9px 30px 9px 11px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:13.5px;color:var(--text);background:var(--surface);appearance:none;cursor:pointer;outline:none;transition:border-color .14s}
 .sel-wrap select:focus{border-color:var(--accent)}
-.sel-wrap::after{content:"";position:absolute;right:10px;top:50%;transform:translateY(-50%);border:4px solid transparent;border-top-color:var(--text3);pointer-events:none}
-.d-modal{width:500px}
-.d-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
-.d-name{font-size:17px;font-weight:600;letter-spacing:-.3px;line-height:1.4;flex:1}
-.d-close{width:28px;height:28px;border-radius:var(--r8);border:none;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:16px}
-.d-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
-.d-section{border-top:1px solid var(--border);padding:14px 0}
-.d-lbl{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:7px}
-.d-memo{font-size:14px;color:var(--text);line-height:1.7;white-space:pre-wrap;background:var(--surface2);border-radius:var(--r8);padding:11px 13px}
-.d-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.d-item{background:var(--surface2);border-radius:var(--r8);padding:9px 11px}
-.d-item-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:3px}
-.d-item-val{font-size:13px;font-weight:500;color:var(--text)}
+.sel-wrap::after{content:'';position:absolute;right:10px;top:50%;transform:translateY(-50%);border:4px solid transparent;border-top-color:var(--text3);pointer-events:none}
+
+/* Settings */
 .s-section{border:1px solid var(--border);border-radius:var(--r12);overflow:hidden;margin-bottom:14px}
-.s-title{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.s-section-title{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border)}
 .s-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);gap:12px}
 .s-row:last-child{border-bottom:none}
 .s-row-lbl{font-size:13px;font-weight:500}
+.s-row-sub{font-size:11.5px;color:var(--text3);margin-top:1px}
 .swatches{display:flex;gap:6px;flex-wrap:wrap}
 .swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all .14s;flex-shrink:0}
 .swatch:hover{transform:scale(1.18)}
 .swatch.sel{border-color:var(--text);transform:scale(1.1)}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-@keyframes slideIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.task-card{animation:slideIn .15s ease both}
+.tog-btns{display:flex;gap:5px}
+.tog-btn{padding:5px 11px;border-radius:var(--r8);border:1.5px solid var(--border);background:var(--surface);font-family:var(--font);font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .12s}
+.tog-btn:hover{border-color:var(--border2);color:var(--text)}
+.tog-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+
+/* Login screen */
+.nav-group{margin-bottom:2px}
+.nav-group-header{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:var(--r8);border:none;background:none;font-family:var(--font);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);cursor:pointer;transition:all .12s;text-align:left;user-select:none}
+.nav-group-header:hover{background:var(--surface2);color:var(--text2)}
+.nav-group-header svg{width:13px;height:13px;flex-shrink:0;transition:transform .2s}
+.nav-group-header.open svg.chevron{transform:rotate(90deg)}
+.nav-group-children{overflow:hidden;max-height:0;transition:max-height .25s ease}
+.nav-group-children.open{max-height:400px}
+.nav-child{display:flex;align-items:center;gap:7px;width:100%;padding:6px 10px 6px 22px;border-radius:var(--r8);border:none;background:none;font-family:var(--font);font-size:12.5px;color:var(--text2);cursor:pointer;transition:all .12s;text-align:left;margin-bottom:1px}
+.nav-child:hover{background:var(--surface2);color:var(--text)}
+.nav-child.active{background:var(--accent-bg);color:var(--accent);font-weight:500}
+.nav-child-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.nav-child-count{margin-left:auto;background:var(--border);color:var(--text2);font-size:10px;font-family:var(--mono);padding:1px 5px;border-radius:20px;font-weight:500;min-width:18px;text-align:center}
+.nav-child.active .nav-child-count{background:rgba(58,94,229,.18);color:var(--accent)}
+
+/* Detail modal */
+.detail-modal{width:520px}
+.detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px}
+.detail-task-name{font-size:18px;font-weight:600;letter-spacing:-.3px;line-height:1.4;flex:1}
+.detail-close{width:28px;height:28px;border-radius:var(--r8);border:none;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0;font-size:16px;transition:all .12s}
+.detail-close:hover{background:var(--border);color:var(--text)}
+.detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+.detail-section{border-top:1px solid var(--border);padding:16px 0}
+.detail-section-label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:8px}
+.detail-memo{font-size:14px;color:var(--text);line-height:1.7;white-space:pre-wrap;background:var(--surface2);border-radius:var(--r8);padding:12px 14px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.detail-item{background:var(--surface2);border-radius:var(--r8);padding:10px 12px}
+.detail-item-label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:4px}
+.detail-item-value{font-size:13.5px;font-weight:500;color:var(--text)}
+.detail-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
 </style>
 </head>
 <body>
+<div class="layout">
 
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="brand-icon">&#10022;</div>
-    <div class="brand-name">&#12383;&#12356;&#12365; Tasks</div>
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-top">
+    <div class="brand">
+      <div class="brand-icon" id="brand-icon">✦</div>
+      <span class="brand-name" id="brand-name">たいき Tasks</span>
+    </div>
+
+    <!-- 期限 accordion -->
+    <div class="nav-group">
+      <button class="nav-group-header" onclick="toggleGroup('due-group',this)">
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+        📅 期限
+      </button>
+      <div class="nav-group-children" id="due-group">
+        <button class="nav-child active" data-view="all" onclick="switchView('all',this)">
+          <svg style="width:11px;height:11px;flex-shrink:0;opacity:.6" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
+          すべて <span class="nav-child-count" id="nav-all">0</span>
+        </button>
+        <button class="nav-child" data-view="today" onclick="switchView('today',this)">
+          <svg style="width:11px;height:11px;flex-shrink:0;opacity:.6" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 3V1.5M11 3V1.5M2 7h12"/></svg>
+          今日期限 <span class="nav-child-count" id="nav-today">0</span>
+        </button>
+        <button class="nav-child" data-view="high" onclick="switchView('high',this)">
+          <svg style="width:11px;height:11px;flex-shrink:0;opacity:.6" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4 7l4-5 4 5M4 13h8"/></svg>
+          高優先度 <span class="nav-child-count" id="nav-high">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- カテゴリ accordion -->
+    <div class="nav-group">
+      <button class="nav-group-header" onclick="toggleGroup('cat-group',this)">
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+        📁 カテゴリ
+      </button>
+      <div class="nav-group-children" id="cat-group">
+        <div id="cat-nav"></div>
+      </div>
+    </div>
+
+    <!-- 担当者 accordion -->
+    <div class="nav-group">
+      <button class="nav-group-header" onclick="toggleGroup('member-group',this)">
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+        👤 担当者
+      </button>
+      <div class="nav-group-children" id="member-group">
+        <button class="nav-child" data-member="中村" onclick="filterMember('中村',this)">
+          <span class="nav-child-dot" style="background:#3A5EE5"></span>
+          中村 <span class="nav-child-count" id="mc-中村">0</span>
+        </button>
+        <button class="nav-child" data-member="中" onclick="filterMember('中',this)">
+          <span class="nav-child-dot" style="background:#1A7A50"></span>
+          中 <span class="nav-child-count" id="mc-中">0</span>
+        </button>
+        <button class="nav-child" data-member="櫻井" onclick="filterMember('櫻井',this)">
+          <span class="nav-child-dot" style="background:#C0253A"></span>
+          櫻井 <span class="nav-child-count" id="mc-櫻井">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ゴミ箱 -->
+    <div style="margin-top:4px">
+      <button class="nav-btn" data-view="trash" onclick="switchView('trash',this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg>
+        ゴミ箱 <span class="nav-count trash-cnt" id="nav-trash">0</span>
+      </button>
+    </div>
   </div>
-  <div class="topbar-right">
-    <button class="btn btn-ghost btn-sm" onclick="toggleTrash()">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg>
-      &#12468;&#12511;&#31665; <span id="trash-btn-cnt" style="font-family:var(--mono);font-size:11px;background:var(--red-bg);color:var(--red);padding:1px 6px;border-radius:20px;margin-left:2px">0</span>
-    </button>
-    <button class="btn btn-ghost btn-sm" onclick="openSettings()">
+  <div class="sidebar-footer">
+    <div class="today-box">
+      <div class="today-label">今日</div>
+      <div class="today-date" id="today-date">—</div>
+      <div class="today-day" id="today-day">—</div>
+    </div>
+    <button class="settings-btn" onclick="openSettings()">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
-      &#35373;&#23450;
-    </button>
-    <button class="btn btn-primary" onclick="openAddModal()">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
-      &#12479;&#12473;&#12463;&#12434;&#36861;&#21152;
+      設定
     </button>
   </div>
-</div>
+</nav>
 
-<div class="stats-bar">
-  <div class="stat-chip"><span class="stat-dot" style="background:var(--accent)"></span>&#21512;&#35336; <span class="stat-num" id="st-total">0</span> &#20214;</div>
-  <div class="stats-sep"></div>
-  <div class="stat-chip"><span class="stat-dot" style="background:var(--cn)"></span>&#20013;&#26449; <span class="stat-num" id="st-n">0</span></div>
-  <div class="stat-chip"><span class="stat-dot" style="background:var(--cm)"></span>&#20013; <span class="stat-num" id="st-m">0</span></div>
-  <div class="stat-chip"><span class="stat-dot" style="background:var(--cs)"></span>&#26707;&#20117; <span class="stat-num" id="st-s">0</span></div>
-  <div class="stats-sep"></div>
-  <div class="stat-chip"><span class="stat-dot" style="background:var(--red)"></span>&#39640;&#20778;&#20808;&#24230; <span class="stat-num" id="st-high">0</span></div>
-  <div class="stat-chip"><span class="stat-dot" style="background:var(--amber)"></span>&#20170;&#26085;&#26399;&#38480; <span class="stat-num" id="st-today">0</span></div>
-</div>
-
-<div id="main-content">
-  <div class="kanban" id="kanban">
-    <div class="col col-nakamura">
-      <div class="col-header">
-        <div class="col-title">
-          <div class="col-avatar" style="background:var(--cn)">&#20013;</div>
-          &#20013;&#26449;
-        </div>
-        <span class="col-count" id="cnt-n">0</span>
-      </div>
-      <div class="col-sort-bar">
-        <button class="sort-btn active" onclick="setColSort('n','created',this)">追加順</button>
-        <button class="sort-btn" onclick="setColSort('n','priority',this)">優先度順</button>
-        <button class="sort-btn" onclick="setColSort('n','due',this)">期限順</button>
-      </div>
-      <div class="col-body" id="col-n"></div>
-    </div>
-    <div class="col col-naka">
-      <div class="col-header">
-        <div class="col-title">
-          <div class="col-avatar" style="background:var(--cm)">&#20013;</div>
-          &#20013;
-        </div>
-        <span class="col-count" id="cnt-m">0</span>
-      </div>
-      <div class="col-sort-bar">
-        <button class="sort-btn active" onclick="setColSort('m','created',this)">追加順</button>
-        <button class="sort-btn" onclick="setColSort('m','priority',this)">優先度順</button>
-        <button class="sort-btn" onclick="setColSort('m','due',this)">期限順</button>
-      </div>
-      <div class="col-body" id="col-m"></div>
-    </div>
-    <div class="col col-sakurai">
-      <div class="col-header">
-        <div class="col-title">
-          <div class="col-avatar" style="background:var(--cs)">&#26707;</div>
-          &#26707;&#20117;
-        </div>
-        <span class="col-count" id="cnt-s">0</span>
-      </div>
-      <div class="col-sort-bar">
-        <button class="sort-btn active" onclick="setColSort('s','created',this)">追加順</button>
-        <button class="sort-btn" onclick="setColSort('s','priority',this)">優先度順</button>
-        <button class="sort-btn" onclick="setColSort('s','due',this)">期限順</button>
-      </div>
-      <div class="col-body" id="col-s"></div>
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="view-title">すべてのタスク</div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost btn-sm" id="empty-trash-btn" style="display:none" onclick="emptyTrash()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/></svg>
+        すべて完全削除
+      </button>
+      <button class="btn btn-primary" id="add-btn" onclick="openAddModal()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+        タスクを追加
+      </button>
     </div>
   </div>
+
+  <div class="filterbar" id="filterbar">
+    <span class="fl-label">並び替え</span>
+    <div class="fl-sep"></div>
+    <span class="filter-chip on" data-sort="created" onclick="setSort('created',this)">追加順</span>
+    <span class="filter-chip" data-sort="due" onclick="setSort('due',this)">期限順</span>
+    <span class="filter-chip" data-sort="priority" onclick="setSort('priority',this)">優先度順</span>
+    <span class="filter-chip" id="drag-chip" onclick="toggleDragMode(this)">
+      <svg width="12" height="12" viewBox="0 0 16 16"><circle cx="5" cy="4" r="1.2" fill="currentColor"/><circle cx="11" cy="4" r="1.2" fill="currentColor"/><circle cx="5" cy="8" r="1.2" fill="currentColor"/><circle cx="11" cy="8" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="11" cy="12" r="1.2" fill="currentColor"/></svg>
+      手動並び替え
+    </span>
+    <div class="fl-sep"></div>
+    <span class="fl-label">優先度</span>
+    <span class="filter-chip" data-pf="high" onclick="togglePF('high',this)"><span class="chip-dot" style="background:var(--red)"></span>高</span>
+    <span class="filter-chip" data-pf="mid" onclick="togglePF('mid',this)"><span class="chip-dot" style="background:var(--amber)"></span>中</span>
+    <span class="filter-chip" data-pf="low" onclick="togglePF('low',this)"><span class="chip-dot" style="background:var(--green)"></span>低</span>
+    <div class="drag-mode-hint">
+      <svg width="11" height="11" viewBox="0 0 16 16"><circle cx="5" cy="4" r="1.2" fill="currentColor"/><circle cx="11" cy="4" r="1.2" fill="currentColor"/><circle cx="5" cy="8" r="1.2" fill="currentColor"/><circle cx="11" cy="8" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="11" cy="12" r="1.2" fill="currentColor"/></svg>
+      ドラッグで並び替えできます
+    </div>
+  </div>
+
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat"><span class="stat-dot" style="background:var(--accent)"></span><span id="st-total" class="stat-num">0</span> 件</div>
+    <div class="stat"><span class="stat-dot" style="background:var(--red)"></span>高優先度 <span id="st-high" class="stat-num">0</span></div>
+    <div class="stat"><span class="stat-dot" style="background:var(--amber)"></span>今日期限 <span id="st-today" class="stat-num">0</span></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
 </div>
 
 <!-- Task Modal -->
 <div class="overlay" id="task-modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
-    <div class="modal-title" id="modal-ttl">&#12479;&#12473;&#12463;&#12434;&#36861;&#21152;</div>
+    <div class="modal-title" id="modal-ttl">タスクを追加</div>
     <input type="hidden" id="edit-id">
     <div class="form-row">
-      <label class="form-label">&#12479;&#12473;&#12463;&#21517; <span style="color:var(--red)">*</span></label>
-      <input type="text" class="form-input" id="f-name" placeholder="&#20363;&#65306;&#26682;&#24335;&#20250;&#31038;&#12288;&#12288;">
+      <label class="form-label">タスク名 <span style="color:var(--red)">*</span></label>
+      <input type="text" class="form-input" id="f-name" placeholder="例：企画書を作成する">
     </div>
     <div class="form-row">
-      <label class="form-label">&#12�；&#12514;&#65288;&#20219;&#24847;&#65289;</label>
-      <textarea class="form-input" id="f-memo" placeholder="&#35443;&#32048;&#12539;&#20633;&#32771;&#12394;&#12393;" rows="2"></textarea>
+      <label class="form-label">メモ（任意）</label>
+      <textarea class="form-input" id="f-memo" placeholder="詳細・備考など" rows="2"></textarea>
     </div>
     <div class="form-2">
       <div class="form-row" style="margin-bottom:0">
-        <label class="form-label">&#12459;&#12486;&#12468;&#12522;</label>
-        <div class="sel-wrap"><select id="f-cat"><option value="">&#12394;&#12375;</option></select></div>
+        <label class="form-label">カテゴリ</label>
+        <div class="sel-wrap"><select id="f-cat"><option value="">なし</option></select></div>
       </div>
       <div class="form-row" style="margin-bottom:0">
-        <label class="form-label">&#20778;&#20808;&#24230;</label>
+        <label class="form-label">優先度</label>
         <div class="sel-wrap">
           <select id="f-pri">
-            <option value="">&#12394;&#12375;</option>
-            <option value="high">&#128308; &#39640;</option>
-            <option value="mid">&#128993; &#20013;</option>
-            <option value="low">&#128994; &#20302;</option>
+            <option value="">なし</option>
+            <option value="high">🔴 高</option>
+            <option value="mid">🟡 中</option>
+            <option value="low">🟢 低</option>
           </select>
         </div>
       </div>
     </div>
     <div class="form-2" style="margin-top:13px">
       <div class="form-row" style="margin-bottom:0">
-        <label class="form-label">&#25285;&#24403;&#32773;</label>
+        <label class="form-label">担当者</label>
         <div class="sel-wrap">
           <select id="f-assignee">
-            <option value="">&#26410;&#23450;</option>
-            <option value="&#20013;&#26449;">&#20013;&#26449;</option>
-            <option value="&#20013;">&#20013;</option>
-            <option value="&#26707;&#20117;">&#26707;&#20117;</option>
+            <option value="">未定</option>
+            <option value="中村">中村</option>
+            <option value="中">中</option>
+            <option value="櫻井">櫻井</option>
           </select>
         </div>
       </div>
       <div class="form-row" style="margin-bottom:0">
-        <label class="form-label">&#26399;&#38480;&#26085;&#65288;&#20219;&#24847;&#65289;</label>
+        <label class="form-label">期限日（任意）</label>
         <input type="date" class="form-input" id="f-due">
       </div>
     </div>
     <div class="form-row" style="margin-top:13px">
-      <label class="form-label">&#26399;&#38480;&#26178;&#38291;&#65288;&#20219;&#24847;&#65289;</label>
+      <label class="form-label">期限時間（任意）</label>
       <input type="time" class="form-input" id="f-due-time">
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">&#12461;&#12515;&#12531;&#12475;&#12523;</button>
-      <button class="btn btn-primary" onclick="saveTask()">&#20445;&#23384;&#12377;&#12427;</button>
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveTask()">保存する</button>
     </div>
   </div>
 </div>
 
 <!-- Detail Modal -->
 <div class="overlay" id="detail-modal" onclick="if(event.target===this)closeDetail()">
-  <div class="modal d-modal">
-    <div class="d-header">
-      <div class="d-name" id="d-name"></div>
-      <button class="d-close" onclick="closeDetail()">&#10005;</button>
+  <div class="modal detail-modal">
+    <div class="detail-header">
+      <div class="detail-task-name" id="d-name"></div>
+      <button class="detail-close" onclick="closeDetail()">✕</button>
     </div>
-    <div class="d-tags" id="d-tags"></div>
-    <div class="d-section" id="d-memo-sec">
-      <div class="d-lbl">&#12513;&#12514;&#12539;&#35443;&#32048;</div>
-      <div class="d-memo" id="d-memo"></div>
+    <div class="detail-tags" id="d-tags"></div>
+    <div class="detail-section" id="d-memo-section">
+      <div class="detail-section-label">メモ・詳細</div>
+      <div class="detail-memo" id="d-memo"></div>
     </div>
-    <div class="d-section">
-      <div class="d-lbl">&#12479;&#12473;&#12463;&#24773;&#22577;</div>
-      <div class="d-grid">
-        <div class="d-item"><div class="d-item-lbl">&#25285;&#24403;&#32773;</div><div class="d-item-val" id="d-asgn">&#8212;</div></div>
-        <div class="d-item"><div class="d-item-lbl">&#20778;&#20808;&#24230;</div><div class="d-item-val" id="d-pri">&#8212;</div></div>
-        <div class="d-item"><div class="d-item-lbl">&#26399;&#38480;&#26085;</div><div class="d-item-val" id="d-due">&#8212;</div></div>
-        <div class="d-item"><div class="d-item-lbl">&#12459;&#12486;&#12468;&#12522;</div><div class="d-item-val" id="d-cat">&#8212;</div></div>
+    <div class="detail-section">
+      <div class="detail-section-label">タスク情報</div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-item-label">担当者</div>
+          <div class="detail-item-value" id="d-assignee">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-item-label">優先度</div>
+          <div class="detail-item-value" id="d-priority">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-item-label">期限日</div>
+          <div class="detail-item-value" id="d-due">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-item-label">カテゴリ</div>
+          <div class="detail-item-value" id="d-cat">—</div>
+        </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeDetail()">&#38281;&#12376;&#12427;</button>
-      <button class="btn btn-primary" id="d-edit-btn">&#32232;&#38598;&#12377;&#12427;</button>
+    <div class="detail-footer">
+      <button class="btn btn-ghost" onclick="closeDetail()">閉じる</button>
+      <button class="btn btn-primary" id="d-edit-btn">編集する</button>
     </div>
   </div>
 </div>
 
 <!-- Settings Modal -->
 <div class="overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
-  <div class="modal" style="width:480px">
-    <div class="modal-title">&#35373;&#23450;</div>
+  <div class="modal" style="width:500px">
+    <div class="modal-title">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
+      設定
+    </div>
+
     <div class="s-section">
-      <div class="s-title">&#12459;&#12521;&#12540;&#12486;&#12540;&#12510;</div>
+      <div class="s-section-title">ダッシュボード名</div>
       <div class="s-row">
-        <div class="s-row-lbl">&#12450;&#12463;&#12475;&#12531;&#12488;&#12459;&#12521;&#12540;</div>
+        <div><div class="s-row-lbl">名前</div><div class="s-row-sub">サイドバーとタブタイトルに反映</div></div>
+        <input type="text" class="form-input" id="s-name" style="width:190px" placeholder="たいき Tasks">
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">カラーテーマ</div>
+      <div class="s-row">
+        <div><div class="s-row-lbl">アクセントカラー</div><div class="s-row-sub">ボタン・選択状態に反映</div></div>
         <div class="swatches" id="accent-swatches"></div>
       </div>
     </div>
+
     <div class="s-section">
-      <div class="s-title">&#12459;&#12486;&#12468;&#12522;&#31649;&#29702;</div>
-      <div id="s-cat-list"></div>
-      <div style="padding:10px 14px;border-top:1px solid var(--border)">
-        <div style="display:flex;gap:7px;align-items:center">
-          <input type="text" class="form-input" id="s-cat-nm" placeholder="&#26032;&#12375;&#12356;&#12459;&#12486;&#12468;&#12522;&#21517;" style="flex:1;padding:7px 10px;font-size:13px">
-          <div class="sel-wrap" style="width:68px"><select id="s-cat-col" style="padding:7px 26px 7px 9px;font-size:13px"><option value="#3A5EE5">&#128309;</option><option value="#1A7A50">&#128994;</option><option value="#A05C00">&#128993;</option><option value="#C0253A">&#128308;</option><option value="#6B35C8">&#128995;</option></select></div>
-          <button class="btn btn-primary btn-sm" onclick="addCatS()">&#36861;&#21152;</button>
+      <div class="s-section-title">フォントサイズ</div>
+      <div class="s-row">
+        <div><div class="s-row-lbl">文字の大きさ</div><div class="s-row-sub">画面全体に反映</div></div>
+        <div class="tog-btns">
+          <button class="tog-btn" data-sz="12" onclick="previewFont(12,this)">小</button>
+          <button class="tog-btn" data-sz="14" onclick="previewFont(14,this)">中</button>
+          <button class="tog-btn" data-sz="16" onclick="previewFont(16,this)">大</button>
         </div>
       </div>
     </div>
+
+    <div class="s-section">
+      <div class="s-section-title">デフォルト並び替え</div>
+      <div class="s-row">
+        <div><div class="s-row-lbl">起動時の並び順</div><div class="s-row-sub">ダッシュボードを開いたときの初期値</div></div>
+        <div class="tog-btns">
+          <button class="tog-btn" data-ds="created" onclick="setDS('created',this)">追加順</button>
+          <button class="tog-btn" data-ds="due" onclick="setDS('due',this)">期限順</button>
+          <button class="tog-btn" data-ds="priority" onclick="setDS('priority',this)">優先度順</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">カテゴリ管理</div>
+      <div id="s-cat-list"></div>
+      <div style="padding:10px 14px;border-top:1px solid var(--border)">
+        <div style="display:flex;gap:7px;align-items:center">
+          <input type="text" class="form-input" id="s-cat-nm" placeholder="新しいカテゴリ名" style="flex:1;padding:7px 10px;font-size:13px">
+          <div class="sel-wrap" style="width:68px"><select id="s-cat-col" style="padding:7px 26px 7px 9px;font-size:13px"><option value="#3A5EE5">🔵</option><option value="#1A7A50">🟢</option><option value="#A05C00">🟡</option><option value="#C0253A">🔴</option><option value="#6B35C8">🟣</option></select></div>
+          <button class="btn btn-primary btn-sm" onclick="addCatS()">追加</button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeSettings()">&#12461;&#12515;&#12531;&#12475;&#12523;</button>
-      <button class="btn btn-primary" onclick="applySettings()">&#20445;&#23384;&#12375;&#12390;&#36969;&#29992;</button>
+      <button class="btn btn-ghost" onclick="closeSettings()">キャンセル</button>
+      <button class="btn btn-primary" onclick="applySettings()">保存して適用</button>
     </div>
   </div>
 </div>
 
 <script>
-document.body.insertAdjacentHTML("beforeend",`<div id="fb-loading" style="position:fixed;inset:0;background:#F0EFE9;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-family:sans-serif"><div style="width:32px;height:32px;border:3px solid #E2DFD6;border-top-color:#3A5EE5;border-radius:50%;animation:spin .8s linear infinite"></div><div style="font-size:13px;color:#5C5A62">&#25509;&#32154;&#20013;...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style></div>`);
+// ── Loading overlay ──
+document.body.insertAdjacentHTML('beforeend',`
+<div id="fb-loading" style="position:fixed;inset:0;background:#F5F4EF;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-family:'Instrument Sans',sans-serif">
+  <div style="width:32px;height:32px;border:3px solid #E2DFD6;border-top-color:#3A5EE5;border-radius:50%;animation:spin .8s linear infinite"></div>
+  <div style="font-size:13px;color:#5C5A62">接続中...</div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</div>`);
 
-const ACCENTS=[{h:"#3A5EE5",l:"&#12502;&#12523;&#12540;"},{h:"#1A7A50",l:"&#12464;&#12522;&#12540;&#12531;"},{h:"#6B35C8",l:"&#12497;&#12540;&#12503;&#12523;"},{h:"#C0253A",l:"&#12524;&#12483;&#12489;"},{h:"#A05C00",l:"&#12450;&#12531;&#12496;&#12540;"},{h:"#0E7490",l:"&#12471;&#12450;&#12531;"},{h:"#BE185D",l:"&#12ԥ12531;&#12463;"},{h:"#374151",l:"&#12464;&#12524;&#12540;"}];
-
-let tasks=[],trash=[],cats=[
-  {id:"doc",name:"&#36039;&#26009;&#20316;&#25104;",color:"#3A5EE5"},
-  {id:"est",name:"&#35211;&#31309;&#26360;&#20316;&#25104;",color:"#1A7A50"},
-  {id:"sf",name:"SF&#30003;&#35531;",color:"#0E7490"},
-  {id:"credit",name:"&#19982;&#20449;WF&#30003;&#35531;",color:"#A05C00"},
-  {id:"irreg",name:"&#12452;&#12524;&#12�;&#12517;&#12521;&#12540;WF&#30003;&#35531;",color:"#C0253A"},
-  {id:"demo",name:"&#12ǳ;&#12514;&#30011;&#38754;&#30330;&#34892;",color:"#6B35C8"},
-  {id:"sched",name:"&#26085;&#31243;&#35519;&#25972;",color:"#BE185D"},
+const ACCENTS=[
+  {h:'#3A5EE5',l:'ブルー'},{h:'#1A7A50',l:'グリーン'},{h:'#6B35C8',l:'パープル'},
+  {h:'#C0253A',l:'レッド'},{h:'#A05C00',l:'アンバー'},{h:'#0E7490',l:'シアン'},
+  {h:'#BE185D',l:'ピンク'},{h:'#374151',l:'グレー'},
 ];
-let cfg={accent:"#3A5EE5"};
-let showTrash=false,tmpAccent=cfg.accent;
-let colSort={n:"created",m:"created",s:"created"};
 
-function setColSort(col,sort,btn){
-  colSort[col]=sort;
-  // update active button in this col
-  btn.closest(".col-sort-bar").querySelectorAll(".sort-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  renderKanban();
+let tasks=[], trash=[], cats=[
+  {id:'doc',   name:'資料作成',          color:'#3A5EE5'},
+  {id:'est',   name:'見積書作成',        color:'#1A7A50'},
+  {id:'credit',name:'与信WF申請',        color:'#A05C00'},
+  {id:'irreg', name:'イレギュラーWF申請',color:'#C0253A'},
+  {id:'demo',  name:'デモ画面発行',      color:'#6B35C8'},
+  {id:'sched', name:'日程調整',          color:'#0E7490'},
+];
+let cfg={dashName:'たいき Tasks',accent:'#3A5EE5',fontSize:14,defaultSort:'created'};
+
+let view='all',sortBy='created',priFilters=[],catFilter=null,memberFilter=null;
+let dragMode=false,dragSrcId=null;
+let tmpAccent=cfg.accent,tmpFont=cfg.fontSize,tmpDS=cfg.defaultSort;
+
+// ── Firebase helpers (set after fb-ready) ──
+let _db,_ref,_set,_push,_remove,_onValue,_update;
+
+function fbSet(path,val){if(_db)_set(_ref(_db,path),val);}
+function fbRemove(path){if(_db)_remove(_ref(_db,path));}
+function fbUpdate(path,val){if(_db)_update(_ref(_db,path),val);}
+
+function save(){
+  // cfg & cats saved to Firebase
+  fbSet('cfg',cfg);
+  fbSet('cats',cats);
+  // tasks & trash saved individually (handled per action)
 }
-let _db,_ref,_set,_remove,_onValue;
+function saveTaskToFb(t){
+  fbSet('tasks/'+t.id, t);
+}
+function removeTaskFromFb(id){
+  fbRemove('tasks/'+id);
+}
+function saveTrashToFb(t){
+  fbSet('trash/'+t.id, t);
+}
+function removeTrashFromFb(id){
+  fbRemove('trash/'+id);
+}
+function clearAllTrashFb(){
+  fbRemove('trash');
+}
 
-function fbSet(p,v){if(_db)_set(_ref(_db,p),v);}
-function fbRemove(p){if(_db)_remove(_ref(_db,p));}
-function saveTaskToFb(t){fbSet("tasks/"+t.id,t);}
-function removeTaskFromFb(id){fbRemove("tasks/"+id);}
-function saveTrashToFb(t){fbSet("trash/"+t.id,t);}
-function removeTrashFromFb(id){fbRemove("trash/"+id);}
-function clearAllTrashFb(){fbRemove("trash");}
+function applyConfig(){
+  const r=document.documentElement.style;
+  r.setProperty('--accent',cfg.accent);
+  r.setProperty('--accent-bg',cfg.accent+'1f');
+  r.setProperty('--font-size-base',cfg.fontSize+'px');
+  const n=cfg.dashName||'たいき Tasks';
+  document.getElementById('brand-name').textContent=n;
+  document.getElementById('brand-icon').style.background=cfg.accent;
+  document.getElementById('page-title').textContent=n;
+}
 
-function todayStr(){return new Date().toISOString().split("T")[0]}
+function todayStr(){return new Date().toISOString().split('T')[0]}
 function fmtDue(s,time){
   if(!s)return null;
-  const d=new Date(s+"T00:00:00"),t=new Date();t.setHours(0,0,0,0);
+  const d=new Date(s+'T00:00:00'),t=new Date();t.setHours(0,0,0,0);
   const diff=Math.round((d-t)/86400000);
-  let label=diff<0?Math.abs(diff)+"&#26085;&#36229;&#36942;":diff===0?"&#20170;&#26085;":diff===1?"&#26明;&#26085;":d.toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"});
-  if(time)label+=" "+time;
-  return{label,cls:diff<0?"overdue":diff===0?"today":""};
+  let label='';
+  if(diff<0)label=`${Math.abs(diff)}日超過`;
+  else if(diff===0)label='今日';
+  else if(diff===1)label='明日';
+  else label=d.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'});
+  if(time)label+=` ${time}`;
+  const cls=diff<0?'overdue':diff===0?'today':'';
+  return{label,cls};
 }
 
-function refresh(){updateStats();showTrash?renderTrashView():renderKanban();}
-
-function updateStats(){
-  document.getElementById("st-total").textContent=tasks.length;
-  document.getElementById("st-n").textContent=tasks.filter(t=>t.assignee==="&#20013;&#26449;").length;
-  document.getElementById("st-m").textContent=tasks.filter(t=>t.assignee==="&#20013;").length;
-  document.getElementById("st-s").textContent=tasks.filter(t=>t.assignee==="&#26707;&#20117;").length;
-  document.getElementById("st-high").textContent=tasks.filter(t=>t.priority==="high").length;
-  document.getElementById("st-today").textContent=tasks.filter(t=>t.due&&t.due<=todayStr()).length;
-  document.getElementById("trash-btn-cnt").textContent=trash.length;
+function initDate(){
+  const n=new Date();
+  document.getElementById('today-date').textContent=n.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('today-day').textContent=['日','月','火','水','木','金','土'][n.getDay()]+'曜日';
 }
 
-function renderKanban(){
-  document.getElementById("kanban").style.display="grid";
-  const tv=document.getElementById("trash-view-container");if(tv)tv.remove();
-  const cols=[{id:"col-n",name:"&#20013;&#26449;",cnt:"cnt-n",sort:"n"},{id:"col-m",name:"&#20013;",cnt:"cnt-m",sort:"m"},{id:"col-s",name:"&#26707;&#20117;",cnt:"cnt-s",sort:"s"}];
-  const nameMap={"col-n":"&#20013;&#26449;","col-m":"&#20013;","col-s":"&#26707;&#20117;"};
-  const po={high:0,mid:1,low:2,"":3};
-  cols.forEach(col=>{
-    const el=document.getElementById(col.id);
-    let mt=tasks.filter(t=>t.assignee===nameMap[col.id]);
-    const s=colSort[col.sort];
-    if(s==="priority")mt.sort((a,b)=>(po[a.priority]||3)-(po[b.priority]||3));
-    else if(s==="due")mt.sort((a,b)=>{if(!a.due&&!b.due)return 0;if(!a.due)return 1;if(!b.due)return-1;return a.due.localeCompare(b.due);});
-    else mt.sort((a,b)=>b.createdAt-a.createdAt);
-    document.getElementById(col.cnt).textContent=mt.length;
-    if(!mt.length){el.innerHTML='<div class="col-empty">&#12479;&#12473;&#12463;&#12394;&#12375;</div>';return;}
-    el.innerHTML=mt.map((t,i)=>taskCard(t,i)).join("");
+function updateNav(){
+  document.getElementById('nav-all').textContent=tasks.length;
+  document.getElementById('nav-today').textContent=tasks.filter(t=>t.due&&t.due<=todayStr()).length;
+  document.getElementById('nav-high').textContent=tasks.filter(t=>t.priority==='high').length;
+  document.getElementById('nav-trash').textContent=trash.length;
+  ['中村','中','櫻井'].forEach(m=>{
+    const el=document.getElementById('mc-'+m);
+    if(el)el.textContent=tasks.filter(t=>t.assignee===m).length;
   });
+  renderCatNav();
 }
-
+function renderCatNav(){
+  document.getElementById('cat-nav').innerHTML=cats.map(c=>{
+    const cnt=tasks.filter(t=>t.cat===c.id).length;
+    return `<button class="nav-child ${catFilter===c.id&&memberFilter===null&&view==='all'?'active':''}" onclick="filterCat('${c.id}',this)">
+      <span class="nav-child-dot" style="background:${c.color}"></span>
+      ${esc(c.name)}<span class="nav-child-count">${cnt}</span>
+    </button>`;
+  }).join('');
+}
+function toggleGroup(id,btn){
+  const el=document.getElementById(id);
+  const isOpen=el.classList.contains('open');
+  el.classList.toggle('open',!isOpen);
+  btn.classList.toggle('open',!isOpen);
+}
+function filterMember(name,el){
+  if(memberFilter===name){
+    memberFilter=null;
+    document.querySelectorAll('.nav-child[data-member]').forEach(b=>b.classList.remove('active'));
+  } else {
+    memberFilter=name;
+    document.querySelectorAll('.nav-child[data-member]').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+  }
+  catFilter=null;
+  view='all';
+  document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-title').textContent=memberFilter?`👤 ${memberFilter}`:'すべてのタスク';
+  renderCatNav();updateStats();render();
+}
+function filterCat(id,el){
+  catFilter=catFilter===id?null:id;
+  memberFilter=null;
+  document.querySelectorAll('.nav-child[data-member]').forEach(b=>b.classList.remove('active'));
+  view='all';
+  document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-title').textContent=catFilter?cats.find(c=>c.id===id)?.name||'タスク':'すべてのタスク';
+  renderCatNav();updateStats();render();
+}
+function updateStats(){
+  const l=getList();
+  document.getElementById('st-total').textContent=l.length;
+  document.getElementById('st-high').textContent=l.filter(t=>t.priority==='high').length;
+  document.getElementById('st-today').textContent=l.filter(t=>t.due&&t.due<=todayStr()).length;
+}
+function getList(){
+  let l=[...tasks];
+  if(view==='today')l=l.filter(t=>t.due&&t.due<=todayStr());
+  else if(view==='high')l=l.filter(t=>t.priority==='high');
+  if(catFilter)l=l.filter(t=>t.cat===catFilter);
+  if(memberFilter)l=l.filter(t=>t.assignee===memberFilter);
+  if(priFilters.length)l=l.filter(t=>priFilters.includes(t.priority));
+  const po={high:0,mid:1,low:2,'':3};
+  if(sortBy==='priority')l.sort((a,b)=>(po[a.priority]||3)-(po[b.priority]||3));
+  else if(sortBy==='due')l.sort((a,b)=>{if(!a.due&&!b.due)return 0;if(!a.due)return 1;if(!b.due)return-1;return a.due.localeCompare(b.due)});
+  else l.sort((a,b)=>b.createdAt-a.createdAt);
+  return l;
+}
+function render(){
+  const area=document.getElementById('content');
+  const fb=document.getElementById('filterbar'),sb=document.getElementById('stats-bar');
+  const etb=document.getElementById('empty-trash-btn'),ab=document.getElementById('add-btn');
+  if(view==='trash'){
+    fb.style.display='none';sb.style.display='none';
+    etb.style.display=trash.length?'':'none';ab.style.display='none';
+    renderTrash(area);return;
+  }
+  fb.style.display='';sb.style.display='';etb.style.display='none';ab.style.display='';
+  const l=getList();
+  if(!l.length){
+    area.innerHTML=`<div class="empty"><div class="empty-icon">✦</div>
+      <div class="empty-title">${tasks.length===0?'タスクはありません':'条件に合うタスクはありません'}</div>
+      <div class="empty-sub">${tasks.length===0?`「タスクを追加」または <span class="kbd">N</span> キーで追加`:'フィルターを変えてみてください。'}</div>
+    </div>`;return;
+  }
+  area.innerHTML=l.map((t,i)=>taskCard(t,i)).join('');
+}
 function taskCard(t,i){
   const cat=cats.find(c=>c.id===t.cat);
   const due=t.due?fmtDue(t.due,t.dueTime):null;
-  const pb={high:"pb-high",mid:"pb-mid",low:"pb-low","":"pb-none"};
-  const pt={high:"tag-ph",mid:"tag-pm",low:"tag-pl"};
-  const ptl={high:"&#39640;&#20778;&#20808;&#24230;",mid:"&#20013;&#20778;&#20808;&#24230;",low:"&#20302;&#20778;&#20808;&#24230;"};
-  return `<div class="task-card" id="tc-${t.id}" style="animation-delay:${i*15}ms" onclick="openDetail(${t.id})">
-    <div class="pri-bar ${pb[t.priority]||"pb-none"}"></div>
-    <div class="card-inner">
-      <div class="card-top">
-        <div class="card-check" id="cb-${t.id}" onclick="event.stopPropagation();completeTask(${t.id})">
-          <svg class="ck-svg" viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg>
-        </div>
-        <div class="card-name">${esc(t.name)}</div>
-      </div>
-      ${t.memo?`<div class="card-memo">${esc(t.memo)}</div>`:""}
-      <div class="card-tags">
-        ${cat?`<span class="tag" style="background:${cat.color}18;color:${cat.color}">${esc(cat.name)}</span>`:""}
-        ${t.priority?`<span class="tag ${pt[t.priority]}">${ptl[t.priority]}</span>`:""}
-        ${due?`<span class="tag tag-due ${due.cls}">&#128197; ${due.label}</span>`:""}
+  const pb={high:'pb-high',mid:'pb-mid',low:'pb-low','':'pb-none'};
+  const pt={high:['tag-ph','高優先度'],mid:['tag-pm','中優先度'],low:['tag-pl','低優先度']};
+  const[ptc,ptl]=pt[t.priority]||[];
+  const assigneeColors={'中村':'#3A5EE5','中':'#1A7A50','櫻井':'#C0253A'};
+  const ac=assigneeColors[t.assignee]||'#9B99A4';
+  return `<div class="task-card" id="tc-${t.id}" style="animation-delay:${i*18}ms" draggable="false"
+    ondragstart="onDragStart(event,${t.id})" ondragover="onDragOver(event,${t.id})"
+    ondragend="onDragEnd()" ondrop="onDrop(event,${t.id})">
+    <div class="drag-handle" onmousedown="enableDrag(${t.id})">
+      <svg viewBox="0 0 16 16"><circle cx="5" cy="4" r="1.2" fill="currentColor"/><circle cx="11" cy="4" r="1.2" fill="currentColor"/><circle cx="5" cy="8" r="1.2" fill="currentColor"/><circle cx="11" cy="8" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="11" cy="12" r="1.2" fill="currentColor"/></svg>
+    </div>
+    <div class="pri-bar ${pb[t.priority]||'pb-none'}"></div>
+    <div class="check-wrap"><div class="checkbox" id="cb-${t.id}" onclick="completeTask(${t.id})" title="完了">
+      <svg class="ck-svg" viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg>
+    </div></div>
+    <div class="task-body" onclick="openDetail(${t.id})" style="cursor:pointer">
+      <div class="task-name">${esc(t.name)}</div>
+      ${t.memo?`<div class="task-memo" style="display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${esc(t.memo)}</div>`:''}
+      <div class="task-tags">
+        ${cat?`<span class="tag" style="background:${cat.color}18;color:${cat.color}">${esc(cat.name)}</span>`:''}
+        ${ptc?`<span class="tag ${ptc}">${ptl}</span>`:''}
+        ${t.assignee?`<span class="tag" style="background:${ac}18;color:${ac}">👤 ${esc(t.assignee)}</span>`:''}
+        ${due?`<span class="tag tag-due ${due.cls}">📅 ${due.label}</span>`:''}
       </div>
     </div>
-    <div class="card-actions">
-      <button class="icon-btn" onclick="event.stopPropagation();openEdit(${t.id})">
+    <div class="task-actions">
+      <button class="icon-btn" onclick="openEdit(${t.id})" title="編集">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg>
       </button>
-      <button class="icon-btn del" onclick="event.stopPropagation();sendTrash(${t.id})">
+      <button class="icon-btn del" onclick="sendTrash(${t.id})" title="ゴミ箱">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg>
       </button>
     </div>
   </div>`;
 }
-
-function renderTrashView(){
-  document.getElementById("kanban").style.display="none";
-  let tv=document.getElementById("trash-view-container");
-  if(!tv){tv=document.createElement("div");tv.id="trash-view-container";tv.className="trash-view";document.getElementById("main-content").appendChild(tv);}
-  if(!trash.length){tv.innerHTML='<div style="font-size:15px;font-weight:600;margin-bottom:12px">&#12468;&#12511;&#31665;</div><div style="text-align:center;padding:48px;color:var(--text3)">&#12468;&#12511;&#31665;&#12399;&#31354;&#12391;&#12377;</div>';return;}
-  tv.innerHTML=`<div style="font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between"><span>&#12468;&#12511;&#31665;&#65288;${trash.length}&#20214;&#65289;</span><button class="btn btn-danger btn-sm" onclick="emptyTrash()">&#12059;&#12409;&#12066;&#23436;&#20840;&#21066;&#38500;</button></div>`+
-    trash.map((t,i)=>{
-      const cat=cats.find(c=>c.id===t.cat);
-      return `<div class="trash-item">
-        <div style="flex:1;min-width:0"><div class="trash-name">${esc(t.name)}</div>
-          <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
-            ${cat?`<span class="tag" style="background:${cat.color}18;color:${cat.color};font-size:10px">${esc(cat.name)}</span>`:""}
-            <span class="trash-meta">${t.deletedAt||""}&#12395;&#31227;&#21205;</span>
-          </div>
+function renderTrash(area){
+  if(!trash.length){area.innerHTML=`<div class="empty"><div class="empty-icon">🗑️</div><div class="empty-title">ゴミ箱は空です</div></div>`;return;}
+  area.innerHTML=trash.map((t,i)=>{
+    const cat=cats.find(c=>c.id===t.cat);
+    return `<div class="trash-item" style="animation-delay:${i*15}ms">
+      <div style="flex:1;min-width:0">
+        <div class="trash-name">${esc(t.name)}</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
+          ${cat?`<span class="tag" style="background:${cat.color}18;color:${cat.color};font-size:10px">${esc(cat.name)}</span>`:''}
+          <span class="trash-meta">${t.deletedAt||''}に移動</span>
         </div>
-        <div class="trash-acts">
-          <button class="btn btn-ghost btn-sm" onclick="restore(${t.id})">&#24489;&#20803;</button>
-          <button class="btn btn-danger btn-sm" onclick="permDelete(${t.id})">&#23436;&#20840;&#21066;&#38500;</button>
-        </div>
-      </div>`;
-    }).join("");
+      </div>
+      <div class="trash-acts">
+        <button class="btn btn-ghost btn-sm" onclick="restore(${t.id})">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a5 5 0 1 0 1.4-3.5"/><path d="M3 4v4h4"/></svg>復元
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="permDelete(${t.id})">完全削除</button>
+      </div>
+    </div>`;
+  }).join('');
 }
-
-function toggleTrash(){showTrash=!showTrash;refresh();}
 
 function completeTask(id){
-  if(!confirm("&#12053;&#12398;&#12479;&#12473;&#12463;&#12434;&#23436;&#20102;&#12375;&#12390;&#12468;&#12511;&#31665;&#12395;&#31227;&#21205;&#12375;&#12414;&#12377;&#12363;&#65311;"))return;
-  const cb=document.getElementById("cb-"+id);const card=document.getElementById("tc-"+id);
-  cb.classList.add("checked");
-  card.classList.add("completing");
-  setTimeout(()=>{const t=tasks.find(t=>t.id===id);if(!t)return;t.deletedAt=new Date().toLocaleDateString("ja-JP");saveTrashToFb(t);removeTaskFromFb(id);},340);
+  const t=tasks.find(t=>t.id===id);if(!t)return;
+  if(!confirm(`「${t.name}」を完了してゴミ箱に移動しますか？`))return;
+  document.getElementById('cb-'+id).classList.add('checked');
+  setTimeout(()=>{
+    const card=document.getElementById('tc-'+id);card.classList.add('completing');
+    setTimeout(()=>{
+      t.deletedAt=new Date().toLocaleDateString('ja-JP');
+      saveTrashToFb(t);
+      removeTaskFromFb(id);
+    },340);
+  },200);
 }
 function sendTrash(id){
-  const card=document.getElementById("tc-"+id);card.classList.add("completing");
-  setTimeout(()=>{const t=tasks.find(t=>t.id===id);if(!t)return;t.deletedAt=new Date().toLocaleDateString("ja-JP");saveTrashToFb(t);removeTaskFromFb(id);},340);
+  const card=document.getElementById('tc-'+id);card.classList.add('completing');
+  setTimeout(()=>{
+    const t=tasks.find(t=>t.id===id);if(!t)return;
+    t.deletedAt=new Date().toLocaleDateString('ja-JP');
+    saveTrashToFb(t);
+    removeTaskFromFb(id);
+  },340);
 }
-function restore(id){const t=trash.find(t=>t.id===id);if(!t)return;delete t.deletedAt;saveTaskToFb(t);removeTrashFromFb(id);}
+function restore(id){
+  const t=trash.find(t=>t.id===id);if(!t)return;
+  delete t.deletedAt;
+  saveTaskToFb(t);
+  removeTrashFromFb(id);
+}
 function permDelete(id){removeTrashFromFb(id);}
-function emptyTrash(){if(!confirm("&#12468;&#12511;&#31665;&#12434;&#23436;&#20840;&#12395;&#31354;&#12395;&#12375;&#12414;&#12377;&#12363;&#65311;"))return;clearAllTrashFb();}
+function emptyTrash(){if(!confirm('ゴミ箱を完全に空にしますか？'))return;clearAllTrashFb();}
+function refresh(){updateNav();updateStats();render();}
 
+const vTitles={all:'すべてのタスク',today:'今日期限',high:'高優先度',trash:'ゴミ箱'};
+function switchView(v,el){
+  view=v;catFilter=null;memberFilter=null;
+  document.querySelectorAll('.nav-child[data-view]').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-child[data-member]').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('view-title').textContent=vTitles[v];
+  renderCatNav();updateStats();render();
+}
+function setSort(s,el){
+  sortBy=s;
+  document.querySelectorAll('.filter-chip[data-sort]').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');render();
+}
+function togglePF(p,el){
+  const idx=priFilters.indexOf(p);
+  const cm={high:'on-red',mid:'on-amber',low:'on-green'};
+  if(idx>=0){priFilters.splice(idx,1);el.classList.remove('on',cm[p]);}
+  else{priFilters.push(p);el.classList.add(cm[p]);}
+  updateStats();render();
+}
+
+// Detail modal
 function openDetail(id){
   const t=tasks.find(t=>t.id===id);if(!t)return;
   const cat=cats.find(c=>c.id===t.cat);
   const due=t.due?fmtDue(t.due,t.dueTime):null;
-  const ptMap={high:"&#128308; &#39640;&#20778;&#20808;&#24230;",mid:"&#128993; &#20013;&#20778;&#20808;&#24230;",low:"&#128994; &#20302;&#20778;&#20808;&#24230;"};
-  const mc={"&#20013;&#26449;":"#3A5EE5","&#20013;":"#1A7A50","&#26707;&#20117;":"#C0253A"};
-  const ac=mc[t.assignee]||"#9B99A4";
-  document.getElementById("d-name").textContent=t.name;
-  let tags="";
-  if(cat)tags+=`<span class="tag" style="background:${cat.color}18;color:${cat.color};font-size:12px">${esc(cat.name)}</span>`;
-  if(t.priority)tags+=`<span class="tag ${t.priority==="high"?"tag-ph":t.priority==="mid"?"tag-pm":"tag-pl"}" style="font-size:12px">${ptMap[t.priority]}</span>`;
-  if(t.assignee)tags+=`<span class="tag" style="background:${ac}18;color:${ac};font-size:12px">&#128100; ${esc(t.assignee)}</span>`;
-  if(due)tags+=`<span class="tag tag-due ${due.cls}" style="font-size:12px">&#128197; ${due.label}</span>`;
-  document.getElementById("d-tags").innerHTML=tags;
-  const ms=document.getElementById("d-memo-sec");
-  if(t.memo){document.getElementById("d-memo").textContent=t.memo;ms.style.display="";}else{ms.style.display="none";}
-  document.getElementById("d-asgn").textContent=t.assignee||"&#26410;&#23450;";
-  document.getElementById("d-pri").textContent=ptMap[t.priority]||"&#12394;&#12375;";
-  document.getElementById("d-due").textContent=due?due.label:"&#26410;&#35373;&#23450;";
-  document.getElementById("d-cat").textContent=cat?cat.name:"&#12394;&#12375;";
-  document.getElementById("d-edit-btn").onclick=()=>{closeDetail();openEdit(id);};
-  document.getElementById("detail-modal").classList.add("open");
-}
-function closeDetail(){document.getElementById("detail-modal").classList.remove("open");}
+  const ptMap={high:'🔴 高優先度',mid:'🟡 中優先度',low:'🟢 低優先度'};
+  const assigneeColors={'中村':'#3A5EE5','中':'#1A7A50','櫻井':'#C0253A'};
+  const ac=assigneeColors[t.assignee]||'#9B99A4';
 
-function fillCatSel(){document.getElementById("f-cat").innerHTML='<option value="">&#12394;&#12375;</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");}
+  document.getElementById('d-name').textContent=t.name;
+
+  // tags
+  let tags='';
+  if(cat)tags+=`<span class="tag" style="background:${cat.color}18;color:${cat.color};font-size:12px">${esc(cat.name)}</span>`;
+  if(t.priority)tags+=`<span class="tag ${t.priority==='high'?'tag-ph':t.priority==='mid'?'tag-pm':'tag-pl'}" style="font-size:12px">${ptMap[t.priority]}</span>`;
+  if(t.assignee)tags+=`<span class="tag" style="background:${ac}18;color:${ac};font-size:12px">👤 ${esc(t.assignee)}</span>`;
+  if(due)tags+=`<span class="tag tag-due ${due.cls}" style="font-size:12px">📅 ${due.label}</span>`;
+  document.getElementById('d-tags').innerHTML=tags;
+
+  // memo
+  const memoSection=document.getElementById('d-memo-section');
+  if(t.memo){
+    document.getElementById('d-memo').textContent=t.memo;
+    memoSection.style.display='';
+  } else {
+    memoSection.style.display='none';
+  }
+
+  // info grid
+  document.getElementById('d-assignee').textContent=t.assignee||'未定';
+  document.getElementById('d-priority').textContent=ptMap[t.priority]||'なし';
+  document.getElementById('d-due').textContent=due?due.label:'未設定';
+  document.getElementById('d-cat').textContent=cat?cat.name:'なし';
+
+  // edit button
+  document.getElementById('d-edit-btn').onclick=()=>{closeDetail();openEdit(id);};
+
+  document.getElementById('detail-modal').classList.add('open');
+}
+function closeDetail(){document.getElementById('detail-modal').classList.remove('open');}
+
+// Task modal
+function fillCatSel(){
+  document.getElementById('f-cat').innerHTML='<option value="">なし</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+}
 function openAddModal(){
-  document.getElementById("edit-id").value="";document.getElementById("modal-ttl").textContent="&#12479;&#12473;&#12463;&#12434;&#36861;&#21152;";
-  ["f-name","f-memo"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("f-pri").value="";document.getElementById("f-due").value="";document.getElementById("f-due-time").value="";document.getElementById("f-assignee").value="";
-  fillCatSel();document.getElementById("f-cat").value="";
-  document.getElementById("task-modal").classList.add("open");setTimeout(()=>document.getElementById("f-name").focus(),180);
+  document.getElementById('edit-id').value='';
+  document.getElementById('modal-ttl').textContent='タスクを追加';
+  ['f-name','f-memo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-pri').value='';
+  document.getElementById('f-due').value='';
+  document.getElementById('f-due-time').value='';
+  document.getElementById('f-assignee').value='';
+  fillCatSel();document.getElementById('f-cat').value='';
+  document.getElementById('task-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('f-name').focus(),180);
 }
 function openEdit(id){
   const t=tasks.find(t=>t.id===id);if(!t)return;
-  document.getElementById("edit-id").value=id;document.getElementById("modal-ttl").textContent="&#12479;&#12473;&#12463;&#12434;&#32232;&#38598;";
-  document.getElementById("f-name").value=t.name;document.getElementById("f-memo").value=t.memo||"";
-  document.getElementById("f-pri").value=t.priority||"";document.getElementById("f-due").value=t.due||"";
-  document.getElementById("f-due-time").value=t.dueTime||"";document.getElementById("f-assignee").value=t.assignee||"";
-  fillCatSel();document.getElementById("f-cat").value=t.cat||"";
-  document.getElementById("task-modal").classList.add("open");setTimeout(()=>document.getElementById("f-name").focus(),180);
+  document.getElementById('edit-id').value=id;
+  document.getElementById('modal-ttl').textContent='タスクを編集';
+  document.getElementById('f-name').value=t.name;
+  document.getElementById('f-memo').value=t.memo||'';
+  document.getElementById('f-pri').value=t.priority||'';
+  document.getElementById('f-due').value=t.due||'';
+  document.getElementById('f-due-time').value=t.dueTime||'';
+  document.getElementById('f-assignee').value=t.assignee||'';
+  fillCatSel();document.getElementById('f-cat').value=t.cat||'';
+  document.getElementById('task-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('f-name').focus(),180);
 }
-function closeModal(){document.getElementById("task-modal").classList.remove("open");}
+function closeModal(){document.getElementById('task-modal').classList.remove('open');}
 function saveTask(){
-  const name=document.getElementById("f-name").value.trim();
-  if(!name){const el=document.getElementById("f-name");el.style.borderColor="var(--red)";el.focus();setTimeout(()=>el.style.borderColor="",1500);return;}
-  const eid=document.getElementById("edit-id").value;
-  const data={name,memo:document.getElementById("f-memo").value.trim(),cat:document.getElementById("f-cat").value,priority:document.getElementById("f-pri").value,due:document.getElementById("f-due").value,dueTime:document.getElementById("f-due-time").value,assignee:document.getElementById("f-assignee").value};
-  if(eid){const t=tasks.find(t=>t.id==eid);if(t){Object.assign(t,data);saveTaskToFb(t);}}
-  else saveTaskToFb({id:Date.now(),createdAt:Date.now(),...data});
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){const el=document.getElementById('f-name');el.style.borderColor='var(--red)';el.focus();setTimeout(()=>el.style.borderColor='',1500);return;}
+  const eid=document.getElementById('edit-id').value;
+  const data={
+    name,
+    memo:document.getElementById('f-memo').value.trim(),
+    cat:document.getElementById('f-cat').value,
+    priority:document.getElementById('f-pri').value,
+    due:document.getElementById('f-due').value,
+    dueTime:document.getElementById('f-due-time').value,
+    assignee:document.getElementById('f-assignee').value,
+  };
+  if(eid){
+    const t=tasks.find(t=>t.id==eid);
+    if(t){Object.assign(t,data);saveTaskToFb(t);}
+  } else {
+    const t={id:Date.now(),createdAt:Date.now(),...data};
+    saveTaskToFb(t);
+  }
   closeModal();
 }
-document.getElementById("f-name").addEventListener("keydown",e=>{if(e.key==="Enter")saveTask();});
+document.getElementById('f-name').addEventListener('keydown',e=>{if(e.key==='Enter')saveTask();});
 
+// Settings modal
 function openSettings(){
-  tmpAccent=cfg.accent;
-  document.getElementById("accent-swatches").innerHTML=ACCENTS.map(a=>`<div class="swatch ${cfg.accent===a.h?"sel":""}" style="background:${a.h}" onclick="pickAccent('${a.h}',this)"></div>`).join("");
-  renderSCatList();document.getElementById("settings-modal").classList.add("open");
+  tmpAccent=cfg.accent;tmpFont=cfg.fontSize;tmpDS=cfg.defaultSort;
+  document.getElementById('s-name').value=cfg.dashName||'たいき Tasks';
+  document.getElementById('accent-swatches').innerHTML=ACCENTS.map(a=>
+    `<div class="swatch ${cfg.accent===a.h?'sel':''}" style="background:${a.h}" title="${a.l}" onclick="pickAccent('${a.h}',this)"></div>`
+  ).join('');
+  document.querySelectorAll('.tog-btn[data-sz]').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.sz)===cfg.fontSize));
+  document.querySelectorAll('.tog-btn[data-ds]').forEach(b=>b.classList.toggle('active',b.dataset.ds===cfg.defaultSort));
+  renderSCatList();
+  document.getElementById('settings-modal').classList.add('open');
 }
-function closeSettings(){cfg.accent=tmpAccent;applyConfig();document.getElementById("settings-modal").classList.remove("open");}
+function closeSettings(){
+  // revert live preview if cancelled
+  cfg.accent=tmpAccent;cfg.fontSize=tmpFont;
+  applyConfig();
+  document.getElementById('settings-modal').classList.remove('open');
+}
 function renderSCatList(){
-  document.getElementById("s-cat-list").innerHTML=cats.map(c=>`
+  document.getElementById('s-cat-list').innerHTML=cats.length?cats.map(c=>`
     <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border)">
       <span style="width:9px;height:9px;border-radius:50%;background:${c.color};flex-shrink:0"></span>
       <span style="flex:1;font-size:13px">${esc(c.name)}</span>
-      <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">${tasks.filter(t=>t.cat===c.id).length}&#20214;</span>
+      <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">${tasks.filter(t=>t.cat===c.id).length}件</span>
       <button class="icon-btn del" onclick="delCatS('${c.id}')">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/></svg>
       </button>
-    </div>`).join("")||`<div style="padding:11px 14px;font-size:12.5px;color:var(--text3)">&#12459;&#12486;&#12468;&#12522;&#12364;&#12354;&#12426;&#12414;&#12379;&#12435;</div>`;
+    </div>`).join('')
+  :'<div style="padding:11px 14px;font-size:12.5px;color:var(--text3)">カテゴリがありません</div>';
 }
-function pickAccent(h,el){cfg.accent=h;applyConfig();document.querySelectorAll(".swatch").forEach(s=>s.classList.remove("sel"));el.classList.add("sel");}
+function pickAccent(h,el){
+  cfg.accent=h;applyConfig(); // live preview
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function previewFont(sz,el){
+  cfg.fontSize=sz;applyConfig();
+  document.querySelectorAll('.tog-btn[data-sz]').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+function setDS(s,el){
+  tmpDS=s;
+  document.querySelectorAll('.tog-btn[data-ds]').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
 function addCatS(){
-  const name=document.getElementById("s-cat-nm").value.trim();if(!name)return;
-  cats.push({id:"cat_"+Date.now(),name,color:document.getElementById("s-cat-col").value});
-  document.getElementById("s-cat-nm").value="";fbSet("cats",cats);renderSCatList();refresh();
+  const name=document.getElementById('s-cat-nm').value.trim();if(!name)return;
+  cats.push({id:'cat_'+Date.now(),name,color:document.getElementById('s-cat-col').value});
+  document.getElementById('s-cat-nm').value='';
+  fbSet('cats',cats);renderSCatList();refresh();
 }
-document.getElementById("s-cat-nm").addEventListener("keydown",e=>{if(e.key==="Enter")addCatS();});
+document.getElementById('s-cat-nm').addEventListener('keydown',e=>{if(e.key==='Enter')addCatS();});
 function delCatS(id){
   const cnt=tasks.filter(t=>t.cat===id).length;
-  if(cnt>0&&!confirm(`&#12053;&#12398;&#12459;&#12486;&#12468;&#12522;&#12395;&#12399;${cnt}&#20214;&#12398;&#12479;&#12473;&#12463;&#12364;&#12354;&#12426;&#12414;&#12377;&#12290;&#21066;&#38500;&#12375;&#12414;&#12377;&#12363;&#65311;`))return;
-  tasks.forEach(t=>{if(t.cat===id){t.cat="";saveTaskToFb(t);}});
-  cats=cats.filter(c=>c.id!==id);fbSet("cats",cats);renderSCatList();refresh();
+  if(cnt>0&&!confirm(`このカテゴリには${cnt}件のタスクがあります。削除しますか？`))return;
+  tasks.forEach(t=>{if(t.cat===id){t.cat='';saveTaskToFb(t);}});
+  cats=cats.filter(c=>c.id!==id);
+  if(catFilter===id)catFilter=null;
+  fbSet('cats',cats);renderSCatList();refresh();
 }
-function applySettings(){fbSet("cfg",cfg);applyConfig();document.getElementById("settings-modal").classList.remove("open");refresh();}
-function applyConfig(){document.documentElement.style.setProperty("--accent",cfg.accent);document.documentElement.style.setProperty("--accent-bg",cfg.accent+"1f");}
+function applySettings(){
+  const name=document.getElementById('s-name').value.trim();
+  if(name)cfg.dashName=name;
+  cfg.defaultSort=tmpDS;
+  fbSet('cfg',cfg);applyConfig();
+  document.getElementById('settings-modal').classList.remove('open');
+  refresh();
+}
 
-document.addEventListener("keydown",e=>{
-  const inI=document.activeElement.tagName==="INPUT"||document.activeElement.tagName==="TEXTAREA"||document.activeElement.tagName==="SELECT";
-  if(!inI&&(e.key==="n"||e.key==="N"))openAddModal();
-  if(e.key==="Escape"){closeModal();closeDetail();closeSettings();}
+// Drag
+function toggleDragMode(el){
+  dragMode=!dragMode;
+  const c=document.getElementById('content');
+  if(dragMode){el.classList.add('on-drag');c.classList.add('drag-mode');document.querySelectorAll('.filter-chip[data-sort]').forEach(x=>x.style.opacity='.4');}
+  else{el.classList.remove('on-drag');c.classList.remove('drag-mode');document.querySelectorAll('.filter-chip[data-sort]').forEach(x=>x.style.opacity='');document.querySelectorAll('.task-card').forEach(x=>x.setAttribute('draggable','false'));}
+}
+function enableDrag(id){if(!dragMode)return;const c=document.getElementById('tc-'+id);if(c)c.setAttribute('draggable','true');}
+function onDragStart(e,id){if(!dragMode){e.preventDefault();return;}dragSrcId=id;e.dataTransfer.effectAllowed='move';setTimeout(()=>{const c=document.getElementById('tc-'+id);if(c)c.classList.add('dragging');},0);}
+function onDragOver(e,id){if(!dragMode||dragSrcId===id)return;e.preventDefault();document.querySelectorAll('.task-card').forEach(c=>c.classList.remove('drag-over'));const c=document.getElementById('tc-'+id);if(c)c.classList.add('drag-over');}
+function onDrop(e,tid){if(!dragMode||!dragSrcId||dragSrcId===tid)return;e.preventDefault();const si=tasks.findIndex(t=>t.id===dragSrcId),ti=tasks.findIndex(t=>t.id===tid);if(si<0||ti<0)return;const[m]=tasks.splice(si,1);tasks.splice(ti,0,m);tasks.forEach((t,i)=>{t.createdAt=tasks.length-i;saveTaskToFb(t);});dragSrcId=null;render();}
+function onDragEnd(){document.querySelectorAll('.task-card').forEach(c=>{c.classList.remove('dragging','drag-over');c.setAttribute('draggable','false');});}
+
+document.addEventListener('keydown',e=>{
+  const inI=document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA'||document.activeElement.tagName==='SELECT';
+  if(!inI&&(e.key==='n'||e.key==='N'))openAddModal();
+  if(e.key==='Escape'){closeModal();closeSettings();closeDetail();}
 });
-function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
+// Init
+applyConfig();
+initDate();
+
+// Wait for Firebase module to be ready, then subscribe
 function initFirebase(){
-  _db=window._fb.db;_ref=window._fb.ref;_set=window._fb.set;_remove=window._fb.remove;_onValue=window._fb.onValue;
-  _onValue(_ref(_db,"tasks"),snap=>{const val=snap.val();tasks=val?Object.values(val):[];refresh();});
-  _onValue(_ref(_db,"trash"),snap=>{const val=snap.val();trash=val?Object.values(val):[];refresh();});
-  _onValue(_ref(_db,"cats"),snap=>{
+  _db  = window._fb.db;
+  _ref = window._fb.ref;
+  _set = window._fb.set;
+  _push= window._fb.push;
+  _remove=window._fb.remove;
+  _onValue=window._fb.onValue;
+  _update=window._fb.update;
+
+  // Listen: tasks
+  _onValue(_ref(_db,'tasks'), snap=>{
     const val=snap.val();
-    if(val&&Array.isArray(val))cats=val;
-    else if(val&&typeof val==="object")cats=Object.values(val);
+    tasks=val?Object.values(val):[];
     refresh();
   });
-  _onValue(_ref(_db,"cfg"),snap=>{
-    const val=snap.val();if(val)cfg=Object.assign(cfg,val);applyConfig();
-    document.getElementById("fb-loading").style.display="none";
+  // Listen: trash
+  _onValue(_ref(_db,'trash'), snap=>{
+    const val=snap.val();
+    trash=val?Object.values(val):[];
+    refresh();
+  });
+  // Listen: cats
+  _onValue(_ref(_db,'cats'), snap=>{
+    const val=snap.val();
+    if(val&&Array.isArray(val))cats=val;
+    else if(val&&typeof val==='object')cats=Object.values(val);
+    refresh();
+  });
+  // Listen: cfg
+  _onValue(_ref(_db,'cfg'), snap=>{
+    const val=snap.val();
+    if(val){
+      cfg=Object.assign(cfg,val);
+      applyConfig();
+      sortBy=cfg.defaultSort||'created';
+      document.querySelectorAll('.filter-chip[data-sort]').forEach(c=>c.classList.toggle('on',c.dataset.sort===sortBy));
+    }
+    // Hide loading overlay
+    document.getElementById('fb-loading').style.display='none';
   });
 }
-if(window._fbReady)initFirebase();
-else window.addEventListener("fb-ready",initFirebase);
-<\/script>
+
+if(window._fbReady){
+  initFirebase();
+} else {
+  window.addEventListener('fb-ready',initFirebase);
+}
+</script>
 </body>
 </html>
