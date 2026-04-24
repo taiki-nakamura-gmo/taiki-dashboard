@@ -647,11 +647,20 @@ function updateStats(){
   document.getElementById("st5").textContent=tasks.filter(t=>t.due&&t.due<=today()).length;
   document.getElementById("tbtn").textContent=trash.length;
 }
+const _colMap={n:{id:"cn",name:"中村",cnt:"cn0"},m:{id:"cm",name:"中",cnt:"cm0"},s:{id:"cs",name:"櫻井",cnt:"cs0"}};
+function renderCol(colKey){
+  const col=_colMap[colKey];
+  const el=document.getElementById(col.id);
+  const list=sortTasks(tasks.filter(t=>t.assignee===col.name),colSort[colKey]);
+  document.getElementById(col.cnt).textContent=list.length;
+  if(!list.length){el.innerHTML='<div class="empty">タスクなし</div>';return;}
+  el.innerHTML=list.map((t,i)=>cardHTML(t,i)).join("");
+}
 function setSort(col,sort,btn){
   colSort[col]=sort;
   btn.closest(".sort-bar").querySelectorAll(".sort-btn").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
-  renderKanban();
+  renderCol(col);
 }
 const PO={high:0,mid:1,low:2,"":3};
 function sortTasks(list,sort){
