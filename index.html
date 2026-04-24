@@ -160,7 +160,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 <div class="auth" id="auth-screen" style="display:none">
   <div class="auth-card">
     <div class="auth-title">ログイン</div>
-    <div class="auth-sub">ログイン者を選択し、パスワードを入力してください。</div>
+    <div class="auth-sub">ログイン者を選択し、パスワードを入力してください（未設定の場合は初回設定として登録します）。</div>
 
     <div class="form-row">
       <label class="lbl">ログイン者</label>
@@ -172,13 +172,6 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
     <div class="form-row">
       <label class="lbl">パスワード</label>
       <input type="password" class="inp" id="login-pass" placeholder="パスワード" autocomplete="current-password">
-    </div>
-
-    <div class="form-row" style="margin-top:6px">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:var(--text2)">
-        <input type="checkbox" id="login-first" style="transform:translateY(1px)">
-        初めてのログイン（最初にパスワードを設定する）
-      </label>
     </div>
 
     <div style="display:flex;justify-content:flex-end;gap:8px;align-items:center;margin-top:10px">
@@ -402,28 +395,33 @@ async function login(){
     const id=document.getElementById("login-user").value;
     const u=LOGIN_USERS.find(x=>x.id===id);
     const pass=document.getElementById("login-pass").value;
-    const first=document.getElementById("login-first").checked;
     if(!u)throw new Error("ログイン者を選択してください。");
     if(!pass)throw new Error("パスワードを入力してください。");
-    if(first){
-      // First time: create account with chosen password
-      const cred=await _signUp(_auth,u.email,pass);
-      try{ await _updateProfile(cred.user,{ displayName:u.label }); }catch(_){}
-    }else{
+    try{
+      // Normal login first
       await _signIn(_auth,u.email,pass);
+    }catch(e){
+      const code=e&&e.code?String(e.code):"";
+      if(code==="auth/user-not-found"){
+        // First time: create account with chosen password
+        const cred=await _signUp(_auth,u.email,pass);
+        try{ await _updateProfile(cred.user,{ displayName:u.label }); }catch(_){}
+      }else{
+        throw e;
+      }
     }
     document.getElementById("login-pass").value="";
-    document.getElementById("login-first").checked=false;
   }catch(e){
+    const code=e&&e.code?String(e.code):"";
     const msg=String(e&&e.message?e.message:e);
-    if(msg.includes("auth/email-already-in-use")){
-      setErr("この使用者は既に初期設定済みです。チェックを外してログインしてください。");
-    }else if(msg.includes("auth/user-not-found")){
-      setErr("この使用者は未設定です。「初めてのログイン」にチェックを入れてパスワードを設定してください。");
-    }else if(msg.includes("auth/wrong-password")||msg.includes("auth/invalid-credential")||msg.includes("auth/invalid-login-credentials")){
+    if(code==="auth/wrong-password"||code==="auth/invalid-credential"||code==="auth/invalid-login-credentials"){
       setErr("ログインに失敗しました（使用者またはパスワードを確認してください）。");
-    }else if(msg.includes("auth/weak-password")){
+    }else if(code==="auth/weak-password"){
       setErr("パスワードが弱すぎます。もう少し長く複雑なものにしてください。");
+    }else if(code==="auth/email-already-in-use"){
+      setErr("この使用者は既に初期設定済みです。パスワードでログインしてください。");
+    }else if(code==="auth/operation-not-allowed"){
+      setErr("Firebase側でメール/パスワード認証が無効になっています（管理画面で有効化してください）。");
     }else{
       setErr(msg.includes("auth/")?"ログインに失敗しました。":msg);
     }
