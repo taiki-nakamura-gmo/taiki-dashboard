@@ -8,7 +8,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const cfg = {
   apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
   authDomain: "taiki-tasks-933cc.firebaseapp.com",
@@ -21,7 +21,7 @@ const cfg = {
 const app = initializeApp(cfg);
 const db = getDatabase(app);
 const auth = getAuth(app);
-window._fb = { db, ref, set, remove, onValue, auth, onAuthStateChanged, signInWithEmailAndPassword, signOut };
+window._fb = { db, ref, set, remove, onValue, auth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile };
 window._fbReady = true;
 window.dispatchEvent(new Event("fb-ready"));
 </script>
@@ -172,6 +172,13 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
     <div class="form-row">
       <label class="lbl">パスワード</label>
       <input type="password" class="inp" id="login-pass" placeholder="パスワード" autocomplete="current-password">
+    </div>
+
+    <div class="form-row" style="margin-top:6px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:var(--text2)">
+        <input type="checkbox" id="login-first" style="transform:translateY(1px)">
+        初めてのログイン（最初にパスワードを設定する）
+      </label>
     </div>
 
     <div style="display:flex;justify-content:flex-end;gap:8px;align-items:center;margin-top:10px">
@@ -356,10 +363,11 @@ let showTrash=false;
 let colSort={n:"created",m:"created",s:"created"};
 let _db,_ref,_set,_remove,_onValue;
 let _auth,_onAuthStateChanged,_signIn,_signOut;
+let _signUp,_updateProfile;
 
 // Login users (Firebase Auth email/password accounts)
 const LOGIN_USERS=[
-  { id:"nakamuraT", label:"中村T", email:"nakamura.t@example.com" },
+  { id:"nakamura", label:"中村", email:"nakamura@example.com" },
   { id:"naka", label:"中", email:"naka@example.com" },
   { id:"sakurii", label:"櫻井", email:"sakurii@example.com" },
 ];
@@ -389,18 +397,36 @@ async function login(){
   setErr("");
   const btn=document.getElementById("login-btn");
   btn.disabled=true;
-  btn.textContent="ログイン中...";
+  btn.textContent="処理中...";
   try{
     const id=document.getElementById("login-user").value;
     const u=LOGIN_USERS.find(x=>x.id===id);
     const pass=document.getElementById("login-pass").value;
+    const first=document.getElementById("login-first").checked;
     if(!u)throw new Error("ログイン者を選択してください。");
     if(!pass)throw new Error("パスワードを入力してください。");
-    await _signIn(_auth,u.email,pass);
+    if(first){
+      // First time: create account with chosen password
+      const cred=await _signUp(_auth,u.email,pass);
+      try{ await _updateProfile(cred.user,{ displayName:u.label }); }catch(_){}
+    }else{
+      await _signIn(_auth,u.email,pass);
+    }
     document.getElementById("login-pass").value="";
+    document.getElementById("login-first").checked=false;
   }catch(e){
     const msg=String(e&&e.message?e.message:e);
-    setErr(msg.includes("auth/")?"ログインに失敗しました（IDまたはパスワードを確認してください）。":msg);
+    if(msg.includes("auth/email-already-in-use")){
+      setErr("この使用者は既に初期設定済みです。チェックを外してログインしてください。");
+    }else if(msg.includes("auth/user-not-found")){
+      setErr("この使用者は未設定です。「初めてのログイン」にチェックを入れてパスワードを設定してください。");
+    }else if(msg.includes("auth/wrong-password")||msg.includes("auth/invalid-credential")||msg.includes("auth/invalid-login-credentials")){
+      setErr("ログインに失敗しました（使用者またはパスワードを確認してください）。");
+    }else if(msg.includes("auth/weak-password")){
+      setErr("パスワードが弱すぎます。もう少し長く複雑なものにしてください。");
+    }else{
+      setErr(msg.includes("auth/")?"ログインに失敗しました。":msg);
+    }
   }finally{
     btn.disabled=false;
     btn.textContent="ログイン";
@@ -622,7 +648,7 @@ document.addEventListener("keydown",e=>{
 
 function initFirebase(){
   _db=window._fb.db;_ref=window._fb.ref;_set=window._fb.set;_remove=window._fb.remove;_onValue=window._fb.onValue;
-  _auth=window._fb.auth;_onAuthStateChanged=window._fb.onAuthStateChanged;_signIn=window._fb.signInWithEmailAndPassword;_signOut=window._fb.signOut;
+  _auth=window._fb.auth;_onAuthStateChanged=window._fb.onAuthStateChanged;_signIn=window._fb.signInWithEmailAndPassword;_signUp=window._fb.createUserWithEmailAndPassword;_signOut=window._fb.signOut;_updateProfile=window._fb.updateProfile;
 
   fillLoginUsers();
   document.getElementById("login-user").addEventListener("change",()=>localStorage.setItem("loginUserId",document.getElementById("login-user").value));
