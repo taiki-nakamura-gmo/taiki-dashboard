@@ -237,7 +237,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
     <div class="form-row" style="margin-top:13px"><label class="lbl">期限時間</label><input type="time" class="inp" id="ft"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="saveTask()">保存する</button>
+      <button class="btn btn-primary" onclick="saveTaskForm()">保存する</button>
     </div>
   </div>
 </div>
@@ -479,7 +479,7 @@ function openEdit(id){
   setTimeout(()=>document.getElementById("fn").focus(),180);
 }
 function closeModal(){document.getElementById("task-modal").classList.remove("open");}
-function saveTask(){
+function saveTaskForm(){
   const name=document.getElementById("fn").value.trim();
   if(!name){const el=document.getElementById("fn");el.style.borderColor="var(--red)";el.focus();setTimeout(()=>el.style.borderColor="",1500);return;}
   const eid=document.getElementById("eid").value;
@@ -488,7 +488,7 @@ function saveTask(){
   else window.saveTask({id:Date.now(),createdAt:Date.now(),...data});
   closeModal();
 }
-document.getElementById("fn").addEventListener("keydown",e=>{if(e.key==="Enter")saveTask();});
+document.getElementById("fn").addEventListener("keydown",e=>{if(e.key==="Enter")saveTaskForm();});
 
 function openSettings(){
   document.getElementById("swatches").innerHTML=ACCENTS.map(a=>`<div class="sw ${appCfg.accent===a?"sel":""}" style="background:${a}" onclick="pickAccent('${a}',this)"></div>`).join("");
