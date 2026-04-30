@@ -433,18 +433,15 @@ async function checkAuth() {
   if (sess && sess.key && sess.loginId) {
     const age = Date.now() - (sess.ts || 0);
     if (age < SESS_FRESH) {
-      // 7日以内: Firebase確認して自動ログイン
-      try {
-        const snap = await window._fb.get(window._fb.ref(window._fb.db, 'auth/' + sess.key));
-        const d = snap.val();
-        if (d && d.loginId === sess.loginId) {
-          currentUser = AUTH_USERS.find(u => u.key === sess.key);
-          enterApp();
-          return;
-        }
-      } catch(e) { /* ネットワークエラー時はログイン画面へ */ }
+      // 有効なセッション: Firebaseを待たず即時ログイン（アクセスのたびにセッション更新）
+      currentUser = AUTH_USERS.find(u => u.key === sess.key);
+      if (currentUser) {
+        saveSess(sess.key, sess.loginId); // セッション更新
+        enterApp();
+        return;
+      }
     } else if (age < SESS_REMEMBER) {
-      // 7〜90日: ユーザーを記憶して短縮ログイン（パスワードのみ入力）
+      // 期限切れ: ユーザーを記憶して短縮ログイン
       authSelectedUser = AUTH_USERS.find(u => u.key === sess.key);
       if (authSelectedUser) {
         showAuthForm(sess.loginId, false);
@@ -459,9 +456,18 @@ async function checkAuth() {
 
 async function authSelectUser(key) {
   authSelectedUser = AUTH_USERS.find(u => u.key === key);
-  const snap = await window._fb.get(window._fb.ref(window._fb.db, 'auth/' + key));
-  const d = snap.val();
-  showAuthForm(d ? d.loginId : null, !d);
+  try {
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000));
+    const snap = await Promise.race([
+      window._fb.get(window._fb.ref(window._fb.db, 'auth/' + key)),
+      timeout
+    ]);
+    const d = snap.val();
+    showAuthForm(d ? d.loginId : null, !d);
+  } catch {
+    // Firebase遅延・失敗時でもログインフォームを表示
+    showAuthForm(null, false);
+  }
 }
 
 function showAuthForm(prefillLoginId, isFirstTime) {
