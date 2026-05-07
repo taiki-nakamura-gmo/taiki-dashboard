@@ -38,7 +38,7 @@ window.dispatchEvent(new Event("fb-ready"));
   --shadow:0 1px 4px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06);
   --shadow-lg:0 8px 24px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05);
   --font:"Instrument Sans",sans-serif;--mono:monospace;
-  --cn:#3A5EE5;--cm:#1A7A50;--cs:#C0253A;
+  --cn:#3A5EE5;--cm:#1A7A50;--cs:#C0253A;--ca:#7C3AED;
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
 
@@ -90,18 +90,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .dot{width:8px;height:8px;border-radius:50%}
 .num{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--text)}
 .sep{width:1px;height:16px;background:var(--border)}
-.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 20px;align-items:start}
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:14px 20px;align-items:start}
 .col{background:var(--surface2);border-radius:var(--r16);overflow:hidden;border:1px solid var(--border)}
 .col-header{padding:13px 14px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid transparent}
 .col-n .col-header{border-color:var(--cn);background:linear-gradient(135deg,#EDF0FC,#f5f7ff)}
 .col-m .col-header{border-color:var(--cm);background:linear-gradient(135deg,#E8F5EE,#f0faf4)}
 .col-s .col-header{border-color:var(--cs);background:linear-gradient(135deg,#FDEAED,#fff5f6)}
+.col-a .col-header{border-color:var(--ca);background:linear-gradient(135deg,#F3EEFF,#faf5ff)}
 .col-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
 .avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
 .col-cnt{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;font-weight:600}
 .col-n .col-cnt{background:#c7d7ff;color:var(--cn)}
 .col-m .col-cnt{background:#a7f3d0;color:var(--cm)}
 .col-s .col-cnt{background:#fecdd3;color:var(--cs)}
+.col-a .col-cnt{background:#ddd6fe;color:var(--ca)}
 .sort-bar{display:flex;gap:4px;padding:6px 10px 2px}
 .sort-btn{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text3);transition:all .12s}
 .sort-btn:hover{border-color:var(--border2);color:var(--text2)}
@@ -204,6 +206,10 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
           <div class="uav" style="background:var(--cs)">櫻</div>
           <div class="un">櫻井</div>
         </div>
+        <div class="user-card" onclick="authSelectUser('aoki')">
+          <div class="uav" style="background:var(--ca)">青</div>
+          <div class="un">青木</div>
+        </div>
       </div>
     </div>
 
@@ -272,6 +278,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
   <div class="stat"><span class="dot" style="background:var(--cn)"></span>中村 <span class="num" id="st1">0</span></div>
   <div class="stat"><span class="dot" style="background:var(--cm)"></span>中 <span class="num" id="st2">0</span></div>
   <div class="stat"><span class="dot" style="background:var(--cs)"></span>櫻井 <span class="num" id="st3">0</span></div>
+  <div class="stat"><span class="dot" style="background:var(--ca)"></span>青木 <span class="num" id="st6">0</span></div>
   <div class="sep"></div>
   <div class="stat"><span class="dot" style="background:var(--red)"></span>高優先度 <span class="num" id="st4">0</span></div>
   <div class="stat"><span class="dot" style="background:var(--amber)"></span>今日期限 <span class="num" id="st5">0</span></div>
@@ -315,6 +322,18 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
       </div>
       <div class="col-body" id="cs"></div>
     </div>
+    <div class="col col-a">
+      <div class="col-header">
+        <div class="col-title"><div class="avatar" style="background:var(--ca)">青</div>青木</div>
+        <span class="col-cnt" id="ca0">0</span>
+      </div>
+      <div class="sort-bar">
+        <button class="sort-btn active" onclick="setSort('a','created',this)">追加順</button>
+        <button class="sort-btn" onclick="setSort('a','priority',this)">優先度順</button>
+        <button class="sort-btn" onclick="setSort('a','due',this)">期限順</button>
+      </div>
+      <div class="col-body" id="ca"></div>
+    </div>
   </div>
 </div>
 
@@ -330,7 +349,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
       <div class="form-row" style="margin:0"><label class="lbl">優先度</label><div class="sel-w"><select id="fp"><option value="">なし</option><option value="high">🔴 高</option><option value="mid">🟡 中</option><option value="low">🟢 低</option></select></div></div>
     </div>
     <div class="f2" style="margin-top:13px">
-      <div class="form-row" style="margin:0"><label class="lbl">担当者</label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="中村">中村</option><option value="中">中</option><option value="櫻井">櫻井</option></select></div></div>
+      <div class="form-row" style="margin:0"><label class="lbl">担当者</label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="中村">中村</option><option value="中">中</option><option value="櫻井">櫻井</option><option value="青木">青木</option></select></div></div>
       <div class="form-row" style="margin:0"><label class="lbl">期限日</label><input type="date" class="inp" id="fd"></div>
     </div>
     <div class="form-row" style="margin-top:13px"><label class="lbl">期限時間</label><input type="time" class="inp" id="ft"></div>
@@ -405,7 +424,8 @@ document.body.insertAdjacentHTML("beforeend","<div id=loading style='position:fi
 const AUTH_USERS = [
   {key:'nakamura', name:'中村', color:'#3A5EE5', initial:'中'},
   {key:'naka',     name:'中',   color:'#1A7A50', initial:'中'},
-  {key:'sakurai',  name:'櫻井', color:'#C0253A', initial:'櫻'}
+  {key:'sakurai',  name:'櫻井', color:'#C0253A', initial:'櫻'},
+  {key:'aoki',     name:'青木', color:'#7C3AED', initial:'青'}
 ];
 const SESS_KEY      = 'taiki_sess';
 const SESS_FRESH    = 7  * 24 * 60 * 60 * 1000; // 7日以内: 自動ログイン
@@ -623,7 +643,7 @@ let tasks=[],trash=[],cats=[
 ];
 let appCfg={accent:"#3A5EE5"};
 let showTrash=false;
-let colSort={n:"created",m:"created",s:"created"};
+let colSort={n:"created",m:"created",s:"created",a:"created"};
 let _db,_ref,_set,_remove,_onValue;
 
 function fbSet(p,v){if(_db)_set(_ref(_db,p),v);}
@@ -649,11 +669,12 @@ function updateStats(){
   document.getElementById("st1").textContent=tasks.filter(t=>t.assignee==="中村").length;
   document.getElementById("st2").textContent=tasks.filter(t=>t.assignee==="中").length;
   document.getElementById("st3").textContent=tasks.filter(t=>t.assignee==="櫻井").length;
+  document.getElementById("st6").textContent=tasks.filter(t=>t.assignee==="青木").length;
   document.getElementById("st4").textContent=tasks.filter(t=>t.priority==="high").length;
   document.getElementById("st5").textContent=tasks.filter(t=>t.due&&t.due<=today()).length;
   document.getElementById("tbtn").textContent=trash.length;
 }
-const _colMap={n:{id:"cn",name:"中村",cnt:"cn0"},m:{id:"cm",name:"中",cnt:"cm0"},s:{id:"cs",name:"櫻井",cnt:"cs0"}};
+const _colMap={n:{id:"cn",name:"中村",cnt:"cn0"},m:{id:"cm",name:"中",cnt:"cm0"},s:{id:"cs",name:"櫻井",cnt:"cs0"},a:{id:"ca",name:"青木",cnt:"ca0"}};
 function renderCol(colKey){
   const col=_colMap[colKey];
   const el=document.getElementById(col.id);
@@ -677,7 +698,7 @@ function sortTasks(list,sort){
 function renderKanban(){
   document.getElementById("kanban").style.display="grid";
   const tv=document.getElementById("trash-container");if(tv)tv.remove();
-  const cols=[{id:"cn",name:"中村",cnt:"cn0",sort:"n"},{id:"cm",name:"中",cnt:"cm0",sort:"m"},{id:"cs",name:"櫻井",cnt:"cs0",sort:"s"}];
+  const cols=[{id:"cn",name:"中村",cnt:"cn0",sort:"n"},{id:"cm",name:"中",cnt:"cm0",sort:"m"},{id:"cs",name:"櫻井",cnt:"cs0",sort:"s"},{id:"ca",name:"青木",cnt:"ca0",sort:"a"}];
   cols.forEach(col=>{
     const el=document.getElementById(col.id);
     const list=sortTasks(tasks.filter(t=>t.assignee===col.name),colSort[col.sort]);
@@ -751,7 +772,7 @@ function openDetail(id){
   const cat=cats.find(c=>c.id===t.cat);
   const due=t.due?fmtDue(t.due,t.dueTime):null;
   const ptMap={high:"🔴 高優先度",mid:"🟡 中優先度",low:"🟢 低優先度"};
-  const mc={"中村":"#3A5EE5","中":"#1A7A50","櫻井":"#C0253A"};
+  const mc={"中村":"#3A5EE5","中":"#1A7A50","櫻井":"#C0253A","青木":"#7C3AED"};
   document.getElementById("d-name").textContent=t.name;
   let tags="";
   if(cat)tags+=`<span class="tag" style="background:${cat.color}18;color:${cat.color};font-size:12px">${esc(cat.name)}</span>`;
