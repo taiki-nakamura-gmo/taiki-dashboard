@@ -177,6 +177,20 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 @keyframes si{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .card{animation:si .15s ease both}
+/* ステータスバッジ */
+.stbadge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;user-select:none;transition:all .12s;border:none;font-family:var(--font)}
+.stbadge:hover{filter:brightness(.92)}
+.st-todo{background:#f1f5f9;color:#64748b}
+.st-doing{background:#dbeafe;color:#1d4ed8}
+.st-done2{background:#dcfce7;color:#16a34a}
+/* 期限切れカード強調 */
+.card.overdue{border-color:#fca5a5}
+.card.overdue .card-inner{background:linear-gradient(180deg,#fff5f5 0%,#fff 100%)}
+/* 期限切れバナー */
+#overdue-banner{background:var(--red-bg);border-bottom:1px solid #fca5a5;padding:7px 20px;font-size:12.5px;color:var(--red);font-weight:500;display:none}
+/* ドラッグ＆ドロップ */
+.col-body.drag-over{background:rgba(58,94,229,.07);border-radius:var(--r8);outline:2px dashed var(--accent);outline-offset:-3px}
+.card.dragging{opacity:.32;transform:scale(.97)}
 </style>
 </head>
 <body>
@@ -272,6 +286,8 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
   </div>
 </div>
 
+<div id="overdue-banner">⚠️ 期限超過のタスクが <strong id="overdue-cnt">0</strong> 件あります</div>
+
 <div class="stats-bar">
   <div class="stat"><span class="dot" style="background:var(--accent)"></span>合計 <span class="num" id="st0">0</span> 件</div>
   <div class="sep"></div>
@@ -296,7 +312,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
         <button class="sort-btn" onclick="setSort('n','priority',this)">優先度順</button>
         <button class="sort-btn" onclick="setSort('n','due',this)">期限順</button>
       </div>
-      <div class="col-body" id="cn"></div>
+      <div class="col-body" id="cn" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'中村')"></div>
     </div>
     <div class="col col-m">
       <div class="col-header">
@@ -308,7 +324,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
         <button class="sort-btn" onclick="setSort('m','priority',this)">優先度順</button>
         <button class="sort-btn" onclick="setSort('m','due',this)">期限順</button>
       </div>
-      <div class="col-body" id="cm"></div>
+      <div class="col-body" id="cm" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'中')"></div>
     </div>
     <div class="col col-s">
       <div class="col-header">
@@ -320,7 +336,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
         <button class="sort-btn" onclick="setSort('s','priority',this)">優先度順</button>
         <button class="sort-btn" onclick="setSort('s','due',this)">期限順</button>
       </div>
-      <div class="col-body" id="cs"></div>
+      <div class="col-body" id="cs" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'櫻井')"></div>
     </div>
     <div class="col col-a">
       <div class="col-header">
@@ -332,7 +348,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
         <button class="sort-btn" onclick="setSort('a','priority',this)">優先度順</button>
         <button class="sort-btn" onclick="setSort('a','due',this)">期限順</button>
       </div>
-      <div class="col-body" id="ca"></div>
+      <div class="col-body" id="ca" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'青木')"></div>
     </div>
   </div>
 </div>
@@ -352,7 +368,10 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
       <div class="form-row" style="margin:0"><label class="lbl">担当者</label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="中村">中村</option><option value="中">中</option><option value="櫻井">櫻井</option><option value="青木">青木</option></select></div></div>
       <div class="form-row" style="margin:0"><label class="lbl">期限日</label><input type="date" class="inp" id="fd"></div>
     </div>
-    <div class="form-row" style="margin-top:13px"><label class="lbl">期限時間</label><input type="time" class="inp" id="ft"></div>
+    <div class="f2" style="margin-top:13px">
+      <div class="form-row" style="margin:0"><label class="lbl">期限時間</label><input type="time" class="inp" id="ft"></div>
+      <div class="form-row" style="margin:0"><label class="lbl">ステータス</label><div class="sel-w"><select id="fs"><option value="todo">⬜ 未着手</option><option value="doing">🔵 進行中</option><option value="done">✅ 完了</option></select></div></div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
       <button class="btn btn-primary" onclick="saveTaskForm()">保存する</button>
@@ -665,14 +684,18 @@ function fmtDue(s,time){
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function refresh(){updateStats();showTrash?renderTrash():renderKanban();}
 function updateStats(){
+  const td=today();
   document.getElementById("st0").textContent=tasks.length;
   document.getElementById("st1").textContent=tasks.filter(t=>t.assignee==="中村").length;
   document.getElementById("st2").textContent=tasks.filter(t=>t.assignee==="中").length;
   document.getElementById("st3").textContent=tasks.filter(t=>t.assignee==="櫻井").length;
   document.getElementById("st6").textContent=tasks.filter(t=>t.assignee==="青木").length;
   document.getElementById("st4").textContent=tasks.filter(t=>t.priority==="high").length;
-  document.getElementById("st5").textContent=tasks.filter(t=>t.due&&t.due<=today()).length;
+  document.getElementById("st5").textContent=tasks.filter(t=>t.due&&t.due<=td).length;
   document.getElementById("tbtn").textContent=trash.length;
+  const overdue=tasks.filter(t=>t.due&&t.due<td).length;
+  const banner=document.getElementById("overdue-banner");
+  if(banner){banner.style.display=overdue>0?"block":"none";const cnt=document.getElementById("overdue-cnt");if(cnt)cnt.textContent=overdue;}
 }
 const _colMap={n:{id:"cn",name:"中村",cnt:"cn0"},m:{id:"cm",name:"中",cnt:"cm0"},s:{id:"cs",name:"櫻井",cnt:"cs0"},a:{id:"ca",name:"青木",cnt:"ca0"}};
 function renderCol(colKey){
@@ -713,7 +736,11 @@ function cardHTML(t,i){
   const pb={high:"ph",mid:"pm",low:"pl","":"pn"};
   const pt={high:"tph",mid:"tpm",low:"tpl"};
   const ptl={high:"高優先度",mid:"中優先度",low:"低優先度"};
-  return `<div class="card" id="tc${t.id}" style="animation-delay:${i*15}ms" onclick="openDetail(${t.id})">
+  const status=t.status||"todo";
+  const stMap={todo:"⬜ 未着手",doing:"🔵 進行中",done:"✅ 完了"};
+  const stCls={todo:"st-todo",doing:"st-doing",done:"st-done2"};
+  const isOverdue=t.due&&t.due<today();
+  return `<div class="card${isOverdue?" overdue":""}" id="tc${t.id}" style="animation-delay:${i*15}ms" onclick="openDetail(${t.id})" draggable="true" ondragstart="dragStart(event,${t.id})" ondragend="dragEnd(event)">
     <div class="pri-bar ${pb[t.priority]||"pn"}"></div>
     <div class="card-inner">
       <div class="card-top">
@@ -723,10 +750,13 @@ function cardHTML(t,i){
         <div class="card-name">${esc(t.name)}</div>
       </div>
       ${t.memo?`<div class="card-memo">${esc(t.memo)}</div>`:""}
-      <div class="tags">
-        ${cat?`<span class="tag" style="background:${cat.color}18;color:${cat.color}">${esc(cat.name)}</span>`:""}
-        ${t.priority?`<span class="tag ${pt[t.priority]}">${ptl[t.priority]}</span>`:""}
-        ${due?`<span class="tag tdue ${due.cls}">📅 ${due.label}</span>`:""}
+      <div class="tags" style="justify-content:space-between;align-items:center">
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${cat?`<span class="tag" style="background:${cat.color}18;color:${cat.color}">${esc(cat.name)}</span>`:""}
+          ${t.priority?`<span class="tag ${pt[t.priority]}">${ptl[t.priority]}</span>`:""}
+          ${due?`<span class="tag tdue ${due.cls}">📅 ${due.label}</span>`:""}
+        </div>
+        <button class="stbadge ${stCls[status]}" onclick="event.stopPropagation();toggleStatus(${t.id})">${stMap[status]}</button>
       </div>
     </div>
     <div class="card-acts">
@@ -739,8 +769,8 @@ function renderTrash(){
   document.getElementById("kanban").style.display="none";
   let tc=document.getElementById("trash-container");
   if(!tc){tc=document.createElement("div");tc.id="trash-container";tc.className="trash-view";document.getElementById("main").appendChild(tc);}
-  if(!trash.length){tc.innerHTML='<div style="font-size:15px;font-weight:600;margin-bottom:12px">🗑️ ゴミ箱</div><div style="text-align:center;padding:48px;color:var(--text3)">ゴミ箱は空です</div>';return;}
-  tc.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:15px;font-weight:600">🗑️ ゴミ箱（${trash.length}件）</span><button class="btn btn-danger btn-sm" onclick="emptyTrash()">すべて完全削除</button></div>`+
+  if(!trash.length){tc.innerHTML='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><button class="btn btn-ghost btn-sm" onclick="toggleTrash()">← Dashboardへ戻る</button><span style="font-size:15px;font-weight:600">🗑️ ゴミ箱</span></div><div style="text-align:center;padding:48px;color:var(--text3)">ゴミ箱は空です</div>';return;}
+  tc.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px"><button class="btn btn-ghost btn-sm" onclick="toggleTrash()">← Dashboardへ戻る</button><span style="font-size:15px;font-weight:600">🗑️ ゴミ箱（${trash.length}件）</span></div><button class="btn btn-danger btn-sm" onclick="emptyTrash()">すべて完全削除</button></div>`+
     trash.map(t=>{
       const cat=cats.find(c=>c.id===t.cat);
       return `<div class="ti">
@@ -753,6 +783,34 @@ function renderTrash(){
     }).join("");
 }
 function toggleTrash(){showTrash=!showTrash;refresh();}
+
+// ===== ステータス =====
+function toggleStatus(id){
+  const t=tasks.find(t=>t.id==id);if(!t)return;
+  const cycle={todo:"doing",doing:"done",done:"todo"};
+  t.status=cycle[t.status||"todo"];
+  window.saveTask(t);
+}
+
+// ===== ドラッグ＆ドロップ =====
+let _dragId=null;
+function dragStart(e,id){
+  _dragId=id;e.dataTransfer.effectAllowed="move";
+  setTimeout(()=>{const el=document.getElementById("tc"+id);if(el)el.classList.add("dragging");},0);
+}
+function dragEnd(e){
+  document.querySelectorAll(".card").forEach(c=>c.classList.remove("dragging"));
+  document.querySelectorAll(".col-body").forEach(c=>c.classList.remove("drag-over"));
+}
+function dragOver(e){e.preventDefault();e.dataTransfer.dropEffect="move";e.currentTarget.classList.add("drag-over");}
+function dragLeave(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove("drag-over");}
+function drop(e,assignee){
+  e.preventDefault();e.currentTarget.classList.remove("drag-over");
+  if(_dragId==null)return;
+  const t=tasks.find(t=>t.id==_dragId);_dragId=null;
+  if(!t||t.assignee===assignee)return;
+  t.assignee=assignee;window.saveTask(t);
+}
 function complete(id){
   if(!confirm("このタスクを完了してゴミ箱に移動しますか？"))return;
   const ck=document.getElementById("ck"+id);const card=document.getElementById("tc"+id);
@@ -779,6 +837,10 @@ function openDetail(id){
   if(t.priority)tags+=`<span class="tag ${t.priority==="high"?"tph":t.priority==="mid"?"tpm":"tpl"}" style="font-size:12px">${ptMap[t.priority]}</span>`;
   if(t.assignee)tags+=`<span class="tag" style="background:${(mc[t.assignee]||"#9B99A4")}18;color:${mc[t.assignee]||"#9B99A4"};font-size:12px">👤 ${esc(t.assignee)}</span>`;
   if(due)tags+=`<span class="tag tdue ${due.cls}" style="font-size:12px">📅 ${due.label}</span>`;
+  const stMap2={todo:"⬜ 未着手",doing:"🔵 進行中",done:"✅ 完了"};
+  const stCls2={todo:"st-todo",doing:"st-doing",done:"st-done2"};
+  const stVal=t.status||"todo";
+  tags+=`<button class="stbadge ${stCls2[stVal]}" style="font-size:12px" onclick="toggleStatus(${t.id});closeDetail()">${stMap2[stVal]}</button>`;
   document.getElementById("d-tags").innerHTML=tags;
   const ms=document.getElementById("d-memo-sec");
   if(t.memo){document.getElementById("d-memo").textContent=t.memo;ms.style.display="";}else{ms.style.display="none";}
@@ -795,6 +857,7 @@ function openAdd(){
   document.getElementById("eid").value="";document.getElementById("mtitle").textContent="タスクを追加";
   ["fn","fm"].forEach(i=>document.getElementById(i).value="");
   ["fp","fd","ft","fa"].forEach(i=>document.getElementById(i).value="");
+  document.getElementById("fs").value="todo";
   fillCats();document.getElementById("fc").value="";
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
@@ -805,6 +868,7 @@ function openEdit(id){
   document.getElementById("fn").value=t.name;document.getElementById("fm").value=t.memo||"";
   document.getElementById("fp").value=t.priority||"";document.getElementById("fd").value=t.due||"";
   document.getElementById("ft").value=t.dueTime||"";document.getElementById("fa").value=t.assignee||"";
+  document.getElementById("fs").value=t.status||"todo";
   fillCats();document.getElementById("fc").value=t.cat||"";
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
@@ -816,7 +880,7 @@ function saveTaskForm(){
   const assignee=document.getElementById("fa").value;
   if(!assignee){const el=document.getElementById("fa").closest(".sel-w").querySelector("select");el.style.borderColor="var(--red)";el.focus();setTimeout(()=>el.style.borderColor="",1500);return;}
   const eid=document.getElementById("eid").value;
-  const data={name,memo:document.getElementById("fm").value.trim(),cat:document.getElementById("fc").value,priority:document.getElementById("fp").value,due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee};
+  const data={name,memo:document.getElementById("fm").value.trim(),cat:document.getElementById("fc").value,priority:document.getElementById("fp").value,due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,status:document.getElementById("fs").value||"todo"};
   if(eid){const t=tasks.find(t=>t.id==eid);if(t){Object.assign(t,data);window.saveTask(t);}}
   else window.saveTask({id:Date.now(),createdAt:Date.now(),...data});
   closeModal();
