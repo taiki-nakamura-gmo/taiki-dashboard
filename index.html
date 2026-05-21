@@ -181,6 +181,12 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 .new-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:20px;font-size:9px;font-weight:800;background:var(--green);color:#fff;letter-spacing:.06em;flex-shrink:0;animation:pulse-new 2s ease infinite}
 @keyframes pulse-new{0%,100%{box-shadow:0 0 0 0 rgba(26,122,80,.5)}60%{box-shadow:0 0 0 5px rgba(26,122,80,0)}}
 .card.isnew{border-color:var(--green)!important;box-shadow:0 0 0 1.5px rgba(26,122,80,.25)}
+/* カテゴリチップ（複数選択） */
+.cat-chips{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;min-height:32px}
+.cat-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .12s;user-select:none}
+.cat-chip:hover{border-color:var(--border2);background:var(--surface)}
+.cat-chip.sel{font-weight:600}
+.cat-chips-empty{font-size:12px;color:var(--text3);padding:4px 0}
 /* ステータスバッジ */
 .stbadge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;user-select:none;transition:all .12s;border:none;font-family:var(--font)}
 .stbadge:hover{filter:brightness(.92)}
@@ -369,20 +375,12 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
   <div class="modal">
     <div class="modal-title" id="mtitle">タスクを追加</div>
     <input type="hidden" id="eid">
-    <div class="form-row"><label class="lbl">タスク名 <span style="color:var(--red)">*</span></label><input type="text" class="inp" id="fn" placeholder="例：株式会社〇〇"></div>
-    <div class="form-row"><label class="lbl">メモ（任意）</label><textarea class="inp" id="fm" rows="2" placeholder="詳細・備考など"></textarea></div>
-    <div class="f2">
-      <div class="form-row" style="margin:0"><label class="lbl">カテゴリ</label><div class="sel-w"><select id="fc"><option value="">なし</option></select></div></div>
-      <div class="form-row" style="margin:0"><label class="lbl">優先度</label><div class="sel-w"><select id="fp"><option value="">なし</option><option value="high">🔴 高</option><option value="mid">🟡 中</option><option value="low">🟢 低</option></select></div></div>
-    </div>
-    <div class="f2" style="margin-top:13px">
-      <div class="form-row" style="margin:0"><label class="lbl">担当者</label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="中村">中村</option><option value="中">中</option><option value="櫻井">櫻井</option><option value="青木">青木</option></select></div></div>
-      <div class="form-row" style="margin:0"><label class="lbl">期限日</label><input type="date" class="inp" id="fd"></div>
-    </div>
-    <div class="f2" style="margin-top:13px">
-      <div class="form-row" style="margin:0"><label class="lbl">期限時間</label><input type="time" class="inp" id="ft"></div>
-      <div class="form-row" style="margin:0"><label class="lbl">ステータス</label><div class="sel-w"><select id="fs"><option value="todo">⬜ 未着手</option><option value="doing">🔵 進行中</option><option value="done">✅ 完了</option></select></div></div>
-    </div>
+    <div class="form-row"><label class="lbl">案件名 <span style="color:var(--red)">*</span></label><input type="text" class="inp" id="fn" placeholder="例：株式会社〇〇"></div>
+    <div class="form-row"><label class="lbl">タスク内容</label><textarea class="inp" id="fm" rows="3" placeholder="詳細・備考など"></textarea></div>
+    <div class="form-row"><label class="lbl">カテゴリ（複数選択可）</label><div class="cat-chips" id="cat-chips"></div></div>
+    <div class="form-row"><label class="lbl">担当者 <span style="color:var(--red)">*</span></label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="中村">中村</option><option value="中">中</option><option value="櫻井">櫻井</option><option value="青木">青木</option></select></div></div>
+    <div class="form-row"><label class="lbl">優先度</label><div class="sel-w"><select id="fp"><option value="">なし</option><option value="high">🔴 高</option><option value="mid">🟡 中</option><option value="low">🟢 低</option></select></div></div>
+    <div class="form-row"><label class="lbl">期日</label><div style="display:flex;gap:8px"><input type="date" class="inp" id="fd" style="flex:1"><input type="time" class="inp" id="ft" style="flex:0 0 130px"></div></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
       <button class="btn btn-primary" onclick="saveTaskForm()">保存する</button>
@@ -741,8 +739,12 @@ function renderKanban(){
     el.innerHTML=list.map((t,i)=>cardHTML(t,i)).join("");
   });
 }
+function taskCats(t){
+  const ids=t.cats&&t.cats.length?t.cats:(t.cat?[t.cat]:[]);
+  return ids.map(id=>cats.find(c=>c.id===id)).filter(Boolean);
+}
 function cardHTML(t,i){
-  const cat=cats.find(c=>c.id===t.cat);
+  const tCats=taskCats(t);
   const due=t.due?fmtDue(t.due,t.dueTime):null;
   const pb={high:"ph",mid:"pm",low:"pl","":"pn"};
   const pt={high:"tph",mid:"tpm",low:"tpl"};
@@ -766,7 +768,7 @@ function cardHTML(t,i){
       ${t.memo?`<div class="card-memo">${esc(t.memo).replace(/\n/g,"<br>")}</div>`:""}
       <div class="tags" style="justify-content:space-between;align-items:center">
         <div style="display:flex;flex-wrap:wrap;gap:4px">
-          ${cat?`<span class="tag" style="background:${cat.color}18;color:${cat.color}">${esc(cat.name)}</span>`:""}
+          ${tCats.map(c=>`<span class="tag" style="background:${c.color}18;color:${c.color}">${esc(c.name)}</span>`).join("")}
           ${t.priority?`<span class="tag ${pt[t.priority]}">${ptl[t.priority]}</span>`:""}
           ${due&&due.cls==="over"?`<span class="overdue-badge">⚠️ ${due.label}</span>`:due?`<span class="tag tdue ${due.cls}">📅 ${due.label}</span>`:""}
         </div>
@@ -841,13 +843,13 @@ function emptyTrash(){if(!confirm("ゴミ箱を完全に空にしますか？"))
 
 function openDetail(id){
   const t=tasks.find(t=>t.id===id);if(!t)return;
-  const cat=cats.find(c=>c.id===t.cat);
+  const tCats2=taskCats(t);
   const due=t.due?fmtDue(t.due,t.dueTime):null;
   const ptMap={high:"🔴 高優先度",mid:"🟡 中優先度",low:"🟢 低優先度"};
   const mc={"中村":"#3A5EE5","中":"#1A7A50","櫻井":"#C0253A","青木":"#7C3AED"};
   document.getElementById("d-name").textContent=t.name;
   let tags="";
-  if(cat)tags+=`<span class="tag" style="background:${cat.color}18;color:${cat.color};font-size:12px">${esc(cat.name)}</span>`;
+  tCats2.forEach(c=>{tags+=`<span class="tag" style="background:${c.color}18;color:${c.color};font-size:12px">${esc(c.name)}</span>`;});
   if(t.priority)tags+=`<span class="tag ${t.priority==="high"?"tph":t.priority==="mid"?"tpm":"tpl"}" style="font-size:12px">${ptMap[t.priority]}</span>`;
   if(t.assignee)tags+=`<span class="tag" style="background:${(mc[t.assignee]||"#9B99A4")}18;color:${mc[t.assignee]||"#9B99A4"};font-size:12px">👤 ${esc(t.assignee)}</span>`;
   if(due)tags+=`<span class="tag tdue ${due.cls}" style="font-size:12px">📅 ${due.label}</span>`;
@@ -861,18 +863,30 @@ function openDetail(id){
   document.getElementById("d-a").textContent=t.assignee||"未定";
   document.getElementById("d-p").textContent=ptMap[t.priority]||"なし";
   document.getElementById("d-d").textContent=due?due.label:"未設定";
-  document.getElementById("d-c").textContent=cat?cat.name:"なし";
+  document.getElementById("d-c").textContent=tCats2.map(c=>c.name).join("、")||"なし";
   document.getElementById("d-edit").onclick=()=>{closeDetail();openEdit(id);};
   document.getElementById("detail-modal").classList.add("open");
 }
 function closeDetail(){document.getElementById("detail-modal").classList.remove("open");}
-function fillCats(){document.getElementById("fc").innerHTML='<option value="">なし</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");}
+let _selectedCats=[];
+function fillCats(){
+  const el=document.getElementById("cat-chips");if(!el)return;
+  if(!cats.length){el.innerHTML='<div class="cat-chips-empty">カテゴリがありません（設定から追加できます）</div>';return;}
+  el.innerHTML=cats.map(c=>{
+    const sel=_selectedCats.includes(c.id);
+    return `<div class="cat-chip${sel?" sel":""}" style="${sel?`background:${c.color}20;color:${c.color};border-color:${c.color}`:""}" onclick="toggleCat('${c.id}','${c.color}')">${esc(c.name)}</div>`;
+  }).join("");
+}
+function toggleCat(id,color){
+  const i=_selectedCats.indexOf(id);
+  if(i>=0)_selectedCats.splice(i,1);else _selectedCats.push(id);
+  fillCats();
+}
 function openAdd(){
   document.getElementById("eid").value="";document.getElementById("mtitle").textContent="タスクを追加";
   ["fn","fm"].forEach(i=>document.getElementById(i).value="");
   ["fp","fd","ft","fa"].forEach(i=>document.getElementById(i).value="");
-  document.getElementById("fs").value="todo";
-  fillCats();document.getElementById("fc").value="";
+  _selectedCats=[];fillCats();
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
 }
@@ -882,8 +896,7 @@ function openEdit(id){
   document.getElementById("fn").value=t.name;document.getElementById("fm").value=t.memo||"";
   document.getElementById("fp").value=t.priority||"";document.getElementById("fd").value=t.due||"";
   document.getElementById("ft").value=t.dueTime||"";document.getElementById("fa").value=t.assignee||"";
-  document.getElementById("fs").value=t.status||"todo";
-  fillCats();document.getElementById("fc").value=t.cat||"";
+  _selectedCats=t.cats?[...t.cats]:(t.cat?[t.cat]:[]);fillCats();
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
 }
@@ -894,7 +907,7 @@ function saveTaskForm(){
   const assignee=document.getElementById("fa").value;
   if(!assignee){const el=document.getElementById("fa").closest(".sel-w").querySelector("select");el.style.borderColor="var(--red)";el.focus();setTimeout(()=>el.style.borderColor="",1500);return;}
   const eid=document.getElementById("eid").value;
-  const data={name,memo:document.getElementById("fm").value.trim(),cat:document.getElementById("fc").value,priority:document.getElementById("fp").value,due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,status:document.getElementById("fs").value||"todo"};
+  const data={name,memo:document.getElementById("fm").value.trim(),cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:document.getElementById("fp").value,due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee};
   if(eid){const t=tasks.find(t=>t.id==eid);if(t){Object.assign(t,data);window.saveTask(t);}}
   else window.saveTask({id:Date.now(),createdAt:Date.now(),...data});
   closeModal();
