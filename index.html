@@ -208,6 +208,19 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 /* ドラッグ＆ドロップ */
 .col-body.drag-over{background:rgba(58,94,229,.07);border-radius:var(--r8);outline:2px dashed var(--accent);outline-offset:-3px}
 .card.dragging{opacity:.32;transform:scale(.97)}
+/* 風船アニメーション */
+@keyframes bfloat{
+  0%  {transform:translateY(0) rotate(0deg);opacity:1}
+  20% {transform:translateY(-22vh) rotate(-9deg)}
+  40% {transform:translateY(-44vh) rotate(7deg)}
+  60% {transform:translateY(-66vh) rotate(-5deg)}
+  80% {transform:translateY(-88vh) rotate(6deg);opacity:1}
+  100%{transform:translateY(-125vh) rotate(-4deg);opacity:0}
+}
+/* 完了トースト */
+@keyframes toast-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes toast-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-10px)}}
+.complete-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#18171A;color:#fff;padding:12px 22px;border-radius:30px;font-size:14px;font-weight:600;z-index:99999;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:toast-in .3s ease both}
 </style>
 </head>
 <body>
@@ -838,10 +851,37 @@ function drop(e,assignee){
   if(!t||t.assignee===assignee)return;
   t.assignee=assignee;window.saveTask(t);
 }
+function launchBalloons(){
+  const colors=["#FFD700","#FF4444","#3A5EE5","#1A7A50","#FF69B4","#FF8C00","#9B59B6","#00CED1","#FF6347","#32CD32"];
+  for(let i=0;i<35;i++){
+    setTimeout(()=>{
+      const c=colors[Math.floor(Math.random()*colors.length)];
+      const sz=38+Math.random()*22;
+      const lft=3+Math.random()*94;
+      const dur=4+Math.random()*3;
+      const el=document.createElement("div");
+      el.style.cssText=`position:fixed;bottom:-90px;left:${lft}%;z-index:99998;pointer-events:none;animation:bfloat ${dur}s ease-out forwards`;
+      el.innerHTML=`<div style="position:relative;width:${sz}px;text-align:center">
+        <div style="width:${sz}px;height:${sz*1.25}px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55) 0%,${c} 55%);border-radius:50% 50% 50% 50% / 55% 55% 45% 45%;box-shadow:inset -3px -3px 6px rgba(0,0,0,.12)"></div>
+        <div style="width:0;height:0;border-left:${sz*.13}px solid transparent;border-right:${sz*.13}px solid transparent;border-top:${sz*.18}px solid ${c};margin:0 auto"></div>
+        <div style="width:1.5px;height:28px;background:rgba(0,0,0,.25);margin:0 auto;border-radius:1px"></div>
+      </div>`;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),(dur+0.5)*1000);
+    },i*90);
+  }
+  // 完了トースト
+  const toast=document.createElement("div");
+  toast.className="complete-toast";
+  toast.textContent="🎉 タスク完了！お疲れさまでした！";
+  document.body.appendChild(toast);
+  setTimeout(()=>{toast.style.animation="toast-out .4s ease forwards";setTimeout(()=>toast.remove(),400);},3000);
+}
 function complete(id){
   if(!confirm("このタスクを完了してゴミ箱に移動しますか？"))return;
   const ck=document.getElementById("ck"+id);const card=document.getElementById("tc"+id);
   ck.classList.add("on");card.classList.add("done");
+  launchBalloons();
   setTimeout(()=>{const t=tasks.find(t=>t.id===id);if(!t)return;t.deletedAt=new Date().toLocaleDateString("ja-JP");saveTrash(t);delTask(id);},340);
 }
 function toTrash(id){
