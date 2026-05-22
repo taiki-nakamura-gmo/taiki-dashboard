@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>たいき Tasks</title>
+<link rel="icon" id="favicon-link" href="data:,"  type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -446,6 +447,21 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
           <div class="sel-w" style="width:68px"><select id="ccol" style="padding:7px 26px 7px 9px;font-size:13px"><option value="#3A5EE5">🔵</option><option value="#1A7A50">🟢</option><option value="#A05C00">🟡</option><option value="#C0253A">🔴</option><option value="#6B35C8">🟣</option></select></div>
           <button class="btn btn-primary btn-sm" onclick="addCat()">追加</button>
         </div>
+      </div>
+    </div>
+    <div class="ss" id="favicon-section" style="display:none">
+      <div class="st">🖼️ ファビコン設定</div>
+      <div style="padding:12px 14px">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">ブラウザタブのアイコンを設定します。設定すると全員に反映されます。</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <img id="favicon-preview" style="width:40px;height:40px;border-radius:8px;border:1px solid var(--border);object-fit:cover;display:none">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+            📁 画像を選択
+            <input type="file" id="favicon-input" accept="image/*" style="display:none" onchange="handleFaviconUpload(event)">
+          </label>
+          <button class="btn btn-danger btn-sm" id="favicon-clear" onclick="clearFavicon()" style="display:none">削除</button>
+        </div>
+        <div id="favicon-status" style="font-size:11.5px;color:var(--text3);margin-top:7px"></div>
       </div>
     </div>
     <div class="ss">
@@ -979,6 +995,12 @@ function openSettings(){
   document.getElementById("swatches").innerHTML=ACCENTS.map(a=>`<div class="sw ${appCfg.accent===a?"sel":""}" style="background:${a}" onclick="pickAccent('${a}',this)"></div>`).join("");
   const su=document.getElementById("slack-url");if(su)su.value=appCfg.slackWebhook||"";
   const ss=document.getElementById("slack-status");if(ss)ss.textContent=appCfg.slackWebhook?"✅ 設定済み":"未設定";
+  // ファビコン設定欄（中村のみ表示）
+  const fsec=document.getElementById("favicon-section");
+  if(fsec)fsec.style.display=currentUser&&currentUser.key==="nakamura"?"":"none";
+  const fp=document.getElementById("favicon-preview");const fc=document.getElementById("favicon-clear");
+  if(fp){if(appCfg.favicon){fp.src=appCfg.favicon;fp.style.display="";if(fc)fc.style.display="";}else{fp.style.display="none";if(fc)fc.style.display="none";}}
+  const fst=document.getElementById("favicon-status");if(fst)fst.textContent=appCfg.favicon?"✅ 設定済み":"未設定";
   renderCatList();document.getElementById("settings-modal").classList.add("open");
 }
 function closeSettings(){document.getElementById("settings-modal").classList.remove("open");}
@@ -1006,9 +1028,34 @@ function delCat(id){
 }
 function saveSettings(){
   const su=document.getElementById("slack-url");if(su)appCfg.slackWebhook=su.value.trim();
-  fbSet("cfg",appCfg);applyAccent();closeSettings();refresh();
+  fbSet("cfg",appCfg);applyAccent();applyFavicon();closeSettings();refresh();
 }
 function applyAccent(){document.documentElement.style.setProperty("--accent",appCfg.accent);document.documentElement.style.setProperty("--accent-bg",appCfg.accent+"1f");}
+function applyFavicon(){
+  const link=document.getElementById("favicon-link");
+  if(link)link.href=appCfg.favicon||"data:,";
+}
+function handleFaviconUpload(e){
+  const file=e.target.files[0];if(!file)return;
+  const fst=document.getElementById("favicon-status");
+  if(file.size>800*1024){if(fst){fst.textContent="⚠️ 画像が大きすぎます（800KB以下にしてください）";fst.style.color="var(--red)";}return;}
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    appCfg.favicon=ev.target.result;
+    applyFavicon();
+    const fp=document.getElementById("favicon-preview");const fc=document.getElementById("favicon-clear");
+    if(fp){fp.src=ev.target.result;fp.style.display="";}
+    if(fc)fc.style.display="";
+    if(fst){fst.textContent='「保存して適用」を押すと全員に反映されます';fst.style.color="var(--green)";}
+  };
+  reader.readAsDataURL(file);
+}
+function clearFavicon(){
+  appCfg.favicon="";applyFavicon();
+  const fp=document.getElementById("favicon-preview");const fc=document.getElementById("favicon-clear");
+  if(fp)fp.style.display="";if(fc)fc.style.display="none";
+  const fst=document.getElementById("favicon-status");if(fst){fst.textContent="削除しました。「保存して適用」で反映されます";fst.style.color="var(--text3)";}
+}
 
 function notifySlack(text){
   const url=appCfg.slackWebhook;if(!url)return;
@@ -1031,7 +1078,7 @@ function initFirebaseData(){
     refresh();
   });
   _onValue(_ref(_db,"cfg"),snap=>{
-    const val=snap.val();if(val)appCfg=Object.assign(appCfg,val);applyAccent();
+    const val=snap.val();if(val)appCfg=Object.assign(appCfg,val);applyAccent();applyFavicon();
   });
 }
 
