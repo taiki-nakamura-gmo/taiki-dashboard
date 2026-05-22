@@ -218,6 +218,11 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
   80% {transform:translateY(-88vh) rotate(6deg);opacity:1}
   100%{transform:translateY(-125vh) rotate(-4deg);opacity:0}
 }
+@keyframes bpop0{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(-60px,-80px) scale(0);opacity:0}}
+@keyframes bpop1{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(60px,-80px) scale(0);opacity:0}}
+@keyframes bpop2{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(-80px,20px) scale(0);opacity:0}}
+@keyframes bpop3{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(80px,20px) scale(0);opacity:0}}
+@keyframes bpop4{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(0px,-90px) scale(0);opacity:0}}
 /* 完了トースト */
 @keyframes toast-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 @keyframes toast-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-10px)}}
@@ -867,6 +872,21 @@ function drop(e,assignee){
   if(!t||t.assignee===assignee)return;
   t.assignee=assignee;window.saveTask(t);
 }
+function popBalloon(el,c,sz){
+  el.style.animation="none";el.style.pointerEvents="none";
+  // 破片を5方向に飛ばす
+  for(let j=0;j<5;j++){
+    const s=document.createElement("div");
+    const ps=sz*(0.18+Math.random()*0.18);
+    s.style.cssText=`position:absolute;top:${sz*0.3}px;left:${sz*0.3}px;width:${ps}px;height:${ps}px;background:${c};border-radius:50%;animation:bpop${j} .45s ease-out forwards;pointer-events:none`;
+    el.appendChild(s);
+  }
+  // 「パン！」テキスト
+  const bang=document.createElement("div");
+  bang.textContent="💥";bang.style.cssText=`position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:${sz*0.7}px;animation:bpop4 .4s ease-out forwards;pointer-events:none`;
+  el.appendChild(bang);
+  setTimeout(()=>el.remove(),500);
+}
 function launchBalloons(){
   const colors=["#FFD700","#FF4444","#3A5EE5","#1A7A50","#FF69B4","#FF8C00","#9B59B6","#00CED1","#FF6347","#32CD32"];
   for(let i=0;i<35;i++){
@@ -876,14 +896,16 @@ function launchBalloons(){
       const lft=3+Math.random()*94;
       const dur=4+Math.random()*3;
       const el=document.createElement("div");
-      el.style.cssText=`position:fixed;bottom:-90px;left:${lft}%;z-index:99998;pointer-events:none;animation:bfloat ${dur}s ease-out forwards`;
+      el.style.cssText=`position:fixed;bottom:-90px;left:${lft}%;z-index:99998;cursor:pointer;animation:bfloat ${dur}s ease-out forwards`;
+      el.title="クリックで割る🎈";
       el.innerHTML=`<div style="position:relative;width:${sz}px;text-align:center">
         <div style="width:${sz}px;height:${sz*1.25}px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55) 0%,${c} 55%);border-radius:50% 50% 50% 50% / 55% 55% 45% 45%;box-shadow:inset -3px -3px 6px rgba(0,0,0,.12)"></div>
         <div style="width:0;height:0;border-left:${sz*.13}px solid transparent;border-right:${sz*.13}px solid transparent;border-top:${sz*.18}px solid ${c};margin:0 auto"></div>
         <div style="width:1.5px;height:28px;background:rgba(0,0,0,.25);margin:0 auto;border-radius:1px"></div>
       </div>`;
+      el.onclick=()=>popBalloon(el,c,sz);
       document.body.appendChild(el);
-      setTimeout(()=>el.remove(),(dur+0.5)*1000);
+      setTimeout(()=>{if(el.parentNode)el.remove();},(dur+0.5)*1000);
     },i*90);
   }
   // 完了トースト
