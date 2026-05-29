@@ -717,6 +717,7 @@ let tasks=[],trash=[],cats=[
   {id:"irreg",name:"イレギュラーWF申請",color:"#C0253A"},
   {id:"demo",name:"デモ画面発行",color:"#6B35C8"},
   {id:"sched",name:"日程調整",color:"#BE185D"},
+  {id:"service",name:"役務提供",color:"#D97706"},
 ];
 let appCfg={accent:"#3A5EE5",slackWebhook:""};
 let showTrash=false;
@@ -1100,8 +1101,24 @@ function initFirebaseData(){
   _onValue(_ref(_db,"trash"),snap=>{const val=snap.val();trash=val?Object.values(val):[];refresh();});
   _onValue(_ref(_db,"cats"),snap=>{
     const val=snap.val();
-    if(val&&Array.isArray(val))cats=val;
-    else if(val&&typeof val==="object")cats=Object.values(val);
+    let loaded=[];
+    if(val&&Array.isArray(val))loaded=val;
+    else if(val&&typeof val==="object")loaded=Object.values(val);
+    // デフォルトカテゴリが未登録なら自動追加
+    const defaults=[
+      {id:"doc",name:"資料作成",color:"#3A5EE5"},
+      {id:"est",name:"見積書作成",color:"#1A7A50"},
+      {id:"sf",name:"SF申請",color:"#0E7490"},
+      {id:"credit",name:"与信WF申請",color:"#A05C00"},
+      {id:"irreg",name:"イレギュラーWF申請",color:"#C0253A"},
+      {id:"demo",name:"デモ画面発行",color:"#6B35C8"},
+      {id:"sched",name:"日程調整",color:"#BE185D"},
+      {id:"service",name:"役務提供",color:"#D97706"},
+    ];
+    let changed=false;
+    defaults.forEach(d=>{if(!loaded.find(c=>c.id===d.id)){loaded.push(d);changed=true;}});
+    cats=loaded;
+    if(changed)fbSet("cats",cats);
     refresh();
   });
   _onValue(_ref(_db,"cfg"),snap=>{
