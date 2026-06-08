@@ -845,8 +845,8 @@ function renderTrash(){
   document.getElementById("kanban").style.display="none";
   let tc=document.getElementById("trash-container");
   if(!tc){tc=document.createElement("div");tc.id="trash-container";tc.className="trash-view";document.getElementById("main").appendChild(tc);}
-  if(!trash.length){tc.innerHTML='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><button class="btn btn-ghost btn-sm" onclick="toggleTrash()">← Dashboardへ戻る</button><span style="font-size:15px;font-weight:600">🗑️ ゴミ箱</span></div><div style="text-align:center;padding:48px;color:var(--text3)">ゴミ箱は空です</div>';return;}
-  tc.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px"><button class="btn btn-ghost btn-sm" onclick="toggleTrash()">← Dashboardへ戻る</button><span style="font-size:15px;font-weight:600">🗑️ ゴミ箱（${trash.length}件）</span></div><button class="btn btn-danger btn-sm" onclick="emptyTrash()">すべて完全削除</button></div>`+
+  if(!trash.length){tc.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:15px;font-weight:600">🗑️ ゴミ箱</span><button class="btn btn-primary btn-sm" onclick="toggleTrash()">← Dashboardへ戻る</button></div><div style="text-align:center;padding:48px;color:var(--text3)">ゴミ箱は空です</div>';return;}
+  tc.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:15px;font-weight:600">🗑️ ゴミ箱（${trash.length}件）</span><div style="display:flex;align-items:center;gap:8px"><button class="btn btn-danger btn-sm" onclick="emptyTrash()">すべて完全削除</button><button class="btn btn-primary btn-sm" onclick="toggleTrash()">← Dashboardへ戻る</button></div></div>`+
     trash.map(t=>{
       const cat=cats.find(c=>c.id===t.cat);
       return `<div class="ti">
