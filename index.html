@@ -981,7 +981,7 @@ function _bgSpawn(){
   const ti=_bgPickType();
   const sz=ti.type==='rainbow'?56+Math.random()*16:40+Math.random()*20;
   const x=5+Math.random()*86;
-  const speedY=-(2.8+Math.random()*2.0);
+  const speedY=-(1.8+Math.random()*1.2);
   const wobbleAmp=(Math.random()-.5)*3.5;
   const phase=Math.random()*Math.PI*2;
   const windSens=0.4+Math.random()*1.4;
@@ -1035,7 +1035,7 @@ function _bgFrame(ts){
     if(!b.alive)continue;
     b.vx+=(wind*b.windSens*.017+Math.sin(ts*.0026+b.phase)*b.wobbleAmp*.014);
     b.vx*=.94;
-    b.x+=b.vx;b.y+=b.vy*3.0;
+    b.x+=b.vx;b.y+=b.vy*2.2;
     b.el.style.left=b.x+'px';b.el.style.top=b.y+'px';b.el.style.bottom='auto';
     if(b.y<-160||b.x<-90||b.x>window.innerWidth+90){b.alive=false;b.el.remove();}
   }
@@ -1090,7 +1090,16 @@ function _bgEnd(){
   cancelAnimationFrame(_bGame.rafId);
   _bGame.balloons.forEach(b=>{b.alive=false;b.el.remove();});
   _bGame.balloons=[];
+  // ★ 即座にオーバーレイをクリックスルーにしてフリーズ防止
+  _bGame.bg.style.pointerEvents='none';
+  _bGame.bg.style.opacity='0';
+  if(_bGame.hud)_bGame.hud.remove();
+  if(_bGame.pops)_bGame.pops.remove();
   const finalScore=_bGame.score;
+  const bgEl=_bGame.bg;
+  setTimeout(()=>bgEl.remove(),420);
+  _bGame=null;
+  // スコア保存（非同期・画面はすでに操作可能）
   const userName=_lsUser;
   if(_dbReady&&userName){
     const path='scores/'+userName;
@@ -1099,11 +1108,9 @@ function _bgEnd(){
       const cur=snap.val()||{};
       const newBest=Math.max(cur.best||0,finalScore);
       fbSet(path,{best:newBest,last:finalScore,games:(cur.games||0)+1,date:new Date().toLocaleDateString('ja-JP')});
-      setTimeout(()=>_bgShowResult(finalScore),500);
     });
-  } else {
-    setTimeout(()=>_bgShowResult(finalScore),500);
   }
+  setTimeout(()=>_bgShowResult(finalScore),300);
 }
 
 function _bgShowResult(finalScore){
@@ -1115,16 +1122,6 @@ function _bgShowResult(finalScore){
 }
 
 function _bgResultModal(finalScore,allScores){
-  const g=_bGame;
-  if(g){
-    // 即座にpointer-eventsを無効化してフリーズ防止
-    g.bg.style.pointerEvents='none';
-    g.bg.style.opacity='0';
-    setTimeout(()=>g.bg.remove(),400);
-    if(g.hud)g.hud.remove();
-    if(g.pops)g.pops.remove();
-    _bGame=null;
-  }
   const rankings=AUTH_USERS.map(u=>({key:u.key,name:u.name,color:u.color,best:(allScores[u.name]||{}).best||0,games:(allScores[u.name]||{}).games||0})).sort((a,b)=>b.best-a.best);
   const medal=finalScore>=20?'🥇':finalScore>=10?'🥈':finalScore>=5?'🥉':'🎈';
   const myBest=rankings.find(r=>r.name===_lsUser)?.best||0;
