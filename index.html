@@ -232,15 +232,15 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 @keyframes toast-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 @keyframes toast-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-10px)}}
 .complete-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#18171A;color:#fff;padding:12px 22px;border-radius:30px;font-size:14px;font-weight:600;z-index:99999;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:toast-in .3s ease both}
-/* GOD演出 */
-@keyframes god-ov-in{from{opacity:0}to{opacity:1}}
-@keyframes god-ov-out{from{opacity:1}to{opacity:0;transform:scale(1.04)}}
-@keyframes god-flash{0%{opacity:.9}100%{opacity:0}}
-@keyframes god-text-pop{0%{opacity:0;transform:scale(.3) rotate(-8deg)}60%{transform:scale(1.15) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}
-@keyframes god-reel-stop{0%,100%{transform:scaleY(1)}40%{transform:scaleY(1.18)}70%{transform:scaleY(.93)}}
-@keyframes god-rainbow{0%{border-color:#FFD700}16%{border-color:#FF4444}33%{border-color:#FF69B4}50%{border-color:#3A5EE5}66%{border-color:#1A7A50}83%{border-color:#9B59B6}100%{border-color:#FFD700}}
-@keyframes god-glow{0%,100%{text-shadow:0 0 20px #FFD700,0 0 40px #FF8C00}50%{text-shadow:0 0 40px #FFD700,0 0 80px #FF8C00,0 0 120px #FFD700}}
-@keyframes god-bg-pulse{0%,100%{background:rgba(0,0,0,.96)}50%{background:rgba(20,10,0,.98)}}
+/* 風船ミニゲーム */
+@keyframes bg-hud-in{from{opacity:0;transform:translateX(-50%) translateY(-12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes bg-score-float{0%{opacity:1;transform:translateY(0) translateX(-50%)}100%{opacity:0;transform:translateY(-70px) translateX(-50%)}}
+@keyframes bg-bomb-wobble{0%,100%{transform:rotate(0deg) scale(1)}30%{transform:rotate(-12deg) scale(1.05)}70%{transform:rotate(12deg) scale(1.05)}}
+@keyframes bg-rainbow-spin{to{filter:hue-rotate(360deg)}}
+@keyframes bg-result-in{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes bg-score-bump{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+@keyframes bg-flash-red{from{opacity:.35}to{opacity:0}}
+@keyframes bg-rg-appear{0%{opacity:0;transform:scale(.3) rotate(-5deg)}65%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -898,178 +898,247 @@ function drop(e,assignee){
   if(!t||t.assignee===assignee)return;
   t.assignee=assignee;window.saveTask(t);
 }
-function popBalloon(el,c,sz){
-  const rect=el.getBoundingClientRect();
-  const cx=rect.left+rect.width/2;
-  const cy=rect.top+rect.height/2;
-  el.remove();
-  // 破片を5方向に飛ばす（実際の表示位置から）
-  for(let j=0;j<5;j++){
-    const s=document.createElement("div");
-    const ps=sz*(0.18+Math.random()*0.18);
-    s.style.cssText=`position:fixed;top:${cy-ps/2}px;left:${cx-ps/2}px;width:${ps}px;height:${ps}px;background:${c};border-radius:50%;animation:bpop${j} .45s ease-out forwards;pointer-events:none;z-index:199997`;
-    document.body.appendChild(s);
-    setTimeout(()=>s.remove(),500);
-  }
-  // 「パン！」テキスト
-  const bang=document.createElement("div");
-  bang.textContent="💥";
-  bang.style.cssText=`position:fixed;top:${cy-sz*0.7}px;left:${cx}px;transform:translateX(-50%);font-size:${sz*0.7}px;animation:bpop4 .4s ease-out forwards;pointer-events:none;z-index:199997`;
-  document.body.appendChild(bang);
-  setTimeout(()=>bang.remove(),500);
+// ===== 風船ミニゲーム =====
+let _bGame=null;
+const _BG_SEC=30;
+const _BG_COLORS=["#FF4444","#3A9EE5","#FF69B4","#FF8C00","#9B59B6","#00CED1","#FF6347","#32CD32","#E91E8C","#FFAB00"];
+const _BG_POP_COLORS=["#FF4444","#FFD700","#FF69B4","#00CED1","#9B59B6","#3A9EE5","#32CD32"];
+
+function _bgPickType(){
+  const r=Math.random();
+  if(r<0.05)return{type:'otsukare',pts:3};
+  if(r<0.20)return{type:'bomb',pts:-2};
+  if(r<0.32)return{type:'rainbow',pts:5};
+  return{type:'normal',pts:1};
 }
-function launchBalloons(){
-  const colors=["#FFD700","#FF4444","#3A5EE5","#1A7A50","#FF69B4","#FF8C00","#9B59B6","#00CED1","#FF6347","#32CD32"];
-  for(let i=0;i<35;i++){
-    setTimeout(()=>{
-      const c=colors[Math.floor(Math.random()*colors.length)];
-      const sz=38+Math.random()*22;
-      const lft=3+Math.random()*94;
-      const dur=4+Math.random()*3;
-      const el=document.createElement("div");
-      el.style.cssText=`position:fixed;bottom:-90px;left:${lft}%;z-index:99998;cursor:pointer;animation:bfloat ${dur}s ease-out forwards`;
-      el.title="クリックで割る🎈";
-      el.innerHTML=`<div style="position:relative;width:${sz}px;text-align:center">
-        <div style="width:${sz}px;height:${sz*1.25}px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55) 0%,${c} 55%);border-radius:50% 50% 50% 50% / 55% 55% 45% 45%;box-shadow:inset -3px -3px 6px rgba(0,0,0,.12)"></div>
-        <div style="width:0;height:0;border-left:${sz*.13}px solid transparent;border-right:${sz*.13}px solid transparent;border-top:${sz*.18}px solid ${c};margin:0 auto"></div>
-        <div style="width:1.5px;height:28px;background:rgba(0,0,0,.25);margin:0 auto;border-radius:1px"></div>
-      </div>`;
-      el.onclick=()=>popBalloon(el,c,sz);
-      document.body.appendChild(el);
-      setTimeout(()=>{if(el.parentNode)el.remove();},(dur+0.5)*1000);
-    },i*90);
-  }
-  // 完了トースト
-  const toast=document.createElement("div");
-  toast.className="complete-toast";
-  toast.textContent="🎉 タスク完了！お疲れさまでした！";
-  document.body.appendChild(toast);
-  setTimeout(()=>{toast.style.animation="toast-out .4s ease forwards";setTimeout(()=>toast.remove(),400);},3000);
+
+function startBalloonGame(){
+  if(_bGame)return;
+  const bg=document.createElement('div');
+  bg.style.cssText=`position:fixed;inset:0;z-index:89980;background:rgba(5,5,25,.84);pointer-events:none;opacity:0;transition:opacity .4s`;
+  document.body.appendChild(bg);
+  requestAnimationFrame(()=>bg.style.opacity='1');
+  _bGame={bg,balloons:[],score:0,active:false,spawnTimer:null,rafId:null,startTs:null};
+  _bgCountdown(()=>_bgBegin());
 }
-function launchGOD(){
-  const spinChars=["7","BAR","★","♥","♦","♣","☆","3","1","🎰","🔔","🍒"];
-  const targets=["G","O","D"];
-  let skipped=false;
 
-  // オーバーレイ
-  const ov=document.createElement("div");
-  ov.style.cssText=`position:fixed;inset:0;z-index:199998;background:rgba(0,0,0,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;animation:god-ov-in .35s ease both;cursor:pointer;font-family:sans-serif`;
+function _bgCountdown(cb){
+  const el=document.createElement('div');
+  el.style.cssText=`position:fixed;inset:0;z-index:89995;display:flex;align-items:center;justify-content:center;pointer-events:none`;
+  const txt=document.createElement('div');
+  txt.style.cssText=`font-size:82px;font-weight:900;letter-spacing:.1em;font-family:sans-serif;text-shadow:0 0 50px currentColor,0 4px 24px rgba(0,0,0,.9);animation:bg-rg-appear .4s ease both;transition:all .18s ease`;
+  txt.style.color='#fff';txt.textContent='Ready...';
+  el.appendChild(txt);document.body.appendChild(el);
+  setTimeout(()=>{txt.textContent='GO!!';txt.style.color='#FFD700';txt.style.transform='scale(1.25)';
+    setTimeout(()=>txt.style.transform='scale(1)',120);},1100);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .28s';setTimeout(()=>{el.remove();cb();},280);},1900);
+}
 
-  // ヘッダー
-  const hdr=document.createElement("div");
-  hdr.style.cssText=`font-size:15px;font-weight:900;color:#FFD700;letter-spacing:.25em;text-transform:uppercase;opacity:0;animation:god-text-pop .5s .2s ease both`;
-  hdr.textContent="🎰 SLOT MACHINE 🎰";
+function _bgBegin(){
+  if(!_bGame)return;
+  _bGame.active=true;_bGame.startTs=performance.now();
+  // HUD
+  const hud=document.createElement('div');
+  hud.style.cssText=`position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:89994;animation:bg-hud-in .4s ease both;white-space:nowrap`;
+  hud.innerHTML=`<div style="background:rgba(0,0,0,.78);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.14);border-radius:40px;padding:8px 22px;display:flex;align-items:center;gap:14px;font-family:sans-serif">
+    <span style="font-size:18px">⏱</span>
+    <span id="bg-time" style="font-size:24px;font-weight:900;color:#FFD700;min-width:26px;text-align:center;font-variant-numeric:tabular-nums">${_BG_SEC}</span>
+    <span style="font-size:13px;color:rgba(255,255,255,.38)">秒</span>
+    <div style="width:1px;height:22px;background:rgba(255,255,255,.18)"></div>
+    <span style="font-size:18px">🎈</span>
+    <span id="bg-score-el" style="font-size:24px;font-weight:900;color:#fff;min-width:44px;text-align:center">0</span>
+    <span style="font-size:13px;color:rgba(255,255,255,.38)">pt</span>
+  </div>`;
+  document.body.appendChild(hud);
+  // ポップアップ用レイヤー
+  const pops=document.createElement('div');
+  pops.style.cssText=`position:fixed;inset:0;z-index:89993;pointer-events:none`;
+  document.body.appendChild(pops);
+  _bGame.hud=hud;_bGame.pops=pops;
+  _bgSpawn();
+  _bGame.spawnTimer=setInterval(_bgSpawn,920);
+  _bGame.rafId=requestAnimationFrame(_bgFrame);
+}
 
-  // スキップヒント
-  const skip=document.createElement("div");
-  skip.style.cssText=`position:absolute;bottom:24px;font-size:12px;color:rgba(255,255,255,.35);letter-spacing:.05em`;
-  skip.textContent="クリックでスキップ";
-
-  // リール3つ
-  const reelsCont=document.createElement("div");
-  reelsCont.style.cssText=`display:flex;gap:14px;align-items:center`;
-
-  const reelData=targets.map((target,i)=>{
-    const wrap=document.createElement("div");
-    wrap.style.cssText=`display:flex;flex-direction:column;align-items:center;gap:6px`;
-
-    // リール本体
-    const reel=document.createElement("div");
-    reel.style.cssText=`width:96px;height:110px;background:linear-gradient(180deg,#0f0f23,#1a1a3e);border:3px solid rgba(255,215,0,.5);border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 0 18px rgba(255,215,0,.15),inset 0 0 20px rgba(0,0,0,.5)`;
-
-    const inner=document.createElement("div");
-    inner.style.cssText=`font-size:40px;font-weight:900;color:#fff;text-align:center;line-height:1;transition:color .2s`;
-    inner.textContent=spinChars[Math.floor(Math.random()*spinChars.length)];
-    reel.appendChild(inner);
-
-    // ラベル（G / O / D）
-    const lbl=document.createElement("div");
-    lbl.style.cssText=`font-size:11px;font-weight:700;color:rgba(255,215,0,0);letter-spacing:.2em;transition:color .4s`;
-    lbl.textContent=target;
-
-    wrap.appendChild(reel);
-    wrap.appendChild(lbl);
-    reelsCont.appendChild(wrap);
-    return{reel,inner,lbl,target};
-  });
-
-  // GODテキスト（最初は非表示）
-  const godText=document.createElement("div");
-  godText.style.cssText=`font-size:0px;font-weight:900;color:#FFD700;letter-spacing:.12em;text-align:center;animation:god-glow 1.2s infinite;transition:font-size .45s cubic-bezier(.17,.67,.35,1.4)`;
-  godText.textContent="G・O・D 揃い！！！";
-
-  const godSub=document.createElement("div");
-  godSub.style.cssText=`font-size:0px;color:#fff;font-weight:700;text-align:center;opacity:0;transition:font-size .4s .15s ease,opacity .4s .15s ease`;
-  godSub.textContent="🏆 神 JACKPOT 🏆";
-
-  ov.append(hdr,reelsCont,godText,godSub,skip);
-  document.body.appendChild(ov);
-
-  // スピン開始
-  const intervals=reelData.map(({inner})=>{
-    return setInterval(()=>{inner.textContent=spinChars[Math.floor(Math.random()*spinChars.length)];},75);
-  });
-
-  function stopReel(idx,delay){
-    setTimeout(()=>{
-      if(skipped)return;
-      clearInterval(intervals[idx]);
-      const{reel,inner,lbl,target}=reelData[idx];
-      // バウンスアニメ
-      reel.style.animation="god-reel-stop .4s ease";
-      inner.textContent=target;
-      lbl.style.color="rgba(255,215,0,1)";
-      // 停止フラッシュ
-      reel.style.borderColor="#fff";
-      reel.style.boxShadow="0 0 60px rgba(255,255,255,.9),0 0 30px rgba(255,215,0,.7),inset 0 0 20px rgba(255,215,0,.2)";
-      reel.style.background="linear-gradient(180deg,#FFD700,#FF8C00)";
-      inner.style.color="#000";
-      setTimeout(()=>{
-        reel.style.background="linear-gradient(180deg,#0f0f23,#1a1a3e)";
-        reel.style.borderColor="#FFD700";
-        reel.style.boxShadow="0 0 24px rgba(255,215,0,.5),inset 0 0 20px rgba(0,0,0,.5)";
-        inner.style.color="#FFD700";
-        reel.style.animation="";
-      },320);
-    },delay);
+function _bgSpawn(){
+  if(!_bGame||!_bGame.active)return;
+  const ti=_bgPickType();
+  const sz=ti.type==='rainbow'?56+Math.random()*16:40+Math.random()*20;
+  const x=5+Math.random()*86;
+  const speedY=-(1.1+Math.random()*0.9);
+  const wobbleAmp=(Math.random()-.5)*3.5;
+  const phase=Math.random()*Math.PI*2;
+  const windSens=0.4+Math.random()*1.4;
+  const el=document.createElement('div');
+  el.style.cssText=`position:fixed;z-index:89992;cursor:pointer;pointer-events:all;user-select:none`;
+  if(ti.type==='bomb'){
+    el.innerHTML=`<div style="width:${sz}px;height:${sz}px;background:radial-gradient(circle at 35% 30%,#666 0%,#1a1a1a 55%,#000 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:${sz*.48}px;box-shadow:0 0 18px rgba(255,60,0,.55),inset -3px -3px 8px rgba(255,255,255,.08);animation:bg-bomb-wobble .5s ease-in-out infinite">💣</div>`;
+  } else if(ti.type==='rainbow'){
+    el.innerHTML=`<div style="position:relative;width:${sz}px;text-align:center">
+      <div style="width:${sz}px;height:${sz*1.25}px;background:conic-gradient(#FF0000,#FF8C00,#FFD700,#00FF00,#00CFFF,#8800FF,#FF0000);border-radius:50% 50% 50% 50%/55% 55% 45% 45%;box-shadow:0 0 22px rgba(255,255,255,.6);animation:bg-rainbow-spin 1.8s linear infinite"></div>
+      <div style="width:0;height:0;border-left:${sz*.13}px solid transparent;border-right:${sz*.13}px solid transparent;border-top:${sz*.18}px solid #FF8C00;margin:0 auto"></div>
+      <div style="width:1.5px;height:22px;background:rgba(255,255,255,.35);margin:0 auto;border-radius:1px"></div>
+      <div style="position:absolute;top:${sz*.28}px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9);white-space:nowrap">⭐5pt</div>
+    </div>`;
+  } else if(ti.type==='otsukare'){
+    const pc=['#FFB3C6','#FFD6A5','#FDFFB6','#CAFFBF','#BDE0FE','#EAD7FF'][Math.floor(Math.random()*6)];
+    el.innerHTML=`<div style="position:relative;width:${sz}px;text-align:center">
+      <div style="width:${sz}px;height:${sz*1.25}px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.75) 0%,${pc} 62%);border-radius:50% 50% 50% 50%/55% 55% 45% 45%;box-shadow:0 0 14px rgba(255,255,255,.45),inset -2px -2px 6px rgba(0,0,0,.07);display:flex;align-items:center;justify-content:center">
+        <div style="font-size:${Math.max(9,sz*.14)}px;font-weight:800;color:rgba(50,50,80,.72);text-align:center;line-height:1.25;user-select:none">お疲れ<br>様</div>
+      </div>
+      <div style="width:0;height:0;border-left:${sz*.13}px solid transparent;border-right:${sz*.13}px solid transparent;border-top:${sz*.18}px solid ${pc};margin:0 auto"></div>
+      <div style="width:1.5px;height:22px;background:rgba(0,0,0,.18);margin:0 auto;border-radius:1px"></div>
+    </div>`;
+  } else {
+    const c=_BG_COLORS[Math.floor(Math.random()*_BG_COLORS.length)];
+    el.innerHTML=`<div style="position:relative;width:${sz}px;text-align:center">
+      <div style="width:${sz}px;height:${sz*1.25}px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55) 0%,${c} 55%);border-radius:50% 50% 50% 50%/55% 55% 45% 45%;box-shadow:inset -3px -3px 6px rgba(0,0,0,.12)"></div>
+      <div style="width:0;height:0;border-left:${sz*.13}px solid transparent;border-right:${sz*.13}px solid transparent;border-top:${sz*.18}px solid ${c};margin:0 auto"></div>
+      <div style="width:1.5px;height:22px;background:rgba(0,0,0,.2);margin:0 auto;border-radius:1px"></div>
+    </div>`;
   }
+  const b={el,x:x/100*window.innerWidth,y:window.innerHeight+90,vx:0,vy:speedY,wobbleAmp,phase,windSens,type:ti.type,pts:ti.pts,sz,alive:true};
+  el.addEventListener('click',ev=>{
+    ev.stopPropagation();
+    if(!b.alive||!_bGame?.active)return;
+    b.alive=false;_bgPop(b);
+  });
+  document.body.appendChild(el);
+  _bGame.balloons.push(b);
+}
 
-  stopReel(0,1400);
-  stopReel(1,2700);
-  stopReel(2,4000);
-
-  // 全揃い演出
-  setTimeout(()=>{
-    if(skipped)return;
-    godText.style.fontSize="34px";
-    godSub.style.fontSize="18px";
-    godSub.style.opacity="1";
-    ov.style.animation="god-bg-pulse 1s infinite,god-rainbow 1.5s linear infinite";
-    ov.style.border="4px solid #FFD700";
-    // 全画面フラッシュ
-    const fl=document.createElement("div");
-    fl.style.cssText=`position:fixed;inset:0;z-index:299999;background:#FFD700;pointer-events:none;animation:god-flash .55s ease-out forwards`;
-    document.body.appendChild(fl);
-    setTimeout(()=>fl.remove(),600);
-  },4400);
-
-  function finishGOD(){
-    skipped=true;
-    intervals.forEach(clearInterval);
-    ov.style.animation="god-ov-out .4s ease forwards";
-    setTimeout(()=>{ov.remove();launchBalloons();},420);
+function _bgFrame(ts){
+  if(!_bGame||!_bGame.active)return;
+  const elapsed=(ts-_bGame.startTs)/1000;
+  const left=Math.max(0,_BG_SEC-elapsed);
+  const timeEl=document.getElementById('bg-time');
+  if(timeEl){timeEl.textContent=Math.ceil(left);timeEl.style.color=left<=5?'#FF4444':'#FFD700';}
+  // 風：複数sin波を合成して不規則な動き
+  const wind=Math.sin(ts*.00082)*2.8+Math.sin(ts*.00213)*1.7+Math.sin(ts*.00051)*.9;
+  for(const b of _bGame.balloons){
+    if(!b.alive)continue;
+    b.vx+=(wind*b.windSens*.017+Math.sin(ts*.0026+b.phase)*b.wobbleAmp*.014);
+    b.vx*=.94;
+    b.x+=b.vx;b.y+=b.vy*1.9;
+    b.el.style.left=b.x+'px';b.el.style.top=b.y+'px';b.el.style.bottom='auto';
+    if(b.y<-160||b.x<-90||b.x>window.innerWidth+90){b.alive=false;b.el.remove();}
   }
+  _bGame.balloons=_bGame.balloons.filter(b=>b.alive);
+  if(left<=0){_bgEnd();return;}
+  _bGame.rafId=requestAnimationFrame(_bgFrame);
+}
 
-  // 自動終了（6.5秒後）
-  const autoClose=setTimeout(finishGOD,6500);
-  // クリックでスキップ
-  ov.onclick=()=>{clearTimeout(autoClose);finishGOD();};
+function _bgPop(b){
+  const rect=b.el.getBoundingClientRect();
+  const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  b.el.remove();
+  _bGame.score+=b.pts;
+  const sc=document.getElementById('bg-score-el');
+  if(sc){sc.textContent=_bGame.score;sc.style.animation='none';requestAnimationFrame(()=>{sc.style.animation='bg-score-bump .25s ease';});}
+  // スコアポップアップ
+  const ptsTxt=b.pts>0?`+${b.pts}pt`:`${b.pts}pt`;
+  const popColor=b.type==='bomb'?'#FF4444':b.type==='rainbow'?'#FFD700':b.type==='otsukare'?'#FF8CD6':'#fff';
+  const pop=document.createElement('div');
+  pop.style.cssText=`position:fixed;left:${cx}px;top:${cy}px;font-size:${b.pts>=5?28:20}px;font-weight:900;color:${popColor};text-shadow:0 2px 8px rgba(0,0,0,.9);pointer-events:none;z-index:99999;animation:bg-score-float .9s ease-out forwards;font-family:sans-serif`;
+  document.body.appendChild(pop);pop.textContent=ptsTxt;
+  setTimeout(()=>pop.remove(),950);
+  // パーティクル（実際の位置から）
+  for(let i=0;i<8;i++){
+    const p=document.createElement('div');
+    const ps=4+Math.random()*6;
+    const angle=(i/8)*Math.PI*2,dist=28+Math.random()*48;
+    const pc=_BG_POP_COLORS[Math.floor(Math.random()*_BG_POP_COLORS.length)];
+    p.style.cssText=`position:fixed;left:${cx}px;top:${cy}px;width:${ps}px;height:${ps}px;background:${pc};border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);transition:all .48s ease-out`;
+    document.body.appendChild(p);
+    requestAnimationFrame(()=>{p.style.left=`${cx+Math.cos(angle)*dist}px`;p.style.top=`${cy+Math.sin(angle)*dist}px`;p.style.opacity='0';p.style.transform='translate(-50%,-50%) scale(0)';});
+    setTimeout(()=>p.remove(),500);
+  }
+  // 特殊演出
+  if(b.type==='bomb'){
+    const fl=document.createElement('div');
+    fl.style.cssText=`position:fixed;inset:0;background:rgba(255,30,0,.28);z-index:89979;pointer-events:none;animation:bg-flash-red .32s ease-out forwards`;
+    document.body.appendChild(fl);setTimeout(()=>fl.remove(),340);
+  } else if(b.type==='otsukare'){
+    ['💕','✨','🌸','⭐','🎊'].forEach((em,i)=>{
+      const h=document.createElement('div');
+      h.textContent=em;h.style.cssText=`position:fixed;left:${cx+(Math.random()-.5)*60}px;top:${cy}px;font-size:${14+Math.random()*14}px;pointer-events:none;z-index:99999;animation:bg-score-float ${.7+Math.random()*.5}s ease-out forwards`;
+      document.body.appendChild(h);setTimeout(()=>h.remove(),1300);
+    });
+  }
+}
+
+function _bgEnd(){
+  if(!_bGame)return;
+  _bGame.active=false;
+  clearInterval(_bGame.spawnTimer);
+  cancelAnimationFrame(_bGame.rafId);
+  _bGame.balloons.forEach(b=>{b.alive=false;b.el.remove();});
+  _bGame.balloons=[];
+  const finalScore=_bGame.score;
+  const userName=_lsUser;
+  if(_dbReady&&userName){
+    const path='scores/'+userName;
+    const unsub=_onValue(_ref(_db,path),snap=>{
+      unsub();
+      const cur=snap.val()||{};
+      const newBest=Math.max(cur.best||0,finalScore);
+      fbSet(path,{best:newBest,last:finalScore,games:(cur.games||0)+1,date:new Date().toLocaleDateString('ja-JP')});
+      setTimeout(()=>_bgShowResult(finalScore),500);
+    });
+  } else {
+    setTimeout(()=>_bgShowResult(finalScore),500);
+  }
+}
+
+function _bgShowResult(finalScore){
+  if(_dbReady){
+    const unsub=_onValue(_ref(_db,'scores'),snap=>{unsub();_bgResultModal(finalScore,snap.val()||{});});
+  } else {
+    _bgResultModal(finalScore,{});
+  }
+}
+
+function _bgResultModal(finalScore,allScores){
+  const g=_bGame;
+  if(g){g.bg.style.opacity='0';setTimeout(()=>g.bg.remove(),400);if(g.hud)g.hud.remove();if(g.pops)g.pops.remove();_bGame=null;}
+  const rankings=AUTH_USERS.map(u=>({key:u.key,name:u.name,color:u.color,best:(allScores[u.name]||{}).best||0,games:(allScores[u.name]||{}).games||0})).sort((a,b)=>b.best-a.best);
+  const medal=finalScore>=20?'🥇':finalScore>=10?'🥈':finalScore>=5?'🥉':'🎈';
+  const myBest=rankings.find(r=>r.name===_lsUser)?.best||0;
+  const isNewRecord=finalScore>0&&finalScore>=myBest;
+  const ov=document.createElement('div');
+  ov.style.cssText=`position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)`;
+  const card=document.createElement('div');
+  card.style.cssText=`background:#fff;border-radius:20px;padding:26px 28px;width:420px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:bg-result-in .45s ease both`;
+  card.innerHTML=`
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:50px;margin-bottom:6px">${medal}</div>
+      ${isNewRecord?`<div style="display:inline-block;background:#FFD700;color:#92400e;font-size:11px;font-weight:800;padding:2px 10px;border-radius:20px;margin-bottom:8px">🎉 NEW RECORD!</div><br>`:''}
+      <div style="font-size:13px;font-weight:600;color:#5C5A62;margin-bottom:4px">ゲーム終了！</div>
+      <div><span style="font-size:52px;font-weight:900;color:#18171A;font-family:monospace">${finalScore}</span><span style="font-size:18px;font-weight:500;color:#9B99A4;margin-left:4px">pt</span></div>
+    </div>
+    <div style="background:#F0EFE9;border-radius:14px;overflow:hidden;margin-bottom:16px">
+      <div style="padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9B99A4;background:#EFEDE6;border-bottom:1px solid #E2DFD6">🏆 メンバー最高得点ランキング</div>
+      ${rankings.map((r,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${i<rankings.length-1?'border-bottom:1px solid #E2DFD6;':''}${r.name===_lsUser?'background:#EDF0FC;':''}">
+        <div style="font-size:16px;width:22px;text-align:center">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'　'}</div>
+        <div style="width:26px;height:26px;border-radius:50%;background:${r.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0">${r.name[0]}</div>
+        <div style="flex:1;font-size:13px;font-weight:${r.name===_lsUser?700:500}">${r.name}</div>
+        <div style="font-size:16px;font-weight:900;color:#18171A;font-family:monospace">${r.best}<span style="font-size:11px;font-weight:500;color:#9B99A4;margin-left:2px">pt</span></div>
+        <div style="font-size:11px;color:#9B99A4">${r.games}回</div>
+      </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;background:#F0EFE9;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;color:#5C5A62">
+      <span>🎈 普通 <b>1pt</b></span><span>🌈 レインボー <b>5pt</b></span><span>💣 爆弾 <b>-2pt</b></span><span>💕 お疲れ様 <b>3pt</b></span>
+    </div>
+    <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">閉じる</button>
+  `;
+  ov.appendChild(card);document.body.appendChild(ov);
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
 }
 function complete(id){
   if(!confirm("このタスクを完了してゴミ箱に移動しますか？"))return;
   const ck=document.getElementById("ck"+id);const card=document.getElementById("tc"+id);
   ck.classList.add("on");card.classList.add("done");
-  launchGOD();
+  startBalloonGame();
   setTimeout(()=>{const t=tasks.find(t=>t.id===id);if(!t)return;t.deletedAt=new Date().toLocaleDateString("ja-JP");saveTrash(t);delTask(id);},340);
 }
 function toTrash(id){
