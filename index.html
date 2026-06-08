@@ -231,6 +231,15 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 @keyframes toast-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 @keyframes toast-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-10px)}}
 .complete-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#18171A;color:#fff;padding:12px 22px;border-radius:30px;font-size:14px;font-weight:600;z-index:99999;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:toast-in .3s ease both}
+/* GOD演出 */
+@keyframes god-ov-in{from{opacity:0}to{opacity:1}}
+@keyframes god-ov-out{from{opacity:1}to{opacity:0;transform:scale(1.04)}}
+@keyframes god-flash{0%{opacity:.9}100%{opacity:0}}
+@keyframes god-text-pop{0%{opacity:0;transform:scale(.3) rotate(-8deg)}60%{transform:scale(1.15) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}
+@keyframes god-reel-stop{0%,100%{transform:scaleY(1)}40%{transform:scaleY(1.18)}70%{transform:scaleY(.93)}}
+@keyframes god-rainbow{0%{border-color:#FFD700}16%{border-color:#FF4444}33%{border-color:#FF69B4}50%{border-color:#3A5EE5}66%{border-color:#1A7A50}83%{border-color:#9B59B6}100%{border-color:#FFD700}}
+@keyframes god-glow{0%,100%{text-shadow:0 0 20px #FFD700,0 0 40px #FF8C00}50%{text-shadow:0 0 40px #FFD700,0 0 80px #FF8C00,0 0 120px #FFD700}}
+@keyframes god-bg-pulse{0%,100%{background:rgba(0,0,0,.96)}50%{background:rgba(20,10,0,.98)}}
 </style>
 </head>
 <body>
@@ -921,11 +930,130 @@ function launchBalloons(){
   document.body.appendChild(toast);
   setTimeout(()=>{toast.style.animation="toast-out .4s ease forwards";setTimeout(()=>toast.remove(),400);},3000);
 }
+function launchGOD(){
+  const spinChars=["7","BAR","★","♥","♦","♣","☆","3","1","🎰","🔔","🍒"];
+  const targets=["G","O","D"];
+  let skipped=false;
+
+  // オーバーレイ
+  const ov=document.createElement("div");
+  ov.style.cssText=`position:fixed;inset:0;z-index:199998;background:rgba(0,0,0,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;animation:god-ov-in .35s ease both;cursor:pointer;font-family:sans-serif`;
+
+  // ヘッダー
+  const hdr=document.createElement("div");
+  hdr.style.cssText=`font-size:15px;font-weight:900;color:#FFD700;letter-spacing:.25em;text-transform:uppercase;opacity:0;animation:god-text-pop .5s .2s ease both`;
+  hdr.textContent="🎰 SLOT MACHINE 🎰";
+
+  // スキップヒント
+  const skip=document.createElement("div");
+  skip.style.cssText=`position:absolute;bottom:24px;font-size:12px;color:rgba(255,255,255,.35);letter-spacing:.05em`;
+  skip.textContent="クリックでスキップ";
+
+  // リール3つ
+  const reelsCont=document.createElement("div");
+  reelsCont.style.cssText=`display:flex;gap:14px;align-items:center`;
+
+  const reelData=targets.map((target,i)=>{
+    const wrap=document.createElement("div");
+    wrap.style.cssText=`display:flex;flex-direction:column;align-items:center;gap:6px`;
+
+    // リール本体
+    const reel=document.createElement("div");
+    reel.style.cssText=`width:96px;height:110px;background:linear-gradient(180deg,#0f0f23,#1a1a3e);border:3px solid rgba(255,215,0,.5);border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 0 18px rgba(255,215,0,.15),inset 0 0 20px rgba(0,0,0,.5)`;
+
+    const inner=document.createElement("div");
+    inner.style.cssText=`font-size:40px;font-weight:900;color:#fff;text-align:center;line-height:1;transition:color .2s`;
+    inner.textContent=spinChars[Math.floor(Math.random()*spinChars.length)];
+    reel.appendChild(inner);
+
+    // ラベル（G / O / D）
+    const lbl=document.createElement("div");
+    lbl.style.cssText=`font-size:11px;font-weight:700;color:rgba(255,215,0,0);letter-spacing:.2em;transition:color .4s`;
+    lbl.textContent=target;
+
+    wrap.appendChild(reel);
+    wrap.appendChild(lbl);
+    reelsCont.appendChild(wrap);
+    return{reel,inner,lbl,target};
+  });
+
+  // GODテキスト（最初は非表示）
+  const godText=document.createElement("div");
+  godText.style.cssText=`font-size:0px;font-weight:900;color:#FFD700;letter-spacing:.12em;text-align:center;animation:god-glow 1.2s infinite;transition:font-size .45s cubic-bezier(.17,.67,.35,1.4)`;
+  godText.textContent="G・O・D 揃い！！！";
+
+  const godSub=document.createElement("div");
+  godSub.style.cssText=`font-size:0px;color:#fff;font-weight:700;text-align:center;opacity:0;transition:font-size .4s .15s ease,opacity .4s .15s ease`;
+  godSub.textContent="🏆 神 JACKPOT 🏆";
+
+  ov.append(hdr,reelsCont,godText,godSub,skip);
+  document.body.appendChild(ov);
+
+  // スピン開始
+  const intervals=reelData.map(({inner})=>{
+    return setInterval(()=>{inner.textContent=spinChars[Math.floor(Math.random()*spinChars.length)];},75);
+  });
+
+  function stopReel(idx,delay){
+    setTimeout(()=>{
+      if(skipped)return;
+      clearInterval(intervals[idx]);
+      const{reel,inner,lbl,target}=reelData[idx];
+      // バウンスアニメ
+      reel.style.animation="god-reel-stop .4s ease";
+      inner.textContent=target;
+      lbl.style.color="rgba(255,215,0,1)";
+      // 停止フラッシュ
+      reel.style.borderColor="#fff";
+      reel.style.boxShadow="0 0 60px rgba(255,255,255,.9),0 0 30px rgba(255,215,0,.7),inset 0 0 20px rgba(255,215,0,.2)";
+      reel.style.background="linear-gradient(180deg,#FFD700,#FF8C00)";
+      inner.style.color="#000";
+      setTimeout(()=>{
+        reel.style.background="linear-gradient(180deg,#0f0f23,#1a1a3e)";
+        reel.style.borderColor="#FFD700";
+        reel.style.boxShadow="0 0 24px rgba(255,215,0,.5),inset 0 0 20px rgba(0,0,0,.5)";
+        inner.style.color="#FFD700";
+        reel.style.animation="";
+      },320);
+    },delay);
+  }
+
+  stopReel(0,1400);
+  stopReel(1,2700);
+  stopReel(2,4000);
+
+  // 全揃い演出
+  setTimeout(()=>{
+    if(skipped)return;
+    godText.style.fontSize="34px";
+    godSub.style.fontSize="18px";
+    godSub.style.opacity="1";
+    ov.style.animation="god-bg-pulse 1s infinite,god-rainbow 1.5s linear infinite";
+    ov.style.border="4px solid #FFD700";
+    // 全画面フラッシュ
+    const fl=document.createElement("div");
+    fl.style.cssText=`position:fixed;inset:0;z-index:299999;background:#FFD700;pointer-events:none;animation:god-flash .55s ease-out forwards`;
+    document.body.appendChild(fl);
+    setTimeout(()=>fl.remove(),600);
+  },4400);
+
+  function finishGOD(){
+    skipped=true;
+    intervals.forEach(clearInterval);
+    ov.style.animation="god-ov-out .4s ease forwards";
+    setTimeout(()=>{ov.remove();launchBalloons();},420);
+  }
+
+  // 自動終了（6.5秒後）
+  const autoClose=setTimeout(finishGOD,6500);
+  // クリックでスキップ
+  ov.onclick=()=>{clearTimeout(autoClose);finishGOD();};
+}
 function complete(id){
   if(!confirm("このタスクを完了してゴミ箱に移動しますか？"))return;
   const ck=document.getElementById("ck"+id);const card=document.getElementById("tc"+id);
   ck.classList.add("on");card.classList.add("done");
-  launchBalloons();
+  launchGOD();
   setTimeout(()=>{const t=tasks.find(t=>t.id===id);if(!t)return;t.deletedAt=new Date().toLocaleDateString("ja-JP");saveTrash(t);delTask(id);},340);
 }
 function toTrash(id){
