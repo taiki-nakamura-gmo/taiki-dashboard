@@ -900,7 +900,7 @@ function drop(e,assignee){
 }
 // ===== 風船ミニゲーム =====
 let _bGame=null;
-const _BG_SEC=30;
+const _BG_SEC=10;
 const _BG_COLORS=["#FF4444","#3A9EE5","#FF69B4","#FF8C00","#9B59B6","#00CED1","#FF6347","#32CD32","#E91E8C","#FFAB00"];
 const _BG_POP_COLORS=["#FF4444","#FFD700","#FF69B4","#00CED1","#9B59B6","#3A9EE5","#32CD32"];
 
@@ -915,7 +915,7 @@ function _bgPickType(){
 function startBalloonGame(){
   if(_bGame)return;
   const bg=document.createElement('div');
-  bg.style.cssText=`position:fixed;inset:0;z-index:89980;background:rgba(5,5,25,.84);pointer-events:none;opacity:0;transition:opacity .4s`;
+  bg.style.cssText=`position:fixed;inset:0;z-index:89980;background:rgba(5,5,25,.84);pointer-events:all;opacity:0;transition:opacity .4s`;
   document.body.appendChild(bg);
   requestAnimationFrame(()=>bg.style.opacity='1');
   _bGame={bg,balloons:[],score:0,active:false,spawnTimer:null,rafId:null,startTs:null};
@@ -923,15 +923,30 @@ function startBalloonGame(){
 }
 
 function _bgCountdown(cb){
+  let done=false;
   const el=document.createElement('div');
-  el.style.cssText=`position:fixed;inset:0;z-index:89995;display:flex;align-items:center;justify-content:center;pointer-events:none`;
+  el.style.cssText=`position:fixed;inset:0;z-index:89995;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;pointer-events:all`;
   const txt=document.createElement('div');
   txt.style.cssText=`font-size:82px;font-weight:900;letter-spacing:.1em;font-family:sans-serif;text-shadow:0 0 50px currentColor,0 4px 24px rgba(0,0,0,.9);animation:bg-rg-appear .4s ease both;transition:all .18s ease`;
   txt.style.color='#fff';txt.textContent='Ready...';
-  el.appendChild(txt);document.body.appendChild(el);
-  setTimeout(()=>{txt.textContent='GO!!';txt.style.color='#FFD700';txt.style.transform='scale(1.25)';
+  const skipBtn=document.createElement('button');
+  skipBtn.textContent='スキップ →';
+  skipBtn.style.cssText=`padding:10px 24px;background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35);border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;font-family:sans-serif;backdrop-filter:blur(4px);transition:background .15s`;
+  skipBtn.onmouseover=()=>skipBtn.style.background='rgba(255,255,255,.25)';
+  skipBtn.onmouseout=()=>skipBtn.style.background='rgba(255,255,255,.15)';
+  skipBtn.onclick=()=>{
+    if(done)return;done=true;
+    // ゲームとオーバーレイをクリーンアップしてDashboardに戻る
+    el.remove();
+    if(_bGame){_bGame.bg.style.opacity='0';_bGame.bg.style.pointerEvents='none';setTimeout(()=>{if(_bGame)_bGame.bg.remove();_bGame=null;},400);}
+  };
+  el.appendChild(txt);el.appendChild(skipBtn);document.body.appendChild(el);
+  const t1=setTimeout(()=>{txt.textContent='GO!!';txt.style.color='#FFD700';txt.style.transform='scale(1.25)';
     setTimeout(()=>txt.style.transform='scale(1)',120);},1100);
-  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .28s';setTimeout(()=>{el.remove();cb();},280);},1900);
+  const t2=setTimeout(()=>{
+    if(done)return;done=true;
+    el.style.opacity='0';el.style.transition='opacity .28s';setTimeout(()=>{el.remove();cb();},280);
+  },1900);
 }
 
 function _bgBegin(){
@@ -955,8 +970,9 @@ function _bgBegin(){
   pops.style.cssText=`position:fixed;inset:0;z-index:89993;pointer-events:none`;
   document.body.appendChild(pops);
   _bGame.hud=hud;_bGame.pops=pops;
-  _bgSpawn();
-  _bGame.spawnTimer=setInterval(_bgSpawn,920);
+  // 最初に一気に5個スポーン
+  for(let i=0;i<5;i++) setTimeout(_bgSpawn, i*120);
+  _bGame.spawnTimer=setInterval(_bgSpawn,380);
   _bGame.rafId=requestAnimationFrame(_bgFrame);
 }
 
@@ -965,7 +981,7 @@ function _bgSpawn(){
   const ti=_bgPickType();
   const sz=ti.type==='rainbow'?56+Math.random()*16:40+Math.random()*20;
   const x=5+Math.random()*86;
-  const speedY=-(1.1+Math.random()*0.9);
+  const speedY=-(2.8+Math.random()*2.0);
   const wobbleAmp=(Math.random()-.5)*3.5;
   const phase=Math.random()*Math.PI*2;
   const windSens=0.4+Math.random()*1.4;
@@ -1019,7 +1035,7 @@ function _bgFrame(ts){
     if(!b.alive)continue;
     b.vx+=(wind*b.windSens*.017+Math.sin(ts*.0026+b.phase)*b.wobbleAmp*.014);
     b.vx*=.94;
-    b.x+=b.vx;b.y+=b.vy*1.9;
+    b.x+=b.vx;b.y+=b.vy*3.0;
     b.el.style.left=b.x+'px';b.el.style.top=b.y+'px';b.el.style.bottom='auto';
     if(b.y<-160||b.x<-90||b.x>window.innerWidth+90){b.alive=false;b.el.remove();}
   }
@@ -1100,7 +1116,15 @@ function _bgShowResult(finalScore){
 
 function _bgResultModal(finalScore,allScores){
   const g=_bGame;
-  if(g){g.bg.style.opacity='0';setTimeout(()=>g.bg.remove(),400);if(g.hud)g.hud.remove();if(g.pops)g.pops.remove();_bGame=null;}
+  if(g){
+    // 即座にpointer-eventsを無効化してフリーズ防止
+    g.bg.style.pointerEvents='none';
+    g.bg.style.opacity='0';
+    setTimeout(()=>g.bg.remove(),400);
+    if(g.hud)g.hud.remove();
+    if(g.pops)g.pops.remove();
+    _bGame=null;
+  }
   const rankings=AUTH_USERS.map(u=>({key:u.key,name:u.name,color:u.color,best:(allScores[u.name]||{}).best||0,games:(allScores[u.name]||{}).games||0})).sort((a,b)=>b.best-a.best);
   const medal=finalScore>=20?'🥇':finalScore>=10?'🥈':finalScore>=5?'🥉':'🎈';
   const myBest=rankings.find(r=>r.name===_lsUser)?.best||0;
@@ -1129,7 +1153,7 @@ function _bgResultModal(finalScore,allScores){
     <div style="display:flex;gap:10px;flex-wrap:wrap;background:#F0EFE9;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;color:#5C5A62">
       <span>🎈 普通 <b>1pt</b></span><span>🌈 レインボー <b>5pt</b></span><span>💣 爆弾 <b>-2pt</b></span><span>💕 お疲れ様 <b>3pt</b></span>
     </div>
-    <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">閉じる</button>
+    <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">← Dashboardへ戻る</button>
   `;
   ov.appendChild(card);document.body.appendChild(ov);
   ov.onclick=e=>{if(e.target===ov)ov.remove();};
