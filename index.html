@@ -39,7 +39,7 @@ window.dispatchEvent(new Event("fb-ready"));
   --shadow:0 1px 4px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06);
   --shadow-lg:0 8px 24px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05);
   --font:"Instrument Sans",sans-serif;--mono:monospace;
-  --cn:#3A5EE5;--cm:#1A7A50;--cs:#C0253A;--ca:#7C3AED;
+  --cn:#C0253A;--cm:#D97706;--cs:#0E7490;--ca:#1A7A50;
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
 
@@ -94,17 +94,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:14px 20px;align-items:start}
 .col{background:var(--surface2);border-radius:var(--r16);overflow:hidden;border:1px solid var(--border)}
 .col-header{padding:13px 14px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid transparent}
-.col-n .col-header{border-color:var(--cn);background:linear-gradient(135deg,#EDF0FC,#f5f7ff)}
-.col-m .col-header{border-color:var(--cm);background:linear-gradient(135deg,#E8F5EE,#f0faf4)}
-.col-s .col-header{border-color:var(--cs);background:linear-gradient(135deg,#FDEAED,#fff5f6)}
-.col-a .col-header{border-color:var(--ca);background:linear-gradient(135deg,#F3EEFF,#faf5ff)}
+.col-n .col-header{border-color:var(--cn);background:linear-gradient(135deg,#FDEAED,#fff5f6)}
+.col-m .col-header{border-color:var(--cm);background:linear-gradient(135deg,#FEF4E3,#fff9f0)}
+.col-s .col-header{border-color:var(--cs);background:linear-gradient(135deg,#E0F7FA,#f0fdff)}
+.col-a .col-header{border-color:var(--ca);background:linear-gradient(135deg,#E8F5EE,#f0faf4)}
 .col-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
 .avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
 .col-cnt{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;font-weight:600}
-.col-n .col-cnt{background:#c7d7ff;color:var(--cn)}
-.col-m .col-cnt{background:#a7f3d0;color:var(--cm)}
-.col-s .col-cnt{background:#fecdd3;color:var(--cs)}
-.col-a .col-cnt{background:#ddd6fe;color:var(--ca)}
+.col-n .col-cnt{background:#fecdd3;color:var(--cn)}
+.col-m .col-cnt{background:#fde68a;color:var(--cm)}
+.col-s .col-cnt{background:#a5f3fc;color:var(--cs)}
+.col-a .col-cnt{background:#a7f3d0;color:var(--ca)}
 .sort-bar{display:flex;gap:4px;padding:6px 10px 2px}
 .sort-btn{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text3);transition:all .12s}
 .sort-btn:hover{border-color:var(--border2);color:var(--text2)}
@@ -509,10 +509,10 @@ document.body.insertAdjacentHTML("beforeend","<div id=loading style='position:fi
 
 // ===== AUTH =====
 const AUTH_USERS = [
-  {key:'nakamura', name:'中村', color:'#3A5EE5', initial:'中'},
-  {key:'naka',     name:'中',   color:'#1A7A50', initial:'中'},
-  {key:'sakurai',  name:'櫻井', color:'#C0253A', initial:'櫻'},
-  {key:'aoki',     name:'青木', color:'#7C3AED', initial:'青'}
+  {key:'nakamura', name:'中村', color:'#C0253A', initial:'中'},
+  {key:'naka',     name:'中',   color:'#D97706', initial:'中'},
+  {key:'sakurai',  name:'櫻井', color:'#0E7490', initial:'櫻'},
+  {key:'aoki',     name:'青木', color:'#1A7A50', initial:'青'}
 ];
 const SESS_KEY      = 'taiki_sess';
 const SESS_FRESH    = 7  * 24 * 60 * 60 * 1000; // 7日以内: 自動ログイン
@@ -899,19 +899,24 @@ function drop(e,assignee){
   t.assignee=assignee;window.saveTask(t);
 }
 function popBalloon(el,c,sz){
-  el.style.animation="none";el.style.pointerEvents="none";
-  // 破片を5方向に飛ばす
+  const rect=el.getBoundingClientRect();
+  const cx=rect.left+rect.width/2;
+  const cy=rect.top+rect.height/2;
+  el.remove();
+  // 破片を5方向に飛ばす（実際の表示位置から）
   for(let j=0;j<5;j++){
     const s=document.createElement("div");
     const ps=sz*(0.18+Math.random()*0.18);
-    s.style.cssText=`position:absolute;top:${sz*0.3}px;left:${sz*0.3}px;width:${ps}px;height:${ps}px;background:${c};border-radius:50%;animation:bpop${j} .45s ease-out forwards;pointer-events:none`;
-    el.appendChild(s);
+    s.style.cssText=`position:fixed;top:${cy-ps/2}px;left:${cx-ps/2}px;width:${ps}px;height:${ps}px;background:${c};border-radius:50%;animation:bpop${j} .45s ease-out forwards;pointer-events:none;z-index:199997`;
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),500);
   }
   // 「パン！」テキスト
   const bang=document.createElement("div");
-  bang.textContent="💥";bang.style.cssText=`position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:${sz*0.7}px;animation:bpop4 .4s ease-out forwards;pointer-events:none`;
-  el.appendChild(bang);
-  setTimeout(()=>el.remove(),500);
+  bang.textContent="💥";
+  bang.style.cssText=`position:fixed;top:${cy-sz*0.7}px;left:${cx}px;transform:translateX(-50%);font-size:${sz*0.7}px;animation:bpop4 .4s ease-out forwards;pointer-events:none;z-index:199997`;
+  document.body.appendChild(bang);
+  setTimeout(()=>bang.remove(),500);
 }
 function launchBalloons(){
   const colors=["#FFD700","#FF4444","#3A5EE5","#1A7A50","#FF69B4","#FF8C00","#9B59B6","#00CED1","#FF6347","#32CD32"];
@@ -1080,7 +1085,7 @@ function openDetail(id){
   const tCats2=taskCats(t);
   const due=t.due?fmtDue(t.due,t.dueTime):null;
   const ptMap={high:"🔴 高優先度",mid:"🟡 中優先度",low:"🟢 低優先度"};
-  const mc={"中村":"#3A5EE5","中":"#1A7A50","櫻井":"#C0253A","青木":"#7C3AED"};
+  const mc={"中村":"#C0253A","中":"#D97706","櫻井":"#0E7490","青木":"#1A7A50"};
   document.getElementById("d-name").textContent=t.name;
   let tags="";
   tCats2.forEach(c=>{tags+=`<span class="tag" style="background:${c.color}18;color:${c.color};font-size:12px">${esc(c.name)}</span>`;});
