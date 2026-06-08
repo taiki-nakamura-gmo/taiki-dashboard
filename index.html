@@ -840,7 +840,7 @@ function cardHTML(t,i){
         <div style="display:flex;flex-wrap:wrap;gap:4px">
           ${tCats.map(c=>`<span class="tag" style="background:${c.color}18;color:${c.color}">${esc(c.name)}</span>`).join("")}
           ${t.priority?`<span class="tag ${pt[t.priority]}">${ptl[t.priority]}</span>`:""}
-          ${due&&due.cls==="over"?`<span class="overdue-badge">⚠️ ${due.label}</span>`:due?`<span class="tag tdue ${due.cls}">📅 ${due.label}</span>`:""}
+          ${due&&due.cls!=="over"?`<span class="tag tdue ${due.cls}">📅 ${due.label}</span>`:""}
         </div>
         <button class="stbadge ${stCls[status]}" onclick="event.stopPropagation();toggleStatus(${t.id})">${stMap[status]}</button>
       </div>
