@@ -105,10 +105,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .col-m .col-cnt{background:#fde68a;color:var(--cm)}
 .col-s .col-cnt{background:#a5f3fc;color:var(--cs)}
 .col-a .col-cnt{background:#a7f3d0;color:var(--ca)}
-.sort-bar{display:flex;gap:4px;padding:6px 10px 2px}
-.sort-btn{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text3);transition:all .12s}
-.sort-btn:hover{border-color:var(--border2);color:var(--text2)}
-.sort-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
 .col-body{padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px}
 .empty{padding:24px 10px;text-align:center;color:var(--text3);font-size:12.5px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);overflow:hidden;transition:box-shadow .14s,transform .14s;cursor:pointer;position:relative}
@@ -360,22 +356,12 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
         <div class="col-title"><div class="avatar" style="background:var(--cn)">中</div>中村</div>
         <span class="col-cnt" id="cn0">0</span>
       </div>
-      <div class="sort-bar">
-        <button class="sort-btn" onclick="setSort('n','created',this)">追加順</button>
-        <button class="sort-btn" onclick="setSort('n','priority',this)">優先度順</button>
-        <button class="sort-btn active" onclick="setSort('n','due',this)">期限順</button>
-      </div>
       <div class="col-body" id="cn" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'中村')"></div>
     </div>
     <div class="col col-m">
       <div class="col-header">
         <div class="col-title"><div class="avatar" style="background:var(--cm)">中</div>中</div>
         <span class="col-cnt" id="cm0">0</span>
-      </div>
-      <div class="sort-bar">
-        <button class="sort-btn" onclick="setSort('m','created',this)">追加順</button>
-        <button class="sort-btn" onclick="setSort('m','priority',this)">優先度順</button>
-        <button class="sort-btn active" onclick="setSort('m','due',this)">期限順</button>
       </div>
       <div class="col-body" id="cm" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'中')"></div>
     </div>
@@ -384,22 +370,12 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
         <div class="col-title"><div class="avatar" style="background:var(--cs)">櫻</div>櫻井</div>
         <span class="col-cnt" id="cs0">0</span>
       </div>
-      <div class="sort-bar">
-        <button class="sort-btn" onclick="setSort('s','created',this)">追加順</button>
-        <button class="sort-btn" onclick="setSort('s','priority',this)">優先度順</button>
-        <button class="sort-btn active" onclick="setSort('s','due',this)">期限順</button>
-      </div>
       <div class="col-body" id="cs" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'櫻井')"></div>
     </div>
     <div class="col col-a">
       <div class="col-header">
         <div class="col-title"><div class="avatar" style="background:var(--ca)">青</div>青木</div>
         <span class="col-cnt" id="ca0">0</span>
-      </div>
-      <div class="sort-bar">
-        <button class="sort-btn" onclick="setSort('a','created',this)">追加順</button>
-        <button class="sort-btn" onclick="setSort('a','priority',this)">優先度順</button>
-        <button class="sort-btn active" onclick="setSort('a','due',this)">期限順</button>
       </div>
       <div class="col-body" id="ca" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'青木')"></div>
     </div>
@@ -734,7 +710,6 @@ let tasks=[],trash=[],cats=[
 ];
 let appCfg={accent:"#3A5EE5",slackWebhook:""};
 let showTrash=false;
-let colSort={n:"due",m:"due",s:"due",a:"due"};
 let _db,_ref,_set,_remove,_onValue;
 
 function fbSet(p,v){if(_db)_set(_ref(_db,p),v);}
@@ -770,37 +745,27 @@ function updateStats(){
   if(banner){banner.style.display=overdue>0?"block":"none";const cnt=document.getElementById("overdue-cnt");if(cnt)cnt.textContent=overdue;}
 }
 const _colMap={n:{id:"cn",name:"中村",cnt:"cn0"},m:{id:"cm",name:"中",cnt:"cm0"},s:{id:"cs",name:"櫻井",cnt:"cs0"},a:{id:"ca",name:"青木",cnt:"ca0"}};
+function sortByDue(list){
+  return [...list].sort((a,b)=>{if(!a.due&&!b.due)return 0;if(!a.due)return 1;if(!b.due)return-1;return a.due.localeCompare(b.due);});
+}
 function renderCol(colKey){
   const col=_colMap[colKey];
   const el=document.getElementById(col.id);
-  const list=sortTasks(tasks.filter(t=>t.assignee===col.name),colSort[colKey]);
+  const list=sortByDue(tasks.filter(t=>t.assignee===col.name));
   document.getElementById(col.cnt).textContent=list.length;
   if(!list.length){el.innerHTML='<div class="empty">タスクなし</div>';return;}
   el.innerHTML=list.map((t,i)=>cardHTML(t,i)).join("");
 }
-function setSort(col,sort,btn){
-  colSort[col]=sort;
-  btn.closest(".sort-bar").querySelectorAll(".sort-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  renderCol(col);
-}
-const PO={high:0,mid:1,low:2,"":3};
-function sortTasks(list,sort){
-  if(sort==="priority")return [...list].sort((a,b)=>(PO[a.priority]||3)-(PO[b.priority]||3));
-  if(sort==="due")return [...list].sort((a,b)=>{if(!a.due&&!b.due)return 0;if(!a.due)return 1;if(!b.due)return-1;return a.due.localeCompare(b.due);});
-  return [...list].sort((a,b)=>b.createdAt-a.createdAt);
-}
 function renderKanban(){
   document.getElementById("kanban").style.display="grid";
   const tv=document.getElementById("trash-container");if(tv)tv.remove();
-  // トップバーのボタンを「タスクを追加」に戻す
   const mab=document.getElementById('main-action-btn');
   if(mab){mab.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg> タスクを追加';mab.onclick=openAdd;}
-  const cols=[{id:"cn",name:"中村",cnt:"cn0",sort:"n"},{id:"cm",name:"中",cnt:"cm0",sort:"m"},{id:"cs",name:"櫻井",cnt:"cs0",sort:"s"},{id:"ca",name:"青木",cnt:"ca0",sort:"a"}];
+  const cols=[{id:"cn",name:"中村",cnt:"cn0"},{id:"cm",name:"中",cnt:"cm0"},{id:"cs",name:"櫻井",cnt:"cs0"},{id:"ca",name:"青木",cnt:"ca0"}];
   cols.forEach(col=>{
-    const el=document.getElementById(col.id);
-    const list=sortTasks(tasks.filter(t=>t.assignee===col.name),colSort[col.sort]);
+    const list=sortByDue(tasks.filter(t=>t.assignee===col.name));
     document.getElementById(col.cnt).textContent=list.length;
+    const el=document.getElementById(col.id);
     if(!list.length){el.innerHTML='<div class="empty">タスクなし</div>';return;}
     el.innerHTML=list.map((t,i)=>cardHTML(t,i)).join("");
   });
@@ -1412,15 +1377,6 @@ function initFirebase(){
 if(window._fbReady)initFirebase();
 else window.addEventListener("fb-ready",initFirebase);
 
-// ページ読み込み時に期限順ボタンを強制アクティブ化
-document.addEventListener('DOMContentLoaded',()=>{
-  ['n','m','s','a'].forEach(col=>{
-    const bar=document.querySelector(`[onclick="setSort('${col}','due',this)"]`);
-    if(!bar)return;
-    bar.closest('.sort-bar').querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
-    bar.classList.add('active');
-  });
-});
 </script>
 </body>
 </html>
