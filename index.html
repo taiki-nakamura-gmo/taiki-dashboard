@@ -1113,7 +1113,8 @@ function _bgEnd(){
   const userName=currentUser?.name;
   if(_db&&userName){
     const cur=_bgScores[userName]||{};
-    const updated={score:finalScore,games:(cur.games||0)+1,date:new Date().toLocaleDateString('ja-JP')};
+    const newBest=Math.max(cur.best||0,finalScore);
+    const updated={best:newBest,last:finalScore,games:(cur.games||0)+1,date:new Date().toLocaleDateString('ja-JP')};
     _bgScores[userName]=updated;
     fbSet('scores/'+userName,updated);
   }
@@ -1125,9 +1126,10 @@ function _bgShowResult(finalScore){
 }
 
 function _bgResultModal(finalScore,allScores){
-  const rankings=AUTH_USERS.map(u=>({key:u.key,name:u.name,color:u.color,score:(allScores[u.name]||{}).score||0,games:(allScores[u.name]||{}).games||0,date:(allScores[u.name]||{}).date||'-'})).sort((a,b)=>b.score-a.score);
+  const rankings=AUTH_USERS.map(u=>({key:u.key,name:u.name,color:u.color,best:(allScores[u.name]||{}).best||0,last:(allScores[u.name]||{}).last??'-',games:(allScores[u.name]||{}).games||0,date:(allScores[u.name]||{}).date||'-'})).sort((a,b)=>b.best-a.best);
   const medal=finalScore>=20?'🥇':finalScore>=10?'🥈':finalScore>=5?'🥉':'🎈';
-  const isNewRecord=false;
+  const myBest=rankings.find(r=>r.name===currentUser?.name)?.best||0;
+  const isNewRecord=finalScore>0&&finalScore>=myBest;
   const ov=document.createElement('div');
   ov.style.cssText=`position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)`;
   const card=document.createElement('div');
@@ -1140,13 +1142,15 @@ function _bgResultModal(finalScore,allScores){
       <div><span style="font-size:52px;font-weight:900;color:#18171A;font-family:monospace">${finalScore}</span><span style="font-size:18px;font-weight:500;color:#9B99A4;margin-left:4px">pt</span></div>
     </div>
     <div style="background:#F0EFE9;border-radius:14px;overflow:hidden;margin-bottom:16px">
-      <div style="padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9B99A4;background:#EFEDE6;border-bottom:1px solid #E2DFD6">🏆 メンバー最新スコアランキング</div>
+      <div style="padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9B99A4;background:#EFEDE6;border-bottom:1px solid #E2DFD6">🏆 ベストスコアランキング</div>
       ${rankings.map((r,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${i<rankings.length-1?'border-bottom:1px solid #E2DFD6;':''}${r.name===currentUser?.name?'background:#EDF0FC;':''}">
         <div style="font-size:16px;width:22px;text-align:center">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'　'}</div>
         <div style="width:26px;height:26px;border-radius:50%;background:${r.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0">${r.name[0]}</div>
         <div style="flex:1;font-size:13px;font-weight:${r.name===currentUser?.name?700:500}">${r.name}</div>
-        <div style="font-size:16px;font-weight:900;color:#18171A;font-family:monospace">${r.score}<span style="font-size:11px;font-weight:500;color:#9B99A4;margin-left:2px">pt</span></div>
-        <div style="font-size:11px;color:#9B99A4">${r.games}回</div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:900;color:#18171A;font-family:monospace">${r.best}<span style="font-size:11px;font-weight:500;color:#9B99A4;margin-left:2px">pt</span></div>
+          <div style="font-size:10px;color:#9B99A4">前回 ${r.last}pt</div>
+        </div>
       </div>`).join('')}
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;background:#F0EFE9;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;color:#5C5A62">
@@ -1159,7 +1163,7 @@ function _bgResultModal(finalScore,allScores){
 }
 function openGameRecords(){
   const allScores=_bgScores;
-  const rankings=AUTH_USERS.map(u=>({key:u.key,name:u.name,color:u.color,score:(allScores[u.name]||{}).score||0,games:(allScores[u.name]||{}).games||0,date:(allScores[u.name]||{}).date||'-'})).sort((a,b)=>b.score-a.score);
+  const rankings=AUTH_USERS.map(u=>({key:u.key,name:u.name,color:u.color,best:(allScores[u.name]||{}).best||0,last:(allScores[u.name]||{}).last??'-',games:(allScores[u.name]||{}).games||0,date:(allScores[u.name]||{}).date||'-'})).sort((a,b)=>b.best-a.best);
   const ov=document.createElement('div');
   ov.style.cssText=`position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)`;
   const card=document.createElement('div');
@@ -1171,7 +1175,7 @@ function openGameRecords(){
       <div style="font-size:12px;color:#9B99A4;margin-top:4px">風船割りゲーム ランキング</div>
     </div>
     <div style="background:#F0EFE9;border-radius:14px;overflow:hidden;margin-bottom:16px">
-      <div style="padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9B99A4;background:#EFEDE6;border-bottom:1px solid #E2DFD6">🏅 最新スコアランキング</div>
+      <div style="padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9B99A4;background:#EFEDE6;border-bottom:1px solid #E2DFD6">🏅 ベストスコアランキング</div>
       ${rankings.map((r,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;${i<rankings.length-1?'border-bottom:1px solid #E2DFD6;':''}${r.name===currentUser?.name?'background:#EDF0FC;':''}">
         <div style="font-size:18px;width:24px;text-align:center">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'　'}</div>
         <div style="width:28px;height:28px;border-radius:50%;background:${r.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0">${r.name[0]}</div>
@@ -1180,7 +1184,8 @@ function openGameRecords(){
           <div style="font-size:10.5px;color:#9B99A4">${r.games}回プレイ　${r.date}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:18px;font-weight:900;color:#18171A;font-family:monospace">${r.score}<span style="font-size:11px;font-weight:500;color:#9B99A4;margin-left:2px">pt</span></div>
+          <div style="font-size:18px;font-weight:900;color:#18171A;font-family:monospace">${r.best}<span style="font-size:11px;font-weight:500;color:#9B99A4;margin-left:2px">pt</span></div>
+          <div style="font-size:10.5px;color:#9B99A4">前回 ${r.last}pt</div>
         </div>
       </div>`).join('')}
     </div>
