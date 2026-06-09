@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>タスクKanly</title>
-<meta name="application-name" content="タスクKanly">
-<meta name="apple-mobile-web-app-title" content="タスクKanly">
+<title>タスクCanly</title>
+<meta name="application-name" content="タスクCanly">
+<meta name="apple-mobile-web-app-title" content="タスクCanly">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;タスクKanly&quot;,&quot;short_name&quot;:&quot;タスクKanly&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23ffffff&quot;,&quot;theme_color&quot;:&quot;%233A5EE5&quot;}">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;タスクCanly&quot;,&quot;short_name&quot;:&quot;タスクCanly&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23ffffff&quot;,&quot;theme_color&quot;:&quot;%233A5EE5&quot;}">
 <link rel="icon" id="favicon-link" href="data:,"  type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script type="module">
@@ -250,7 +250,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
   <div class="auth-box">
     <div class="auth-brand">
       <div class="auth-brand-icon">&#10022;</div>
-      <div class="auth-brand-name">タスクKanly</div>
+      <div class="auth-brand-name">タスクCanly</div>
     </div>
     <div class="auth-tagline">チームタスク管理</div>
 
@@ -313,7 +313,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 <div class="topbar">
   <div class="brand">
     <div class="brand-icon">&#10022;</div>
-    <div class="brand-name">タスクKanly</div>
+    <div class="brand-name">タスクCanly</div>
   </div>
   <div class="topbar-right">
     <div id="user-badge" class="user-badge"></div>
@@ -1337,7 +1337,7 @@ function notifySlack(text){
 function testSlack(){
   const url=(document.getElementById("slack-url")||{}).value||"";
   if(!url){alert("Webhook URLを入力してください");return;}
-  fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"payload="+encodeURIComponent(JSON.stringify({text:"✅ *タスクKanly* からのテスト通知です！\nSlack連携が正常に設定されています🎉"}))}).catch(()=>{});
+  fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"payload="+encodeURIComponent(JSON.stringify({text:"✅ *タスクCanly* からのテスト通知です！\nSlack連携が正常に設定されています🎉"}))}).catch(()=>{});
   const ss=document.getElementById("slack-status");if(ss){ss.textContent="📨 送信しました。Slackを確認してください";ss.style.color="var(--green)";}
 }
 
