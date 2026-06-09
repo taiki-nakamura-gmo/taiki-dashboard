@@ -1411,6 +1411,16 @@ function initFirebase(){
 }
 if(window._fbReady)initFirebase();
 else window.addEventListener("fb-ready",initFirebase);
+
+// ページ読み込み時に期限順ボタンを強制アクティブ化
+document.addEventListener('DOMContentLoaded',()=>{
+  ['n','m','s','a'].forEach(col=>{
+    const bar=document.querySelector(`[onclick="setSort('${col}','due',this)"]`);
+    if(!bar)return;
+    bar.closest('.sort-bar').querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+    bar.classList.add('active');
+  });
+});
 </script>
 </body>
 </html>
