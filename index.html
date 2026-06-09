@@ -1111,7 +1111,7 @@ function _bgEnd(){
   _bGame=null;
   // スコア保存（_bgScoresキャッシュを使うことでレースコンディション解消）
   const userName=currentUser?.name;
-  if(_dbReady&&userName){
+  if(_db&&userName){
     const cur=_bgScores[userName]||{};
     const newBest=Math.max(cur.best||0,finalScore);
     const updated={best:newBest,last:finalScore,games:(cur.games||0)+1,date:new Date().toLocaleDateString('ja-JP')};
