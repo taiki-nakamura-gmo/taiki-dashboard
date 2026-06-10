@@ -1569,6 +1569,7 @@ function switchPage(page){
   document.getElementById('anken-page').style.display=isTask?'none':'';
   document.getElementById('tab-task').classList.toggle('active',isTask);
   document.getElementById('tab-anken').classList.toggle('active',!isTask);
+  document.querySelector('.brand-name').textContent=isTask?'タスクCanly':'案件Canly';
   const mab=document.getElementById('main-action-btn');
   if(mab)mab.style.display=isTask?'':'none';
   if(!isTask)renderAnken();
