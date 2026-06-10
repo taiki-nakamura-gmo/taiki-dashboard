@@ -500,8 +500,10 @@ const AUTH_USERS = [
   {key:'aoki',     name:'青木', color:'#1A7A50', initial:'青'}
 ];
 const SESS_KEY      = 'taiki_sess';
-const SESS_FRESH    = 7  * 24 * 60 * 60 * 1000; // 7日以内: 自動ログイン
-const SESS_REMEMBER = 90 * 24 * 60 * 60 * 1000; // 90日以内: ユーザー記憶で短縮ログイン
+const SESS_FRESH    = 1  * 24 * 60 * 60 * 1000; // 1日以内: 自動ログイン
+const SESS_REMEMBER = 30 * 24 * 60 * 60 * 1000; // 30日以内: ユーザー記憶で短縮ログイン
+const MAX_FAIL      = 5;                          // 最大失敗回数
+const LOCK_MS       = 30 * 60 * 1000;            // ロック時間: 30分
 
 let currentUser = null;
 let authSelectedUser = null;
@@ -518,6 +520,47 @@ function saveSess(key, loginId) {
 }
 function loadSess() {
   try { return JSON.parse(localStorage.getItem(SESS_KEY) || 'null'); } catch { return null; }
+}
+// アクセスログをFirebaseに記録
+function writeAccessLog(userKey, userName, action) {
+  try {
+    const db=window._fb.db,ref=window._fb.ref,set=window._fb.set;
+    const ts=Date.now();
+    set(ref(db,`access_logs/${ts}_${userKey}`),{
+      user:userName,key:userKey,action,
+      ts:new Date().toLocaleString('ja-JP'),
+      ua:navigator.userAgent.slice(0,120)
+    });
+  } catch(e){}
+}
+// ログイン失敗カウント確認（ロック中ならエラー文字列を返す）
+async function checkFailLock(userKey) {
+  try {
+    const snap=await window._fb.get(window._fb.ref(window._fb.db,`auth_fails/${userKey}`));
+    const d=snap.val();
+    if(!d)return null;
+    if(d.lockedUntil&&Date.now()<d.lockedUntil){
+      const rem=Math.ceil((d.lockedUntil-Date.now())/60000);
+      return `ログインがロックされています。あと約${rem}分お待ちください。`;
+    }
+  } catch(e){}
+  return null;
+}
+// ログイン失敗を記録
+async function recordFail(userKey) {
+  try {
+    const ref=window._fb.ref,db=window._fb.db,set=window._fb.set,get=window._fb.get;
+    const snap=await get(ref(db,`auth_fails/${userKey}`));
+    const d=snap.val()||{count:0};
+    if(d.lockedUntil&&Date.now()<d.lockedUntil)return;
+    const count=(d.count||0)+1;
+    const lockedUntil=count>=MAX_FAIL?Date.now()+LOCK_MS:null;
+    await set(ref(db,`auth_fails/${userKey}`),{count,lastFail:Date.now(),...(lockedUntil?{lockedUntil}:{})});
+  } catch(e){}
+}
+// ログイン成功時は失敗カウントをリセット
+async function clearFail(userKey) {
+  try { await window._fb.set(window._fb.ref(window._fb.db,`auth_fails/${userKey}`),null); } catch(e){}
 }
 
 async function checkAuth() {
@@ -622,7 +665,7 @@ async function authSubmit() {
   if (!loginId)  { errEl.textContent = 'ログインIDを入力してください'; return; }
   if (!password) { errEl.textContent = 'パスワードを入力してください'; return; }
   if (mode === 'setup') {
-    if (password.length < 4) { errEl.textContent = 'パスワードは4文字以上で設定してください'; return; }
+    if (password.length < 8) { errEl.textContent = 'パスワードは8文字以上で設定してください'; return; }
     if (password !== confirm) { errEl.textContent = 'パスワードが一致しません'; return; }
   }
 
@@ -631,7 +674,6 @@ async function authSubmit() {
 
   try {
     if (mode === 'setup') {
-      // ログインIDの重複チェック
       const snap = await window._fb.get(window._fb.ref(window._fb.db, 'auth'));
       const all = snap.val() || {};
       for (const [k, v] of Object.entries(all)) {
@@ -643,15 +685,29 @@ async function authSubmit() {
       const hash = await sha256(password + salt);
       await window._fb.set(window._fb.ref(window._fb.db, 'auth/' + authSelectedUser.key), {loginId, hash, salt});
     } else {
+      // ロックアウト確認
+      const lockMsg = await checkFailLock(authSelectedUser.key);
+      if (lockMsg) { errEl.textContent = lockMsg; return; }
+
       const snap = await window._fb.get(window._fb.ref(window._fb.db, 'auth/' + authSelectedUser.key));
       const d = snap.val();
       if (!d) { errEl.textContent = 'エラーが発生しました'; return; }
-      if (d.loginId !== loginId) { errEl.textContent = 'ログインIDまたはパスワードが違います'; return; }
+      if (d.loginId !== loginId) {
+        await recordFail(authSelectedUser.key);
+        writeAccessLog(authSelectedUser.key, authSelectedUser.name, 'login_failed');
+        errEl.textContent = 'ログインIDまたはパスワードが違います'; return;
+      }
       const hash = await sha256(password + d.salt);
-      if (hash !== d.hash) { errEl.textContent = 'ログインIDまたはパスワードが違います'; return; }
+      if (hash !== d.hash) {
+        await recordFail(authSelectedUser.key);
+        writeAccessLog(authSelectedUser.key, authSelectedUser.name, 'login_failed');
+        errEl.textContent = 'ログインIDまたはパスワードが違います'; return;
+      }
+      await clearFail(authSelectedUser.key);
     }
     currentUser = authSelectedUser;
     saveSess(currentUser.key, loginId);
+    writeAccessLog(currentUser.key, currentUser.name, 'login_success');
     enterApp();
   } catch(e) {
     errEl.textContent = '通信エラーが発生しました。再度お試しください。';
@@ -673,20 +729,12 @@ function enterApp() {
 
 function doLogout() {
   if (!confirm('ログアウトしますか？')) return;
-  // tsを失効させてユーザー情報は残す（次回の短縮ログイン用）
-  const sess = loadSess();
-  if (sess) {
-    sess.ts = Date.now() - SESS_FRESH - 1000;
-    localStorage.setItem(SESS_KEY, JSON.stringify(sess));
-  }
+  if (currentUser) writeAccessLog(currentUser.key, currentUser.name, 'logout');
+  // セッションを完全削除
+  localStorage.removeItem(SESS_KEY);
   currentUser = null;
   document.getElementById('app').style.display         = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
-  // 同じユーザーで短縮ログイン画面へ
-  if (sess) {
-    authSelectedUser = AUTH_USERS.find(u => u.key === sess.key);
-    if (authSelectedUser) { showAuthForm(sess.loginId, false); return; }
-  }
   document.getElementById('auth-form').style.display   = 'none';
   document.getElementById('auth-select').style.display = 'block';
 }
