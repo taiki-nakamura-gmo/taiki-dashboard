@@ -1686,7 +1686,8 @@ function renderAnkenList(){
   const el=document.getElementById('ak-list-wrap');
   if(!el)return;
   if(!anken.length){el.innerHTML=`<div class="ak-empty">ヨミが登録されていません<br><span style="font-size:12px;margin-top:6px;display:block">「ヨミを追加」ボタンから登録できます</span></div>`;return;}
-  const sorted=[...anken].sort((a,b)=>(PROB_ORDER.indexOf(a.prob)||9)-(PROB_ORDER.indexOf(b.prob)||9));
+  const probRank=p=>{const i=PROB_ORDER.indexOf(p);return i===-1?9:i;};
+  const sorted=[...anken].sort((a,b)=>probRank(a.prob)-probRank(b.prob));
   el.innerHTML=`<div class="ak-table-wrap"><table class="ak-table">
     <thead><tr><th>会社名</th><th>提案金額</th><th>FS担当</th><th>IS担当</th><th>導入月</th><th>確度</th><th></th></tr></thead>
     <tbody>${sorted.map(d=>{
