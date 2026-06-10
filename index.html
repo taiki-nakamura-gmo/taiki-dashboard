@@ -572,7 +572,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
     </div>
     <div class="form-row"><label class="lbl">確度</label>
       <div class="sel-w"><select class="inp" id="ak-prob" style="padding:9px 28px 9px 11px">
-        <option value="confirmed">受注済み</option>
+        <option value="confirmed">受注</option>
         <option value="70">70%</option>
         <option value="50" selected>50%</option>
         <option value="25">25%</option>
@@ -1552,7 +1552,7 @@ else window.addEventListener("fb-ready",initFirebase);
 // ===== 案件Canly =====
 const ANKEN_TARGETS={nakamura:1000000,naka:700000,sakurai:300000,aoki:100000};
 const ANKEN_SCOPES={nakamura:['nakamura','naka','sakurai','aoki'],naka:['naka','sakurai','aoki'],sakurai:['sakurai'],aoki:['aoki']};
-const PROB_LABELS={confirmed:'受注済み','70':'70%','50':'50%','25':'25%',lost:'失注'};
+const PROB_LABELS={confirmed:'受注','70':'70%','50':'50%','25':'25%',lost:'失注'};
 const PROB_COLORS={confirmed:{bg:'#dcfce7',cl:'#16a34a'},'70':{bg:'#dbeafe',cl:'#1d4ed8'},'50':{bg:'#fef9c3',cl:'#a16207'},'25':{bg:'#f1f5f9',cl:'#64748b'},lost:{bg:'#fee2e2',cl:'#dc2626'}};
 const PROB_ORDER=['confirmed','70','50','25','lost'];
 
