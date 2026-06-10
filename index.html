@@ -176,6 +176,48 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 .sw:hover{transform:scale(1.18)}
 .sw.sel{border-color:var(--text)}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+/* ===== 案件Canly ===== */
+.page-tabs{display:flex;background:var(--surface2);border-radius:var(--r8);padding:3px;gap:2px}
+.page-tab{padding:5px 14px;border:none;border-radius:6px;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--text2);transition:all .14s}
+.page-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1);font-weight:600}
+.ak-subnav{display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:52px;z-index:10}
+.ak-subnav-btn{padding:5px 14px;border:none;border-radius:20px;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--text2);transition:all .14s}
+.ak-subnav-btn.active{background:var(--accent);color:#fff;font-weight:600}
+.ak-body{padding:20px 24px}
+.ak-section{margin-bottom:28px}
+.ak-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:12px}
+.ak-team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.ak-team-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);padding:16px 18px}
+.ak-card-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ak-card-title{font-size:14px;font-weight:600}
+.ak-target{font-size:10.5px;color:var(--text3);font-family:var(--mono);margin-top:1px}
+.ak-prog-wrap{margin-bottom:10px}
+.ak-prog-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.ak-prog-name{font-size:11px;font-weight:600;color:var(--text2)}
+.ak-prog-val{font-size:12px;font-weight:700;font-family:var(--mono)}
+.ak-prog-pct{font-size:10.5px;color:var(--text3);margin-left:3px}
+.ak-bar-track{height:7px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.ak-bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.ak-bar-a{background:var(--accent)}
+.ak-bar-c{background:var(--green)}
+.ak-member-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.ak-member-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);overflow:hidden}
+.ak-member-head{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.ak-member-name{font-size:13px;font-weight:600;flex:1}
+.ak-member-role{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2)}
+.ak-prob-list{padding:4px 0}
+.ak-prob-row{display:flex;align-items:center;padding:6px 14px;gap:8px}
+.ak-prob-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:52px;text-align:center;flex-shrink:0}
+.ak-prob-cnt{font-size:11px;color:var(--text3);min-width:24px}
+.ak-prob-amt{font-size:11.5px;font-weight:600;font-family:var(--mono);margin-left:auto}
+.ak-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);overflow:hidden}
+.ak-table{width:100%;border-collapse:collapse;font-size:13px}
+.ak-table th{padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
+.ak-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.ak-table tr:last-child td{border-bottom:none}
+.ak-table tr:hover td{background:var(--surface2)}
+.ak-prob-chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600}
+.ak-empty{text-align:center;padding:48px 20px;color:var(--text3);font-size:13px}
 @keyframes si{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .card{animation:si .15s ease both}
 /* NEW バッジ */
@@ -317,6 +359,10 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
     <div class="brand-icon">&#10022;</div>
     <div class="brand-name">タスクCanly</div>
   </div>
+  <div class="page-tabs">
+    <button class="page-tab active" id="tab-task" onclick="switchPage('task')">タスクCanly</button>
+    <button class="page-tab" id="tab-anken" onclick="switchPage('anken')">案件Canly</button>
+  </div>
   <div class="topbar-right">
     <div id="user-badge" class="user-badge"></div>
     <button class="btn btn-ghost btn-sm" onclick="toggleTrash()">
@@ -343,7 +389,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 
 <div id="overdue-banner">⚠️ 期限超過のタスクが <strong id="overdue-cnt">0</strong> 件あります</div>
 
-<div class="stats-bar">
+<div class="stats-bar" id="stats-bar-wrap">
   <div class="stat"><span class="dot" style="background:var(--accent)"></span>合計 <span class="num" id="st0">0</span> 件</div>
   <div class="sep"></div>
   <div class="stat"><span class="dot" style="background:var(--cn)"></span>中村 <span class="num" id="st1">0</span></div>
@@ -482,6 +528,73 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeSettings()">キャンセル</button>
       <button class="btn btn-primary" onclick="saveSettings()">保存して適用</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== 案件Canly Page ===== -->
+<div id="anken-page" style="display:none">
+  <div class="ak-subnav">
+    <button class="ak-subnav-btn active" id="ak-tab-summary" onclick="showAnkenTab('summary')">サマリー</button>
+    <button class="ak-subnav-btn" id="ak-tab-list" onclick="showAnkenTab('list')">ヨミ一覧</button>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary btn-sm" onclick="openAnkenAdd()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+      ヨミを追加
+    </button>
+  </div>
+  <div id="ak-summary-view" class="ak-body">
+    <div class="ak-section">
+      <div class="ak-section-title">チームサマリー</div>
+      <div class="ak-team-grid" id="ak-team-cards"></div>
+    </div>
+    <div class="ak-section">
+      <div class="ak-section-title">個人ヨミ</div>
+      <div class="ak-member-grid" id="ak-member-cards"></div>
+    </div>
+  </div>
+  <div id="ak-list-view" class="ak-body" style="display:none">
+    <div id="ak-list-wrap"></div>
+  </div>
+</div>
+
+<!-- Anken Modal -->
+<div class="overlay" id="ak-modal" onclick="if(event.target===this)closeAnkenModal()">
+  <div class="modal" style="width:420px">
+    <div class="modal-title" id="ak-modal-title">ヨミを追加</div>
+    <div class="form-row"><label class="lbl">会社名 <span style="color:var(--red)">*</span></label><input type="text" class="inp" id="ak-company" placeholder="例：株式会社〇〇"></div>
+    <div class="f2">
+      <div class="form-row"><label class="lbl">提案金額（円）</label><input type="number" class="inp" id="ak-amount" placeholder="0" min="0"></div>
+      <div class="form-row"><label class="lbl">導入月</label><input type="month" class="inp" id="ak-month"></div>
+    </div>
+    <div class="form-row"><label class="lbl">確度</label>
+      <div class="sel-w"><select class="inp" id="ak-prob" style="padding:9px 28px 9px 11px">
+        <option value="confirmed">受注済み</option>
+        <option value="70">70%</option>
+        <option value="50" selected>50%</option>
+        <option value="25">25%</option>
+        <option value="lost">失注</option>
+      </select></div>
+    </div>
+    <div class="f2">
+      <div class="form-row"><label class="lbl">FS担当</label>
+        <div class="sel-w"><select class="inp" id="ak-fs" style="padding:9px 28px 9px 11px">
+          <option value="nakamura">中村</option>
+          <option value="naka">中</option>
+        </select></div>
+      </div>
+      <div class="form-row"><label class="lbl">IS担当</label>
+        <div class="sel-w"><select class="inp" id="ak-is" style="padding:9px 28px 9px 11px">
+          <option value="naka">中</option>
+          <option value="sakurai">櫻井</option>
+          <option value="aoki">青木</option>
+        </select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAnkenModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveAnkenForm()">保存する</button>
     </div>
   </div>
 </div>
@@ -747,7 +860,7 @@ document.addEventListener('keydown', e => {
   }
   const inInput = ["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName);
   if (!inInput && (e.key === 'n' || e.key === 'N')) openAdd();
-  if (e.key === 'Escape') { closeModal(); closeDetail(); closeSettings(); }
+  if (e.key === 'Escape') { closeModal(); closeDetail(); closeSettings(); closeAnkenModal(); }
 });
 
 // ===== APP =====
@@ -796,7 +909,7 @@ function updateStats(){
   document.getElementById("tbtn").textContent=trash.length;
   const overdue=tasks.filter(t=>t.due&&t.due<td).length;
   const banner=document.getElementById("overdue-banner");
-  if(banner){banner.style.display=overdue>0?"block":"none";const cnt=document.getElementById("overdue-cnt");if(cnt)cnt.textContent=overdue;}
+  if(banner){banner.style.display=(overdue>0&&currentPage==='task')?"block":"none";const cnt=document.getElementById("overdue-cnt");if(cnt)cnt.textContent=overdue;}
 }
 const _colMap={n:{id:"cn",name:"中村",cnt:"cn0"},m:{id:"cm",name:"中",cnt:"cm0"},s:{id:"cs",name:"櫻井",cnt:"cs0"},a:{id:"ca",name:"青木",cnt:"ca0"}};
 function sortByDue(list){
@@ -1423,6 +1536,7 @@ function initFirebaseData(){
   _onValue(_ref(_db,"scores"),snap=>{
     const val=snap.val();_bgScores=(val&&typeof val==='object')?val:{};
   });
+  initAnkenData();
 }
 
 function initFirebase(){
@@ -1431,6 +1545,217 @@ function initFirebase(){
 }
 if(window._fbReady)initFirebase();
 else window.addEventListener("fb-ready",initFirebase);
+
+// ===== 案件Canly =====
+const ANKEN_TARGETS={nakamura:1000000,naka:700000,sakurai:300000,aoki:100000};
+const ANKEN_SCOPES={nakamura:['nakamura','naka','sakurai','aoki'],naka:['naka','sakurai','aoki'],sakurai:['sakurai'],aoki:['aoki']};
+const PROB_LABELS={confirmed:'受注済み','70':'70%','50':'50%','25':'25%',lost:'失注'};
+const PROB_COLORS={confirmed:{bg:'#dcfce7',cl:'#16a34a'},'70':{bg:'#dbeafe',cl:'#1d4ed8'},'50':{bg:'#fef9c3',cl:'#a16207'},'25':{bg:'#f1f5f9',cl:'#64748b'},lost:{bg:'#fee2e2',cl:'#dc2626'}};
+const PROB_ORDER=['confirmed','70','50','25','lost'];
+
+let anken=[];
+let currentPage='task';
+let currentAnkenTab='summary';
+
+function switchPage(page){
+  currentPage=page;
+  const isTask=page==='task';
+  document.getElementById('main').style.display=isTask?'':'none';
+  document.getElementById('stats-bar-wrap').style.display=isTask?'':'none';
+  const ob=document.getElementById('overdue-banner');
+  if(ob)ob.style.display=(isTask&&tasks.filter(t=>t.due&&t.due<today()).length>0)?'block':'none';
+  document.getElementById('anken-page').style.display=isTask?'none':'';
+  document.getElementById('tab-task').classList.toggle('active',isTask);
+  document.getElementById('tab-anken').classList.toggle('active',!isTask);
+  const mab=document.getElementById('main-action-btn');
+  if(mab)mab.style.display=isTask?'':'none';
+  if(!isTask)renderAnken();
+}
+
+function showAnkenTab(tab){
+  currentAnkenTab=tab;
+  document.getElementById('ak-summary-view').style.display=tab==='summary'?'':'none';
+  document.getElementById('ak-list-view').style.display=tab==='list'?'':'none';
+  document.getElementById('ak-tab-summary').classList.toggle('active',tab==='summary');
+  document.getElementById('ak-tab-list').classList.toggle('active',tab==='list');
+  if(tab==='list')renderAnkenList();
+  else renderAnkenSummary();
+}
+
+function getUserYomi(userKey,probs){
+  return anken.filter(d=>probs.includes(d.prob)).reduce((s,d)=>{
+    if(d.fs===userKey)s+=Number(d.amount)/2;
+    if(d.is===userKey)s+=Number(d.amount)/2;
+    return s;
+  },0);
+}
+function getScopeYomi(scopeKeys,probs){
+  return scopeKeys.reduce((s,k)=>s+getUserYomi(k,probs),0);
+}
+function fmtAmt(n){return '¥'+Math.floor(n).toLocaleString();}
+function pct(a,b){return b>0?Math.min(Math.round(a/b*100),999):0;}
+
+function renderAnken(){
+  if(currentAnkenTab==='summary')renderAnkenSummary();
+  else renderAnkenList();
+}
+
+function renderAnkenSummary(){
+  renderTeamCards();
+  renderMemberCards();
+}
+
+function renderTeamCards(){
+  const el=document.getElementById('ak-team-cards');
+  if(!el)return;
+  const scopeLabel={nakamura:'全チーム',naka:'3人チーム',sakurai:'個人',aoki:'個人'};
+  el.innerHTML=AUTH_USERS.map(u=>{
+    const scope=ANKEN_SCOPES[u.key];
+    const target=ANKEN_TARGETS[u.key];
+    const agr=getScopeYomi(scope,['50','70','confirmed']);
+    const con=getScopeYomi(scope,['70','confirmed']);
+    const agrP=pct(agr,target);
+    const conP=pct(con,target);
+    return `<div class="ak-team-card">
+      <div class="ak-card-head">
+        <div class="avatar" style="background:${u.color}">${u.initial}</div>
+        <div>
+          <div class="ak-card-title">${u.name}</div>
+          <div class="ak-target">${scopeLabel[u.key]}目標 ${fmtAmt(target)}</div>
+        </div>
+      </div>
+      <div class="ak-prog-wrap">
+        <div class="ak-prog-label">
+          <span class="ak-prog-name">A（アグレッシブ）</span>
+          <span><span class="ak-prog-val">${fmtAmt(agr)}</span><span class="ak-prog-pct">${agrP}%</span></span>
+        </div>
+        <div class="ak-bar-track"><div class="ak-bar-fill ak-bar-a" style="width:${agrP}%"></div></div>
+      </div>
+      <div class="ak-prog-wrap">
+        <div class="ak-prog-label">
+          <span class="ak-prog-name">C（コンサバ）</span>
+          <span><span class="ak-prog-val">${fmtAmt(con)}</span><span class="ak-prog-pct">${conP}%</span></span>
+        </div>
+        <div class="ak-bar-track"><div class="ak-bar-fill ak-bar-c" style="width:${conP}%"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMemberCards(){
+  const el=document.getElementById('ak-member-cards');
+  if(!el)return;
+  const fsKeys=['nakamura','naka'];
+  const isKeys=['naka','sakurai','aoki'];
+  el.innerHTML=AUTH_USERS.map(u=>{
+    const roles=[fsKeys.includes(u.key)?'FS':'',isKeys.includes(u.key)?'IS':''].filter(Boolean).join('/');
+    const rows=PROB_ORDER.map(prob=>{
+      const deals=anken.filter(d=>d.prob===prob&&(d.fs===u.key||d.is===u.key));
+      if(!deals.length)return '';
+      const amt=deals.reduce((s,d)=>{if(d.fs===u.key)s+=Number(d.amount)/2;if(d.is===u.key)s+=Number(d.amount)/2;return s;},0);
+      const pc=PROB_COLORS[prob]||{bg:'#f1f5f9',cl:'#64748b'};
+      return `<div class="ak-prob-row">
+        <span class="ak-prob-badge" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[prob]}</span>
+        <span class="ak-prob-cnt">${deals.length}件</span>
+        ${prob!=='lost'?`<span class="ak-prob-amt">${fmtAmt(amt)}</span>`:''}
+      </div>`;
+    }).join('');
+    return `<div class="ak-member-card">
+      <div class="ak-member-head">
+        <div class="avatar" style="background:${u.color}">${u.initial}</div>
+        <div class="ak-member-name">${u.name}</div>
+        <span class="ak-member-role">${roles}</span>
+      </div>
+      <div class="ak-prob-list">${rows||'<div style="padding:12px 14px;font-size:12px;color:var(--text3)">ヨミなし</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAnkenList(){
+  const el=document.getElementById('ak-list-wrap');
+  if(!el)return;
+  if(!anken.length){el.innerHTML=`<div class="ak-empty">ヨミが登録されていません<br><span style="font-size:12px;margin-top:6px;display:block">「ヨミを追加」ボタンから登録できます</span></div>`;return;}
+  const sorted=[...anken].sort((a,b)=>(PROB_ORDER.indexOf(a.prob)||9)-(PROB_ORDER.indexOf(b.prob)||9));
+  el.innerHTML=`<div class="ak-table-wrap"><table class="ak-table">
+    <thead><tr><th>会社名</th><th>提案金額</th><th>FS担当</th><th>IS担当</th><th>導入月</th><th>確度</th><th></th></tr></thead>
+    <tbody>${sorted.map(d=>{
+      const pc=PROB_COLORS[d.prob]||{bg:'#f1f5f9',cl:'#64748b'};
+      const fsU=AUTH_USERS.find(u=>u.key===d.fs);
+      const isU=AUTH_USERS.find(u=>u.key===d.is);
+      const av=u=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:${u.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700">${u.initial}</span>${u.name}</span>`;
+      return `<tr>
+        <td style="font-weight:500">${esc(d.company)}</td>
+        <td style="font-family:var(--mono);font-weight:600">${fmtAmt(Number(d.amount))}</td>
+        <td>${fsU?av(fsU):'—'}</td>
+        <td>${isU?av(isU):'—'}</td>
+        <td style="color:var(--text2)">${d.month||'—'}</td>
+        <td><span class="ak-prob-chip" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[d.prob]||d.prob}</span></td>
+        <td><div style="display:flex;gap:4px">
+          <button class="ib" onclick="openAnkenEdit(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button>
+          <button class="ib del" onclick="deleteAnken(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button>
+        </div></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+function initAnkenData(){
+  _onValue(_ref(_db,'anken'),snap=>{
+    const val=snap.val();
+    anken=val?Object.values(val):[];
+    if(currentPage==='anken')renderAnken();
+  });
+}
+
+let _editAnkenId=null;
+function openAnkenAdd(){
+  _editAnkenId=null;
+  document.getElementById('ak-modal-title').textContent='ヨミを追加';
+  document.getElementById('ak-company').value='';
+  document.getElementById('ak-amount').value='';
+  document.getElementById('ak-month').value='';
+  document.getElementById('ak-prob').value='50';
+  document.getElementById('ak-fs').value='nakamura';
+  document.getElementById('ak-is').value='sakurai';
+  document.getElementById('ak-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('ak-company').focus(),180);
+}
+function openAnkenEdit(id){
+  const d=anken.find(d=>d.id===id);if(!d)return;
+  _editAnkenId=id;
+  document.getElementById('ak-modal-title').textContent='ヨミを編集';
+  document.getElementById('ak-company').value=d.company||'';
+  document.getElementById('ak-amount').value=d.amount||'';
+  document.getElementById('ak-month').value=d.month||'';
+  document.getElementById('ak-prob').value=d.prob||'50';
+  document.getElementById('ak-fs').value=d.fs||'nakamura';
+  document.getElementById('ak-is').value=d.is||'sakurai';
+  document.getElementById('ak-modal').classList.add('open');
+}
+function closeAnkenModal(){document.getElementById('ak-modal').classList.remove('open');}
+function saveAnkenForm(){
+  const company=document.getElementById('ak-company').value.trim();
+  if(!company){const el=document.getElementById('ak-company');el.style.borderColor='var(--red)';el.focus();setTimeout(()=>el.style.borderColor='',1500);return;}
+  const data={
+    company,
+    amount:parseInt(document.getElementById('ak-amount').value)||0,
+    month:document.getElementById('ak-month').value,
+    prob:document.getElementById('ak-prob').value,
+    fs:document.getElementById('ak-fs').value,
+    is:document.getElementById('ak-is').value,
+  };
+  if(_editAnkenId){
+    const d=anken.find(d=>d.id===_editAnkenId);
+    if(d){Object.assign(d,data);fbSet('anken/'+d.id,d);}
+  } else {
+    fbSet('anken/'+Date.now(),{id:Date.now(),createdAt:Date.now(),...data});
+  }
+  closeAnkenModal();
+}
+function deleteAnken(id){
+  if(!confirm('このヨミを削除しますか？'))return;
+  fbDel('anken/'+id);
+}
 
 </script>
 </body>
