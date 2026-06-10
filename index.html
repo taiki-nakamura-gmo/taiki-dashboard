@@ -841,6 +841,7 @@ function enterApp() {
   badge.style.cssText = `background:${currentUser.color}18;color:${currentUser.color}`;
   badge.textContent   = '👤 ' + currentUser.name;
   initFirebaseData();
+  if(localStorage.getItem('canly_page')==='anken')switchPage('anken');
 }
 
 function doLogout() {
@@ -1562,6 +1563,7 @@ let currentAnkenTab='summary';
 
 function switchPage(page){
   currentPage=page;
+  localStorage.setItem('canly_page',page);
   const isTask=page==='task';
   document.getElementById('main').style.display=isTask?'':'none';
   document.getElementById('stats-bar-wrap').style.display=isTask?'':'none';
