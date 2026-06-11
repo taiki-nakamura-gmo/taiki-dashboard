@@ -221,6 +221,15 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 .ak-prob-badge{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:10px;min-width:50px;text-align:center;flex-shrink:0}
 .ak-prob-cnt{font-size:11px;color:var(--text3);min-width:28px}
 .ak-prob-amt{font-size:15px;font-weight:800;font-family:var(--mono);margin-left:auto;color:var(--text);letter-spacing:-.02em}
+.ak-prob-row{cursor:pointer;user-select:none;transition:background .1s}
+.ak-prob-chevron{width:14px;height:14px;color:var(--text3);flex-shrink:0;transition:transform .2s}
+.ak-prob-row.open .ak-prob-chevron{transform:rotate(180deg)}
+.ak-prob-detail{display:none;background:var(--surface2);border-bottom:1px solid var(--border)}
+.ak-prob-detail.open{display:block}
+.ak-deal-row{display:flex;align-items:center;padding:7px 16px 7px 40px;font-size:12px;gap:8px;border-bottom:1px solid var(--border)}
+.ak-deal-row:last-child{border-bottom:none}
+.ak-deal-name{flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ak-deal-amt{font-family:var(--mono);font-weight:700;color:var(--text);flex-shrink:0}
 .ak-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);overflow:hidden}
 .ak-table{width:100%;border-collapse:collapse;font-size:13px}
 .ak-table th{padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
@@ -1683,11 +1692,18 @@ function renderMemberCards(){
       if(!deals.length)return '';
       const amt=deals.reduce((s,d)=>{if(d.fs===u.key)s+=Number(d.amount)/2;if(d.is===u.key)s+=Number(d.amount)/2;return s;},0);
       const pc=PROB_COLORS[prob]||{bg:'#f1f5f9',cl:'#64748b'};
-      return `<div class="ak-prob-row">
+      const chevron=`<svg class="ak-prob-chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1l4 4 4-4"/></svg>`;
+      const detail=deals.map(d=>{
+        let c=0;if(d.fs===u.key)c+=Number(d.amount)/2;if(d.is===u.key)c+=Number(d.amount)/2;
+        return `<div class="ak-deal-row"><span class="ak-deal-name">${esc(d.company)}</span><span class="ak-deal-amt">${fmtAmt(c)}</span></div>`;
+      }).join('');
+      return `<div class="ak-prob-row" onclick="toggleProbRow(this)">
         <span class="ak-prob-badge" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[prob]}</span>
         <span class="ak-prob-cnt">${deals.length}件</span>
+        <span style="flex:1"></span>
         ${prob!=='lost'?`<span class="ak-prob-amt">${fmtAmt(amt)}</span>`:''}
-      </div>`;
+        ${chevron}
+      </div><div class="ak-prob-detail">${detail}</div>`;
     }).join('');
     return `<div class="ak-member-card" style="border-top:3px solid ${u.color}">
       <div class="ak-member-head" style="background:${u.color}0d">
@@ -1781,6 +1797,12 @@ function saveAnkenForm(){
     fbSet('anken/'+Date.now(),{id:Date.now(),createdAt:Date.now(),...data});
   }
   closeAnkenModal();
+}
+function toggleProbRow(el){
+  const detail=el.nextElementSibling;
+  if(!detail||!detail.classList.contains('ak-prob-detail'))return;
+  const open=detail.classList.toggle('open');
+  el.classList.toggle('open',open);
 }
 function deleteAnken(id){
   if(!confirm('このヨミを削除しますか？'))return;
