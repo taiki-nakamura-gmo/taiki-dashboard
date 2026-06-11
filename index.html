@@ -1690,20 +1690,21 @@ function renderMemberCards(){
     const rows=PROB_ORDER.map(prob=>{
       const deals=anken.filter(d=>d.prob===prob&&(d.fs===u.key||d.is===u.key));
       if(!deals.length)return '';
-      const amt=deals.reduce((s,d)=>{if(d.fs===u.key)s+=Number(d.amount)/2;if(d.is===u.key)s+=Number(d.amount)/2;return s;},0);
+      const getAmt=d=>{let c=0;if(d.fs===u.key)c+=Number(d.amount)/2;if(d.is===u.key)c+=Number(d.amount)/2;return c;};
+      const amt=deals.reduce((s,d)=>s+getAmt(d),0);
       const pc=PROB_COLORS[prob]||{bg:'#f1f5f9',cl:'#64748b'};
+      const did=`akd_${u.key}_${prob}`;
       const chevron=`<svg class="ak-prob-chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1l4 4 4-4"/></svg>`;
-      const detail=deals.map(d=>{
-        let c=0;if(d.fs===u.key)c+=Number(d.amount)/2;if(d.is===u.key)c+=Number(d.amount)/2;
-        return `<div class="ak-deal-row"><span class="ak-deal-name">${esc(d.company)}</span><span class="ak-deal-amt">${fmtAmt(c)}</span></div>`;
+      const detail=[...deals].sort((a,b)=>getAmt(b)-getAmt(a)).map(d=>{
+        return `<div class="ak-deal-row"><span class="ak-deal-name">${esc(d.company)}</span><span class="ak-deal-amt">${fmtAmt(getAmt(d))}</span></div>`;
       }).join('');
-      return `<div class="ak-prob-row" onclick="toggleProbRow(this)">
+      return `<div class="ak-prob-row" id="row_${did}" onclick="toggleProbRow('${did}')">
         <span class="ak-prob-badge" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[prob]}</span>
         <span class="ak-prob-cnt">${deals.length}件</span>
         <span style="flex:1"></span>
         ${prob!=='lost'?`<span class="ak-prob-amt">${fmtAmt(amt)}</span>`:''}
         ${chevron}
-      </div><div class="ak-prob-detail">${detail}</div>`;
+      </div><div class="ak-prob-detail" id="${did}">${detail}</div>`;
     }).join('');
     return `<div class="ak-member-card" style="border-top:3px solid ${u.color}">
       <div class="ak-member-head" style="background:${u.color}0d">
@@ -1798,11 +1799,12 @@ function saveAnkenForm(){
   }
   closeAnkenModal();
 }
-function toggleProbRow(el){
-  const detail=el.nextElementSibling;
-  if(!detail||!detail.classList.contains('ak-prob-detail'))return;
+function toggleProbRow(did){
+  const detail=document.getElementById(did);
+  const row=document.getElementById('row_'+did);
+  if(!detail||!row)return;
   const open=detail.classList.toggle('open');
-  el.classList.toggle('open',open);
+  row.classList.toggle('open',open);
 }
 function deleteAnken(id){
   if(!confirm('このヨミを削除しますか？'))return;
