@@ -268,6 +268,12 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 .card.overdue::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--red);border-radius:var(--r12) 0 0 var(--r12)}
 .card.overdue .card-inner{background:#fff8f8;padding-left:16px}
 .card.overdue .card-name{color:var(--red)}
+/* 今日期限カード強調 */
+@keyframes today-border-pulse{
+  0%,100%{border-color:var(--red);box-shadow:0 0 0 0 rgba(192,37,58,0)}
+  50%{border-color:#f87171;box-shadow:0 0 0 4px rgba(192,37,58,.22)}
+}
+.card.due-today{border-color:var(--red);border-width:2px;animation:si .15s ease both,today-border-pulse 1.4s .15s ease-in-out infinite}
 .overdue-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10.5px;font-weight:700;background:var(--red);color:#fff}
 /* 完了ボタン */
 .complete-btn{width:100%;padding:9px;background:var(--green-bg);color:var(--green);border:none;border-top:1px solid #bbf7d0;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;letter-spacing:.02em}
@@ -977,8 +983,9 @@ function cardHTML(t,i){
   const stMap={todo:"⬜ 未着手",doing:"🔵 進行中",done:"✅ 完了"};
   const stCls={todo:"st-todo",doing:"st-doing",done:"st-done2"};
   const isOverdue=t.due&&t.due<today();
+  const isDueToday=t.due&&t.due===today();
   const isNew=Date.now()-(t.createdAt||0)<24*60*60*1000;
-  const cardCls=["card",isOverdue?"overdue":"",isNew?"isnew":""].filter(Boolean).join(" ");
+  const cardCls=["card",isOverdue?"overdue":"",isDueToday?"due-today":"",isNew?"isnew":""].filter(Boolean).join(" ");
   let daysBadge="";
   if(t.due){
     const dObj=new Date(t.due+"T00:00:00"),now=new Date();now.setHours(0,0,0,0);
