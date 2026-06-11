@@ -850,7 +850,11 @@ function enterApp() {
   badge.style.cssText = `background:${currentUser.color}18;color:${currentUser.color}`;
   badge.textContent   = '👤 ' + currentUser.name;
   initFirebaseData();
-  if(localStorage.getItem('canly_page')==='anken')switchPage('anken');
+  if(localStorage.getItem('canly_page')==='anken'){
+    switchPage('anken');
+    const savedTab=localStorage.getItem('canly_tab');
+    if(savedTab==='list')showAnkenTab('list');
+  }
 }
 
 function doLogout() {
@@ -1589,6 +1593,7 @@ function switchPage(page){
 
 function showAnkenTab(tab){
   currentAnkenTab=tab;
+  localStorage.setItem('canly_tab',tab);
   document.getElementById('ak-summary-view').style.display=tab==='summary'?'':'none';
   document.getElementById('ak-list-view').style.display=tab==='list'?'':'none';
   document.getElementById('ak-tab-summary').classList.toggle('active',tab==='summary');
