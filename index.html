@@ -200,7 +200,8 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 .ak-prog-letter{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
 .ak-prog-letter-a{background:var(--accent);color:#fff}
 .ak-prog-letter-c{background:var(--green);color:#fff}
-.ak-prog-name{font-size:11.5px;font-weight:500;color:var(--text2);flex:1}
+.ak-prog-name{font-size:11.5px;font-weight:500;color:var(--text2)}
+.ak-prog-hint{font-size:10px;color:var(--text3);flex:1;padding-left:4px}
 .ak-prog-pct{font-size:11.5px;font-weight:800;padding:2px 9px;border-radius:20px;font-family:var(--mono);letter-spacing:.02em}
 .ak-prog-pct-a{background:var(--accent-bg);color:var(--accent)}
 .ak-prog-pct-c{background:#dcfce7;color:var(--green)}
@@ -1669,6 +1670,7 @@ function renderTeamCards(){
           <div class="ak-prog-row">
             <span class="ak-prog-letter ak-prog-letter-a">A</span>
             <span class="ak-prog-name">アグレッシブ</span>
+            <span class="ak-prog-hint">50％以上</span>
             <span class="ak-prog-pct ak-prog-pct-a">${agrP}%</span>
           </div>
           <div class="ak-prog-val">${fmtAmt(agr)}</div>
@@ -1679,6 +1681,7 @@ function renderTeamCards(){
           <div class="ak-prog-row">
             <span class="ak-prog-letter ak-prog-letter-c">C</span>
             <span class="ak-prog-name">コンサバ</span>
+            <span class="ak-prog-hint">70％以上</span>
             <span class="ak-prog-pct ak-prog-pct-c">${conP}%</span>
           </div>
           <div class="ak-prog-val">${fmtAmt(con)}</div>
