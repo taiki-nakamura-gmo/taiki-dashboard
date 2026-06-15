@@ -1080,6 +1080,7 @@ function drop(e,assignee){
 // ===== 風船ミニゲーム =====
 let _bGame=null;
 let _bgScores={};
+let _bgHistory=[];
 const _BG_SEC=10;
 const _BG_COLORS=["#FF4444","#3A9EE5","#FF69B4","#FF8C00","#9B59B6","#00CED1","#FF6347","#32CD32","#E91E8C","#FFAB00"];
 const _BG_POP_COLORS=["#FF4444","#FFD700","#FF69B4","#00CED1","#9B59B6","#3A9EE5","#32CD32"];
@@ -1287,6 +1288,11 @@ function _bgEnd(){
     const updated={best:newBest,last:finalScore,games:(cur.games||0)+1,date:new Date().toLocaleDateString('ja-JP')};
     _bgScores[userName]=updated;
     fbSet('scores/'+userName,updated);
+    const now=new Date();
+    const entry={name:userName,score:finalScore,date:now.toLocaleDateString('ja-JP'),time:now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})};
+    const newHist=[entry,..._bgHistory].slice(0,20);
+    _bgHistory=newHist;
+    fbSet('game_history',newHist);
   }
   setTimeout(()=>_bgShowResult(finalScore),300);
 }
@@ -1358,6 +1364,22 @@ function openGameRecords(){
           <div style="font-size:10.5px;color:#9B99A4">前回 ${r.last}pt</div>
         </div>
       </div>`).join('')}
+    </div>
+    <div style="background:#F0EFE9;border-radius:14px;overflow:hidden;margin-bottom:16px">
+      <div style="padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9B99A4;background:#EFEDE6;border-bottom:1px solid #E2DFD6">🕐 直近のゲーム履歴（最新10回）</div>
+      ${_bgHistory.length===0
+        ? `<div style="padding:20px;text-align:center;color:#9B99A4;font-size:12.5px">まだ履歴がありません</div>`
+        : _bgHistory.slice(0,10).map((h,i)=>{
+            const u=AUTH_USERS.find(u=>u.name===h.name)||{color:'#999',name:h.name};
+            return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;${i<Math.min(_bgHistory.length,10)-1?'border-bottom:1px solid #E2DFD6;':''}">
+              <div style="font-size:11px;color:#9B99A4;width:14px;text-align:center;flex-shrink:0">${i+1}</div>
+              <div style="width:24px;height:24px;border-radius:50%;background:${u.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;flex-shrink:0">${h.name[0]}</div>
+              <div style="flex:1;font-size:13px;font-weight:500">${h.name}</div>
+              <div style="font-size:10px;color:#9B99A4;text-align:right;margin-right:8px">${h.date} ${h.time}</div>
+              <div style="font-size:15px;font-weight:900;color:#18171A;font-family:monospace;min-width:36px;text-align:right">${h.score}<span style="font-size:10px;font-weight:500;color:#9B99A4;margin-left:2px">pt</span></div>
+            </div>`;
+          }).join('')
+      }
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;background:#F0EFE9;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;color:#5C5A62">
       <span>🎈 普通 <b>1pt</b></span><span>🌈 レインボー <b>5pt</b></span><span>💣 爆弾 <b>-2pt</b></span><span>💕 お疲れ様 <b>3pt</b></span>
@@ -1572,6 +1594,9 @@ function initFirebaseData(){
   });
   _onValue(_ref(_db,"scores"),snap=>{
     const val=snap.val();_bgScores=(val&&typeof val==='object')?val:{};
+  });
+  _onValue(_ref(_db,"game_history"),snap=>{
+    const val=snap.val();_bgHistory=(val&&Array.isArray(val))?val:[];
   });
   initAnkenData();
 }
