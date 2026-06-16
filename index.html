@@ -1090,7 +1090,7 @@ const _BG_POP_COLORS=["#FF4444","#FFD700","#FF69B4","#00CED1","#9B59B6","#3A9EE5
 function _bgPickType(){
   const r=Math.random();
   if(r<0.05)return{type:'otsukare',pts:3};
-  if(r<0.20)return{type:'bomb',pts:-2};
+  if(r<0.20)return{type:'bomb',pts:0};
   if(r<0.32)return{type:'rainbow',pts:5};
   return{type:'normal',pts:1};
 }
@@ -1162,7 +1162,7 @@ function _bgBegin(){
 function _bgSpawn(){
   if(!_bGame||!_bGame.active)return;
   const ti=_bgPickType();
-  const sz=ti.type==='normal'?40+Math.random()*20:28+Math.random()*10;
+  const sz=(ti.type==='normal'||ti.type==='bomb')?40+Math.random()*20:28+Math.random()*10;
   const x=5+Math.random()*86;
   const speedY=-(1.8+Math.random()*1.2);
   const wobbleAmp=(Math.random()-.5)*3.5;
@@ -1332,7 +1332,7 @@ function _bgResultModal(finalScore,allScores){
       </div>`).join('')}
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;background:#F0EFE9;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;color:#5C5A62">
-      <span>🎈 普通 <b>1pt</b></span><span>🌈 レインボー <b>5pt</b></span><span>💣 爆弾 <b>-2pt</b></span><span>💕 お疲れ様 <b>3pt</b></span>
+      <span>🎈 普通 <b>1pt</b></span><span>🌈 レインボー <b>5pt</b></span><span>💣 爆弾 <b>0pt</b></span><span>💕 お疲れ様 <b>3pt</b></span>
     </div>
     <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">← Dashboardへ戻る</button>
   `;
@@ -1384,7 +1384,7 @@ function openGameRecords(){
       }
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;background:#F0EFE9;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;color:#5C5A62">
-      <span>🎈 普通 <b>1pt</b></span><span>🌈 レインボー <b>5pt</b></span><span>💣 爆弾 <b>-2pt</b></span><span>💕 お疲れ様 <b>3pt</b></span>
+      <span>🎈 普通 <b>1pt</b></span><span>🌈 レインボー <b>5pt</b></span><span>💣 爆弾 <b>0pt</b></span><span>💕 お疲れ様 <b>3pt</b></span>
     </div>
     <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">閉じる</button>
   `;
