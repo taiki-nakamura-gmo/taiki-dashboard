@@ -1153,16 +1153,16 @@ function _bgBegin(){
   pops.style.cssText=`position:fixed;inset:0;z-index:89993;pointer-events:none`;
   document.body.appendChild(pops);
   _bGame.hud=hud;_bGame.pops=pops;
-  // 最初に一気に5個スポーン
-  for(let i=0;i<5;i++) setTimeout(_bgSpawn, i*120);
-  _bGame.spawnTimer=setInterval(_bgSpawn,380);
+  // 最初に一気に8個スポーン
+  for(let i=0;i<8;i++) setTimeout(_bgSpawn, i*100);
+  _bGame.spawnTimer=setInterval(_bgSpawn,260);
   _bGame.rafId=requestAnimationFrame(_bgFrame);
 }
 
 function _bgSpawn(){
   if(!_bGame||!_bGame.active)return;
   const ti=_bgPickType();
-  const sz=ti.type==='rainbow'?56+Math.random()*16:40+Math.random()*20;
+  const sz=ti.type==='normal'?40+Math.random()*20:28+Math.random()*10;
   const x=5+Math.random()*86;
   const speedY=-(1.8+Math.random()*1.2);
   const wobbleAmp=(Math.random()-.5)*3.5;
