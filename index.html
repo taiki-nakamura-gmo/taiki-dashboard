@@ -192,6 +192,8 @@ input[type=number]{-moz-appearance:textfield}
 .ak-section-title::before{content:'';width:3px;height:13px;border-radius:2px;background:var(--accent);flex-shrink:0}
 .ak-team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .ak-team-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+@keyframes ak-achieve-pulse{0%,100%{box-shadow:0 0 0 2px var(--green),0 2px 8px rgba(0,0,0,.06)}50%{box-shadow:0 0 0 4px #34d399,0 0 20px rgba(26,122,80,.28),0 2px 8px rgba(0,0,0,.06)}}
+.ak-team-card.con-achieved{animation:ak-achieve-pulse 1.3s ease-in-out infinite}
 .ak-card-head{padding:14px 16px 12px;border-bottom:1px solid var(--border)}
 .ak-card-head-inner{display:flex;align-items:center;gap:10px}
 .ak-card-title{font-size:15px;font-weight:700;letter-spacing:-.01em}
@@ -1763,7 +1765,7 @@ function renderTeamCards(){
     const con=getScopeYomi(scope,['70','confirmed']);
     const agrP=pct(agr,target);
     const conP=pct(con,target);
-    return `<div class="ak-team-card" style="border-top:3px solid ${u.color}">
+    return `<div class="ak-team-card${conP>=100?' con-achieved':''}" style="border-top:3px solid ${u.color}">
       <div class="ak-card-head" style="background:${u.color}0d">
         <div class="ak-card-head-inner">
           <div class="avatar" style="background:${u.color}">${u.initial}</div>
