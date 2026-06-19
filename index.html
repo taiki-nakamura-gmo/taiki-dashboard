@@ -1778,17 +1778,6 @@ function renderTeamCards(){
       <div class="ak-card-body">
         <div class="ak-prog-wrap">
           <div class="ak-prog-row">
-            <span class="ak-prog-letter ak-prog-letter-a">A</span>
-            <span class="ak-prog-name">アグレッシブ</span>
-            <span class="ak-prog-hint">50％以上</span>
-            <span class="ak-prog-pct ak-prog-pct-a">${agrP}%</span>
-          </div>
-          <div class="ak-prog-val">${fmtAmt(agr)}</div>
-          <div class="ak-bar-track"><div class="ak-bar-fill ak-bar-a" style="width:${agrP}%"></div></div>
-        </div>
-        <div class="ak-prog-sep"></div>
-        <div class="ak-prog-wrap">
-          <div class="ak-prog-row">
             <span class="ak-prog-letter ak-prog-letter-c">C</span>
             <span class="ak-prog-name">コンサバ</span>
             <span class="ak-prog-hint">70％以上</span>
@@ -1796,6 +1785,17 @@ function renderTeamCards(){
           </div>
           <div class="ak-prog-val">${fmtAmt(con)}</div>
           <div class="ak-bar-track"><div class="ak-bar-fill ak-bar-c" style="width:${conP}%"></div></div>
+        </div>
+        <div class="ak-prog-sep"></div>
+        <div class="ak-prog-wrap">
+          <div class="ak-prog-row">
+            <span class="ak-prog-letter ak-prog-letter-a">A</span>
+            <span class="ak-prog-name">アグレッシブ</span>
+            <span class="ak-prog-hint">50％以上</span>
+            <span class="ak-prog-pct ak-prog-pct-a">${agrP}%</span>
+          </div>
+          <div class="ak-prog-val">${fmtAmt(agr)}</div>
+          <div class="ak-bar-track"><div class="ak-bar-fill ak-bar-a" style="width:${agrP}%"></div></div>
         </div>
       </div>
     </div>`;
