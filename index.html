@@ -251,6 +251,12 @@ input[type=number]{-moz-appearance:textfield}
 .ak-prob-chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600}
 .ak-prob-select{border:none;border-radius:20px;padding:3px 8px;font-size:10.5px;font-weight:600;cursor:pointer;outline:none;font-family:var(--font);transition:filter .12s}
 .ak-prob-select:hover{filter:brightness(.93)}
+.ak-inline-inp{border:none;border-bottom:1.5px solid transparent;padding:3px 2px;font-family:var(--font);font-size:13px;background:transparent;color:var(--text);width:100%;outline:none;transition:border-color .14s;min-width:0}
+.ak-inline-inp:hover{border-bottom-color:var(--border2)}
+.ak-inline-inp:focus{border-bottom-color:var(--accent)}
+.ak-inline-sel{border:none;border-bottom:1.5px solid transparent;padding:3px 18px 3px 2px;font-family:var(--font);font-size:13px;background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239B99A4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 2px center;color:var(--text);outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .14s}
+.ak-inline-sel:hover{border-bottom-color:var(--border2)}
+.ak-inline-sel:focus{border-bottom-color:var(--accent)}
 .ak-empty{text-align:center;padding:48px 20px;color:var(--text3);font-size:13px}
 /* 案件Canly フォント統一（游ゴシック） */
 #anken-page{--font:"Yu Gothic","YuGothic","游ゴシック",sans-serif;--mono:"Yu Gothic","YuGothic","游ゴシック",sans-serif;font-family:var(--font)}
@@ -1936,21 +1942,17 @@ function renderAnkenList(){
   const active=[...monthDeals].filter(d=>d.prob!=='lost').sort((a,b)=>probRank(a.prob)-probRank(b.prob));
   const lost=[...monthDeals].filter(d=>d.prob==='lost');
   const av=u=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:${u.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700">${u.initial}</span>${u.name}</span>`;
+  const userOpts=(cur)=>AUTH_USERS.map(u=>`<option value="${u.key}"${cur===u.key?' selected':''}>${u.name}</option>`).join('');
   const makeRow=(d,dim=false)=>{
     const pc=PROB_COLORS[d.prob]||{bg:'#f1f5f9',cl:'#64748b'};
-    const fsU=AUTH_USERS.find(u=>u.key===d.fs);
-    const isU=AUTH_USERS.find(u=>u.key===d.is);
     return `<tr${dim?' style="opacity:.6"':''}>
-      <td style="font-weight:500;${dim?'color:var(--text2)':''}">${esc(d.company)}</td>
-      <td style="font-family:var(--mono);font-weight:600;${dim?'color:var(--text2)':''}">${fmtAmt(Number(d.amount))}</td>
-      <td>${fsU?av(fsU):'—'}</td>
-      <td>${isU?av(isU):'—'}</td>
-      <td style="color:var(--text2)">${d.month||'—'}</td>
+      <td><input class="ak-inline-inp" type="text" value="${esc(d.company)}" onblur="if(this.value.trim())updateAnkenField(${d.id},'company',this.value.trim())" style="font-weight:500;min-width:120px"></td>
+      <td><input class="ak-inline-inp" type="number" value="${d.amount||''}" onblur="updateAnkenField(${d.id},'amount',this.value)" style="font-family:var(--mono);font-weight:600;width:90px"></td>
+      <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'fs',this.value)">${userOpts(d.fs)}</select></td>
+      <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'is',this.value)">${userOpts(d.is)}</select></td>
+      <td><input class="ak-inline-inp" type="month" value="${d.month||''}" onchange="updateAnkenField(${d.id},'month',this.value)" style="width:110px;color:var(--text2)"></td>
       <td><select class="ak-prob-select" style="background:${pc.bg};color:${pc.cl}" onchange="updateAnkenProb(${d.id},this.value,this)">${PROB_ORDER.map(p=>`<option value="${p}"${d.prob===p?' selected':''}>${PROB_LABELS[p]}</option>`).join('')}</select></td>
-      <td><div style="display:flex;gap:4px">
-        <button class="ib" onclick="openAnkenEdit(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button>
-        <button class="ib del" onclick="deleteAnken(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button>
-      </div></td>
+      <td><button class="ib del" onclick="deleteAnken(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button></td>
     </tr>`;
   };
   const activeHtml=active.length
@@ -2007,6 +2009,11 @@ function openAnkenEdit(id){
   document.getElementById('ak-modal').classList.add('open');
 }
 function closeAnkenModal(){document.getElementById('ak-modal').classList.remove('open');}
+function updateAnkenField(id,field,value){
+  const d=anken.find(d=>d.id===id);if(!d)return;
+  d[field]=value;
+  fbSet('anken/'+id,d);
+}
 function updateAnkenProb(id,prob,el){
   const d=anken.find(d=>d.id===id);if(!d)return;
   d.prob=prob;
