@@ -1943,8 +1943,23 @@ function renderAnkenList(){
   const lost=[...monthDeals].filter(d=>d.prob==='lost');
   const av=u=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:${u.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700">${u.initial}</span>${u.name}</span>`;
   const userOpts=(cur)=>AUTH_USERS.map(u=>`<option value="${u.key}"${cur===u.key?' selected':''}>${u.name}</option>`).join('');
+  const avStatic=key=>{const u=AUTH_USERS.find(u=>u.key===key);return u?`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:${u.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700">${u.initial}</span>${u.name}</span>`:'—';};
+  const editBtn=`<button class="ib" onclick="openAnkenEdit(${0})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button>`;
+  const delBtn=`<button class="ib del" onclick="deleteAnken(${0})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button>`;
   const makeRow=(d,dim=false)=>{
     const pc=PROB_COLORS[d.prob]||{bg:'#f1f5f9',cl:'#64748b'};
+    const confirmed=d.prob==='confirmed';
+    if(confirmed){
+      return `<tr style="background:#f0fdf4">
+        <td style="font-weight:500">${esc(d.company)}</td>
+        <td style="font-family:var(--mono);font-weight:600">${fmtAmt(Number(d.amount))}</td>
+        <td>${avStatic(d.fs)}</td>
+        <td>${avStatic(d.is)}</td>
+        <td style="color:var(--text2)">${d.month||'—'}</td>
+        <td><span class="ak-prob-chip" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[d.prob]}</span></td>
+        <td><button class="ib" onclick="openAnkenEdit(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button></td>
+      </tr>`;
+    }
     return `<tr${dim?' style="opacity:.6"':''}>
       <td><input class="ak-inline-inp" type="text" value="${esc(d.company)}" onblur="if(this.value.trim())updateAnkenField(${d.id},'company',this.value.trim())" style="font-weight:500;min-width:120px"></td>
       <td><input class="ak-inline-inp" type="number" value="${d.amount||''}" onblur="updateAnkenField(${d.id},'amount',this.value)" style="font-family:var(--mono);font-weight:600;width:90px"></td>
