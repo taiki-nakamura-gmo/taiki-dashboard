@@ -186,9 +186,9 @@ input[type=number]{-moz-appearance:textfield}
 .ak-subnav-btn{padding:6px 16px;border:1.5px solid var(--border);border-radius:20px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text2);transition:all .14s}
 .ak-subnav-btn:hover{border-color:var(--border2);background:var(--border);color:var(--text)}
 .ak-subnav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;box-shadow:0 2px 8px rgba(58,94,229,.25)}
-.ak-month-btn{padding:4px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--text2);transition:all .14s}
-.ak-month-btn:hover{border-color:var(--border2);background:var(--border);color:var(--text)}
-.ak-month-btn.active{background:var(--text);color:#fff;border-color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.ak-month-sel{padding:6px 32px 6px 12px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text);outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235C5A62' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:border-color .14s;min-width:130px}
+.ak-month-sel:hover{border-color:var(--border2)}
+.ak-month-sel:focus{border-color:var(--accent)}
 .ak-lost-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 0;user-select:none}
 .ak-lost-toggle{padding:3px 10px;border:1px solid #fca5a5;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--red);font-family:var(--font);transition:all .12s}
 .ak-lost-toggle:hover{background:#fee2e2}
@@ -1740,10 +1740,12 @@ function switchAnkenMonth(month){
 function renderMonthTabs(){
   const el=document.getElementById('ak-month-tabs');
   if(!el)return;
-  el.innerHTML=getAvailableMonths().map(m=>{
+  const months=getAvailableMonths();
+  const opts=months.map(m=>{
     const [y,mo]=m.split('-');
-    return `<button class="ak-month-btn${m===currentAnkenMonth?' active':''}" onclick="switchAnkenMonth('${m}')">${y}年${parseInt(mo)}月</button>`;
+    return `<option value="${m}"${m===currentAnkenMonth?' selected':''}>${y}年${parseInt(mo)}月</option>`;
   }).join('');
+  el.innerHTML=`<select class="ak-month-sel" onchange="switchAnkenMonth(this.value)">${opts}</select>`;
 }
 
 function toggleLostBox(){
