@@ -186,6 +186,12 @@ input[type=number]{-moz-appearance:textfield}
 .ak-subnav-btn{padding:6px 16px;border:1.5px solid var(--border);border-radius:20px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text2);transition:all .14s}
 .ak-subnav-btn:hover{border-color:var(--border2);background:var(--border);color:var(--text)}
 .ak-subnav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;box-shadow:0 2px 8px rgba(58,94,229,.25)}
+.ak-month-btn{padding:4px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--text2);transition:all .14s}
+.ak-month-btn:hover{border-color:var(--border2);background:var(--border);color:var(--text)}
+.ak-month-btn.active{background:var(--text);color:#fff;border-color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.ak-lost-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 0;user-select:none}
+.ak-lost-toggle{padding:3px 10px;border:1px solid #fca5a5;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--red);font-family:var(--font);transition:all .12s}
+.ak-lost-toggle:hover{background:#fee2e2}
 .ak-body{padding:20px 24px}
 .ak-section{margin-bottom:32px}
 .ak-section-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:8px}
@@ -579,6 +585,7 @@ input[type=number]{-moz-appearance:textfield}
     <button class="ak-subnav-btn active" id="ak-tab-summary" onclick="showAnkenTab('summary')">サマリー</button>
     <button class="ak-subnav-btn" id="ak-tab-list" onclick="showAnkenTab('list')">ヨミ一覧</button>
     <div style="flex:1"></div>
+    <div id="ak-month-tabs" style="display:flex;gap:4px;align-items:center;margin-right:10px"></div>
     <button class="btn btn-primary btn-sm" onclick="openAnkenAdd()">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
       ヨミを追加
@@ -594,8 +601,11 @@ input[type=number]{-moz-appearance:textfield}
       <div class="ak-member-grid" id="ak-member-cards"></div>
     </div>
     <div class="ak-section" id="ak-lost-section" style="display:none">
-      <div class="ak-section-title" style="--accent:var(--red)">失注BOX</div>
-      <div id="ak-lost-cards"></div>
+      <div class="ak-lost-header" onclick="toggleLostBox()">
+        <div class="ak-section-title" style="--accent:var(--red);margin-bottom:0">失注BOX <span id="ak-lost-cnt" style="font-size:10px;color:var(--text3);font-weight:500;margin-left:4px"></span></div>
+        <button class="ak-lost-toggle" id="ak-lost-toggle-btn">▶ 開く</button>
+      </div>
+      <div id="ak-lost-cards" style="display:none;margin-top:10px"></div>
     </div>
   </div>
   <div id="ak-list-view" class="ak-body" style="display:none">
@@ -883,6 +893,8 @@ function enterApp() {
   badge.style.cssText = `background:${currentUser.color}18;color:${currentUser.color}`;
   badge.textContent   = '👤 ' + currentUser.name;
   initFirebaseData();
+  const savedMonth=localStorage.getItem('canly_month');
+  if(savedMonth)currentAnkenMonth=savedMonth;
   if(localStorage.getItem('canly_page')==='anken'){
     switchPage('anken');
     const savedTab=localStorage.getItem('canly_tab');
@@ -1708,6 +1720,40 @@ const PROB_ORDER=['confirmed','70','50','25','lost'];
 let anken=[];
 let currentPage='task';
 let currentAnkenTab='summary';
+let currentAnkenMonth=localStorage.getItem('canly_month')||'2026-06';
+
+function getMonthDeals(){return anken.filter(d=>d.month===currentAnkenMonth);}
+
+function getAvailableMonths(){
+  const months=new Set(['2026-06','2026-07']);
+  anken.forEach(d=>{if(d.month)months.add(d.month);});
+  return [...months].sort();
+}
+
+function switchAnkenMonth(month){
+  currentAnkenMonth=month;
+  localStorage.setItem('canly_month',month);
+  renderMonthTabs();
+  renderAnken();
+}
+
+function renderMonthTabs(){
+  const el=document.getElementById('ak-month-tabs');
+  if(!el)return;
+  el.innerHTML=getAvailableMonths().map(m=>{
+    const [y,mo]=m.split('-');
+    return `<button class="ak-month-btn${m===currentAnkenMonth?' active':''}" onclick="switchAnkenMonth('${m}')">${y}年${parseInt(mo)}月</button>`;
+  }).join('');
+}
+
+function toggleLostBox(){
+  const cards=document.getElementById('ak-lost-cards');
+  const btn=document.getElementById('ak-lost-toggle-btn');
+  if(!cards||!btn)return;
+  const open=cards.style.display==='none';
+  cards.style.display=open?'':'none';
+  btn.textContent=open?'▼ 閉じる':'▶ 開く';
+}
 
 function switchPage(page){
   currentPage=page;
@@ -1738,7 +1784,7 @@ function showAnkenTab(tab){
 }
 
 function getUserYomi(userKey,probs){
-  return anken.filter(d=>probs.includes(d.prob)).reduce((s,d)=>{
+  return getMonthDeals().filter(d=>probs.includes(d.prob)).reduce((s,d)=>{
     if(d.fs===userKey)s+=Number(d.amount)/2;
     if(d.is===userKey)s+=Number(d.amount)/2;
     return s;
@@ -1751,6 +1797,7 @@ function fmtAmt(n){return '¥'+Math.floor(n).toLocaleString();}
 function pct(a,b){return b>0?Math.min(Math.round(a/b*100),999):0;}
 
 function renderAnken(){
+  renderMonthTabs();
   if(currentAnkenTab==='summary')renderAnkenSummary();
   else renderAnkenList();
 }
@@ -1762,12 +1809,14 @@ function renderAnkenSummary(){
 }
 
 function renderLostBox(){
-  const lost=anken.filter(d=>d.prob==='lost');
+  const lost=getMonthDeals().filter(d=>d.prob==='lost');
   const sec=document.getElementById('ak-lost-section');
   const el=document.getElementById('ak-lost-cards');
   if(!sec||!el)return;
   if(!lost.length){sec.style.display='none';return;}
   sec.style.display='';
+  const cntEl=document.getElementById('ak-lost-cnt');
+  if(cntEl)cntEl.textContent=`${lost.length}件`;
   const av=u=>`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:18px;height:18px;border-radius:50%;background:${u.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;flex-shrink:0">${u.initial}</span>${u.name}</span>`;
   el.innerHTML=`<div style="background:var(--surface);border:1.5px solid #fca5a5;border-radius:var(--r12);overflow:hidden">
     <table class="ak-table">
@@ -1847,7 +1896,7 @@ function renderMemberCards(){
   el.innerHTML=AUTH_USERS.map(u=>{
     const roles=[fsKeys.includes(u.key)?'FS':'',isKeys.includes(u.key)?'IS':''].filter(Boolean).join('/');
     const rows=PROB_ORDER.filter(p=>p!=='lost').map(prob=>{
-      const deals=anken.filter(d=>d.prob===prob&&(d.fs===u.key||d.is===u.key));
+      const deals=getMonthDeals().filter(d=>d.prob===prob&&(d.fs===u.key||d.is===u.key));
       if(!deals.length)return '';
       const getAmt=d=>{let c=0;if(d.fs===u.key)c+=Number(d.amount)/2;if(d.is===u.key)c+=Number(d.amount)/2;return c;};
       const amt=deals.reduce((s,d)=>s+getAmt(d),0);
@@ -1879,10 +1928,11 @@ function renderMemberCards(){
 function renderAnkenList(){
   const el=document.getElementById('ak-list-wrap');
   if(!el)return;
-  if(!anken.length){el.innerHTML=`<div class="ak-empty">ヨミが登録されていません<br><span style="font-size:12px;margin-top:6px;display:block">「ヨミを追加」ボタンから登録できます</span></div>`;return;}
+  const monthDeals=getMonthDeals();
+  if(!monthDeals.length){el.innerHTML=`<div class="ak-empty">この月のヨミが登録されていません<br><span style="font-size:12px;margin-top:6px;display:block">「ヨミを追加」ボタンから登録できます</span></div>`;return;}
   const probRank=p=>{const i=PROB_ORDER.indexOf(p);return i===-1?9:i;};
-  const active=[...anken].filter(d=>d.prob!=='lost').sort((a,b)=>probRank(a.prob)-probRank(b.prob));
-  const lost=[...anken].filter(d=>d.prob==='lost');
+  const active=[...monthDeals].filter(d=>d.prob!=='lost').sort((a,b)=>probRank(a.prob)-probRank(b.prob));
+  const lost=[...monthDeals].filter(d=>d.prob==='lost');
   const av=u=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:${u.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700">${u.initial}</span>${u.name}</span>`;
   const makeRow=(d,dim=false)=>{
     const pc=PROB_COLORS[d.prob]||{bg:'#f1f5f9',cl:'#64748b'};
