@@ -264,11 +264,10 @@ input[type=number]{-moz-appearance:textfield}
 .ak-amt-cell{white-space:nowrap;font-family:var(--mono);font-weight:600;font-size:13px}
 .ak-amt-wrap{display:inline-flex;align-items:center;gap:6px}
 .ak-amt-display{color:var(--text)}
-.ak-amt-pencil{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;opacity:0;transition:opacity .14s,border-color .14s;flex-shrink:0}
+.ak-amt-pencil{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;transition:border-color .14s;flex-shrink:0}
 .ak-amt-pencil:hover{border-color:var(--accent);background:var(--surface)}
 .ak-amt-pencil svg{width:11px;height:11px;stroke:var(--text3)}
 .ak-amt-pencil:hover svg{stroke:var(--accent)}
-tr:hover .ak-amt-pencil{opacity:1}
 .ak-inline-sel{border:none;border-bottom:1.5px solid transparent;padding:3px 18px 3px 2px;font-family:var(--font);font-size:13px;font-weight:600;background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239B99A4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 2px center;color:var(--text);outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .14s}
 .ak-inline-sel:hover{border-bottom-color:var(--border2)}
 .ak-inline-sel:focus{border-bottom-color:var(--accent)}
@@ -511,7 +510,7 @@ tr:hover .ak-amt-pencil{opacity:1}
     <div class="form-row"><label class="lbl">カテゴリ（複数選択可）</label><div class="cat-chips" id="cat-chips"></div></div>
     <div class="form-row"><label class="lbl">担当者 <span style="color:var(--red)">*</span></label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="中村">中村</option><option value="中">中</option><option value="櫻井">櫻井</option><option value="青木">青木</option></select></div></div>
     <div class="form-row"><label class="lbl">優先度</label><div class="sel-w"><select id="fp"><option value="">なし</option><option value="high">🔴 高</option><option value="mid">🟡 中</option><option value="low">🟢 低</option></select></div></div>
-    <div class="form-row"><label class="lbl">期日</label><div style="display:flex;gap:8px"><input type="date" class="inp" id="fd" style="flex:1"><input type="time" class="inp" id="ft" style="flex:0 0 130px"></div></div>
+    <div class="form-row"><label class="lbl">期日</label><div style="display:flex;gap:8px"><input type="date" class="inp" id="fd" style="flex:1"><input type="text" class="inp" id="ft" placeholder="例）10:00" style="flex:0 0 130px"></div></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
       <button class="btn btn-primary" onclick="saveTaskForm()">保存する</button>
