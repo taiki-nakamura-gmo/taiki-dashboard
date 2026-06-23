@@ -217,8 +217,15 @@ input[type=number]{-moz-appearance:textfield}
 .ak-prog-pct-a{background:var(--accent-bg);color:var(--accent)}
 .ak-prog-pct-c{background:#dcfce7;color:var(--green)}
 .ak-prog-val{font-size:22px;font-weight:800;font-family:var(--mono);color:var(--text);letter-spacing:-.02em;line-height:1;margin-bottom:8px}
-.ak-bar-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
-.ak-bar-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.ak-bar-track{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;margin-bottom:8px}
+.ak-bar-fill{height:100%;border-radius:5px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.ak-goal-row{display:flex;align-items:baseline;gap:6px;margin-bottom:10px}
+.ak-goal-cur{font-size:24px;font-weight:800;font-family:var(--mono);color:var(--text);letter-spacing:-.02em;line-height:1}
+.ak-goal-sep{font-size:13px;color:var(--text3);font-family:var(--mono)}
+.ak-goal-tgt{font-size:13px;font-weight:600;color:var(--text3);font-family:var(--mono)}
+.ak-remaining{font-size:11.5px;font-weight:600;color:var(--text3);text-align:right;margin-top:2px}
+.ak-remaining.done{color:var(--green);font-weight:700}
+.ak-remaining-amt{color:var(--red);font-weight:700}
 .ak-bar-a{background:var(--accent)}
 .ak-bar-c{background:var(--green)}
 .ak-prog-sep{height:1px;background:var(--border);margin:14px 0}
@@ -1877,8 +1884,15 @@ function renderTeamCards(){
             <span class="ak-prog-hint">70％以上</span>
             <span class="ak-prog-pct ak-prog-pct-c">${conP}%</span>
           </div>
-          <div class="ak-prog-val">${fmtAmt(con)}</div>
-          <div class="ak-bar-track"><div class="ak-bar-fill ak-bar-c" style="width:${conP}%"></div></div>
+          <div class="ak-goal-row">
+            <span class="ak-goal-cur">${fmtAmt(con)}</span>
+            <span class="ak-goal-sep">/</span>
+            <span class="ak-goal-tgt">${fmtAmt(target)}</span>
+          </div>
+          <div class="ak-bar-track"><div class="ak-bar-fill ak-bar-c" style="width:${Math.min(conP,100)}%"></div></div>
+          ${conP>=100
+            ? `<div class="ak-remaining done">✓ 目標達成！</div>`
+            : `<div class="ak-remaining">あと <span class="ak-remaining-amt">${fmtAmt(target-con)}</span></div>`}
         </div>
         <div class="ak-prog-sep"></div>
         <div class="ak-prog-wrap">
@@ -1888,8 +1902,15 @@ function renderTeamCards(){
             <span class="ak-prog-hint">50％以上</span>
             <span class="ak-prog-pct ak-prog-pct-a">${agrP}%</span>
           </div>
-          <div class="ak-prog-val">${fmtAmt(agr)}</div>
-          <div class="ak-bar-track"><div class="ak-bar-fill ak-bar-a" style="width:${agrP}%"></div></div>
+          <div class="ak-goal-row">
+            <span class="ak-goal-cur">${fmtAmt(agr)}</span>
+            <span class="ak-goal-sep">/</span>
+            <span class="ak-goal-tgt">${fmtAmt(target)}</span>
+          </div>
+          <div class="ak-bar-track"><div class="ak-bar-fill ak-bar-a" style="width:${Math.min(agrP,100)}%"></div></div>
+          ${agrP>=100
+            ? `<div class="ak-remaining done">✓ 目標達成！</div>`
+            : `<div class="ak-remaining">あと <span class="ak-remaining-amt">${fmtAmt(target-agr)}</span></div>`}
         </div>
       </div>
     </div>`;
