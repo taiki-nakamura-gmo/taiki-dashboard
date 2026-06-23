@@ -261,6 +261,11 @@ input[type=number]{-moz-appearance:textfield}
 .ak-inline-inp{border:none;border-bottom:1.5px solid transparent;padding:3px 2px;font-family:var(--font);font-size:13px;font-weight:600;background:transparent;color:var(--text);width:100%;outline:none;transition:border-color .14s;min-width:0}
 .ak-inline-inp:hover{border-bottom-color:var(--border2)}
 .ak-inline-inp:focus{border-bottom-color:var(--accent)}
+.ak-amt-cell{cursor:pointer;white-space:nowrap;font-family:var(--mono);font-weight:600;font-size:13px;user-select:none}
+.ak-amt-display{color:var(--text);transition:color .14s}
+.ak-amt-edit-icon{opacity:0;font-size:10px;color:var(--text3);margin-left:4px;transition:opacity .14s;vertical-align:middle}
+.ak-amt-cell:hover .ak-amt-edit-icon{opacity:1}
+.ak-amt-cell:hover .ak-amt-display{color:var(--accent)}
 .ak-inline-sel{border:none;border-bottom:1.5px solid transparent;padding:3px 18px 3px 2px;font-family:var(--font);font-size:13px;font-weight:600;background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239B99A4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 2px center;color:var(--text);outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .14s}
 .ak-inline-sel:hover{border-bottom-color:var(--border2)}
 .ak-inline-sel:focus{border-bottom-color:var(--accent)}
@@ -1983,7 +1988,7 @@ function renderAnkenList(){
     }
     return `<tr${dim?' style="opacity:.6"':''}>
       <td><input class="ak-inline-inp" type="text" value="${esc(d.company)}" onblur="if(this.value.trim())updateAnkenField(${d.id},'company',this.value.trim())" style="font-weight:500;min-width:120px"></td>
-      <td><input class="ak-inline-inp" type="number" value="${d.amount||''}" onblur="updateAnkenField(${d.id},'amount',this.value)" style="font-family:var(--mono);font-weight:600;width:90px"></td>
+      <td id="ak-amt-${d.id}" class="ak-amt-cell" onclick="startEditAmt(${d.id},${d.amount||0},this)"><span class="ak-amt-display">${fmtAmt(Number(d.amount||0))}</span><span class="ak-amt-edit-icon">✏</span></td>
       <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'fs',this.value)">${userOpts(d.fs)}</select></td>
       <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'is',this.value)">${userOpts(d.is)}</select></td>
       <td><input class="ak-inline-inp" type="month" value="${d.month||''}" onchange="updateAnkenField(${d.id},'month',this.value)" style="width:110px;color:var(--text2)"></td>
@@ -2049,6 +2054,15 @@ function updateAnkenField(id,field,value){
   const d=anken.find(d=>d.id===id);if(!d)return;
   d[field]=value;
   fbSet('anken/'+id,d);
+}
+function startEditAmt(id,cur,cell){
+  cell.onclick=null;
+  cell.innerHTML=`<input class="ak-inline-inp" type="number" value="${cur||''}" style="font-family:var(--mono);font-weight:600;width:90px" onblur="saveEditAmt(${id},this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${cur||''}';this.blur();}">`;
+  cell.querySelector('input').focus();
+  cell.querySelector('input').select();
+}
+function saveEditAmt(id,value){
+  updateAnkenField(id,'amount',value);
 }
 function updateAnkenProb(id,prob,el){
   const d=anken.find(d=>d.id===id);if(!d)return;
