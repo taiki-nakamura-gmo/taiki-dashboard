@@ -1731,7 +1731,11 @@ if(window._fbReady)initFirebase();
 else window.addEventListener("fb-ready",initFirebase);
 
 // ===== 案件Canly =====
-const ANKEN_TARGETS={nakamura:1000000,naka:700000,sakurai:300000,aoki:100000};
+const ANKEN_TARGETS={
+  '2026-06':{nakamura:1000000,naka:700000,sakurai:300000,aoki:100000},
+  '2026-07':{nakamura:1000000,naka:700000,sakurai:300000,aoki:200000},
+};
+function getTargets(){return ANKEN_TARGETS[currentAnkenMonth]||ANKEN_TARGETS['2026-06'];}
 const ANKEN_SCOPES={nakamura:['nakamura','naka','sakurai','aoki'],naka:['naka','sakurai','aoki'],sakurai:['sakurai'],aoki:['aoki']};
 const PROB_LABELS={confirmed:'受注','70':'70%','50':'50%','25':'25%',lost:'失注'};
 const PROB_COLORS={confirmed:{bg:'#dcfce7',cl:'#16a34a'},'70':{bg:'#dbeafe',cl:'#1d4ed8'},'50':{bg:'#fef9c3',cl:'#a16207'},'25':{bg:'#f1f5f9',cl:'#64748b'},lost:{bg:'#fee2e2',cl:'#dc2626'}};
@@ -1868,7 +1872,7 @@ function renderTeamCards(){
   const scopeLabel={nakamura:'全チーム',naka:'3人チーム',sakurai:'個人',aoki:'個人'};
   el.innerHTML=AUTH_USERS.map(u=>{
     const scope=ANKEN_SCOPES[u.key];
-    const target=ANKEN_TARGETS[u.key];
+    const target=getTargets()[u.key];
     const agr=getScopeYomi(scope,['50','70','confirmed']);
     const con=getScopeYomi(scope,['70','confirmed']);
     const agrP=pct(agr,target);
