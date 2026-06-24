@@ -1989,7 +1989,7 @@ function renderAnkenList(){
       </tr>`;
     }
     return `<tr${dim?' style="opacity:.6"':''}>
-      <td id="ak-co-${d.id}"><span class="ak-amt-wrap"><span class="ak-amt-display" style="font-weight:500;min-width:100px;display:inline-block">${esc(d.company)}</span><button class="ak-amt-pencil" onclick="startEditCo(${d.id},this.closest('td'))" title="会社名を編集"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button></span></td>
+      <td id="ak-co-${d.id}"><span class="ak-amt-wrap"><span class="ak-amt-display" style="font-weight:700;min-width:100px;display:inline-block">${esc(d.company)}</span><button class="ak-amt-pencil" onclick="startEditCo(${d.id},this.closest('td'))" title="会社名を編集"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button></span></td>
       <td id="ak-amt-${d.id}" class="ak-amt-cell"><span class="ak-amt-wrap"><span class="ak-amt-display">${fmtAmt(Number(d.amount||0))}</span><button class="ak-amt-pencil" onclick="startEditAmt(${d.id},${d.amount||0},this.closest('td'))" title="金額を編集"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button></span></td>
       <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'fs',this.value)">${userOpts(d.fs)}</select></td>
       <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'is',this.value)">${userOpts(d.is)}</select></td>
@@ -2068,7 +2068,7 @@ function saveEditCo(id,value){
   const name=value.trim()||d.company;
   if(value.trim())updateAnkenField(id,'company',value.trim());
   const cell=document.getElementById('ak-co-'+id);if(!cell)return;
-  cell.innerHTML=`<span class="ak-amt-wrap"><span class="ak-amt-display" style="font-weight:500;min-width:100px;display:inline-block">${esc(name)}</span><button class="ak-amt-pencil" onclick="startEditCo(${id},this.closest('td'))" title="会社名を編集">${_pencilSvg}</button></span>`;
+  cell.innerHTML=`<span class="ak-amt-wrap"><span class="ak-amt-display" style="font-weight:700;min-width:100px;display:inline-block">${esc(name)}</span><button class="ak-amt-pencil" onclick="startEditCo(${id},this.closest('td'))" title="会社名を編集">${_pencilSvg}</button></span>`;
 }
 function startEditAmt(id,cur,cell){
   cell.innerHTML=`<input class="ak-inline-inp" type="number" value="${cur||''}" style="font-family:var(--mono);font-weight:600;width:90px" onblur="saveEditAmt(${id},this.value,${cur||0})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${cur||''}';this.blur();}">`;
