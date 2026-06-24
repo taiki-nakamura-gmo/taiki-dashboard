@@ -1989,8 +1989,8 @@ function renderAnkenList(){
       </tr>`;
     }
     return `<tr${dim?' style="opacity:.6"':''}>
-      <td><input class="ak-inline-inp" type="text" value="${esc(d.company)}" onblur="if(this.value.trim())updateAnkenField(${d.id},'company',this.value.trim())" style="font-weight:500;min-width:120px"></td>
-      <td id="ak-amt-${d.id}" class="ak-amt-cell"><span class="ak-amt-wrap"><span class="ak-amt-display">${fmtAmt(Number(d.amount||0))}</span><button class="ak-amt-pencil" onclick="startEditAmt(${d.id},${d.amount||0},document.getElementById('ak-amt-${d.id}'))" title="金額を編集"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button></span></td>
+      <td id="ak-co-${d.id}"><span class="ak-amt-wrap"><span class="ak-amt-display" style="font-weight:500;min-width:100px;display:inline-block">${esc(d.company)}</span><button class="ak-amt-pencil" onclick="startEditCo(${d.id},this.closest('td'))" title="会社名を編集"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button></span></td>
+      <td id="ak-amt-${d.id}" class="ak-amt-cell"><span class="ak-amt-wrap"><span class="ak-amt-display">${fmtAmt(Number(d.amount||0))}</span><button class="ak-amt-pencil" onclick="startEditAmt(${d.id},${d.amount||0},this.closest('td'))" title="金額を編集"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button></span></td>
       <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'fs',this.value)">${userOpts(d.fs)}</select></td>
       <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'is',this.value)">${userOpts(d.is)}</select></td>
       <td><input class="ak-inline-inp" type="month" value="${d.month||''}" onchange="updateAnkenField(${d.id},'month',this.value)" style="width:110px;color:var(--text2)"></td>
@@ -2057,13 +2057,28 @@ function updateAnkenField(id,field,value){
   d[field]=value;
   fbSet('anken/'+id,d);
 }
-function startEditAmt(id,cur,cell){
-  cell.innerHTML=`<input class="ak-inline-inp" type="number" value="${cur||''}" style="font-family:var(--mono);font-weight:600;width:90px" onblur="saveEditAmt(${id},this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${cur||''}';this.blur();}">`;
-  const inp=cell.querySelector('input');
-  inp.focus();inp.select();
+const _pencilSvg=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg>`;
+function startEditCo(id,cell){
+  const d=anken.find(d=>d.id===id);if(!d)return;
+  cell.innerHTML=`<input class="ak-inline-inp" type="text" value="${esc(d.company)}" style="font-weight:500;min-width:120px" onblur="saveEditCo(${id},this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur();">`;
+  const inp=cell.querySelector('input');inp.focus();inp.select();
 }
-function saveEditAmt(id,value){
-  updateAnkenField(id,'amount',value);
+function saveEditCo(id,value){
+  const d=anken.find(d=>d.id===id);if(!d)return;
+  const name=value.trim()||d.company;
+  if(value.trim())updateAnkenField(id,'company',value.trim());
+  const cell=document.getElementById('ak-co-'+id);if(!cell)return;
+  cell.innerHTML=`<span class="ak-amt-wrap"><span class="ak-amt-display" style="font-weight:500;min-width:100px;display:inline-block">${esc(name)}</span><button class="ak-amt-pencil" onclick="startEditCo(${id},this.closest('td'))" title="会社名を編集">${_pencilSvg}</button></span>`;
+}
+function startEditAmt(id,cur,cell){
+  cell.innerHTML=`<input class="ak-inline-inp" type="number" value="${cur||''}" style="font-family:var(--mono);font-weight:600;width:90px" onblur="saveEditAmt(${id},this.value,${cur||0})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${cur||''}';this.blur();}">`;
+  const inp=cell.querySelector('input');inp.focus();inp.select();
+}
+function saveEditAmt(id,value,prev){
+  const amt=value!==''?value:prev;
+  if(value!=='')updateAnkenField(id,'amount',value);
+  const cell=document.getElementById('ak-amt-'+id);if(!cell)return;
+  cell.innerHTML=`<span class="ak-amt-wrap"><span class="ak-amt-display">${fmtAmt(Number(amt||0))}</span><button class="ak-amt-pencil" onclick="startEditAmt(${id},${amt||0},this.closest('td'))" title="金額を編集">${_pencilSvg}</button></span>`;
 }
 function updateAnkenProb(id,prob,el){
   const d=anken.find(d=>d.id===id);if(!d)return;
