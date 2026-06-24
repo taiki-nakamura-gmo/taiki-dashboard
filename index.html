@@ -149,7 +149,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .inp{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:13.5px;color:var(--text);background:var(--surface);outline:none;transition:border-color .14s}
 .inp:focus{border-color:var(--accent)}
 .inp::placeholder{color:var(--text3)}
-textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
+textarea.inp{resize:vertical;min-height:120px;line-height:1.6}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
 .sel-w{position:relative}
 .sel-w select{width:100%;padding:9px 28px 9px 11px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:13.5px;color:var(--text);background:var(--surface);appearance:none;cursor:pointer;outline:none;transition:border-color .14s}
@@ -506,7 +506,7 @@ input[type=number]{-moz-appearance:textfield}
     <div class="modal-title" id="mtitle">タスクを追加</div>
     <input type="hidden" id="eid">
     <div class="form-row"><label class="lbl">案件名 <span style="color:var(--red)">*</span></label><input type="text" class="inp" id="fn" placeholder="例：株式会社〇〇"></div>
-    <div class="form-row"><label class="lbl">タスク内容</label><textarea class="inp" id="fm" rows="3" placeholder="詳細・備考など"></textarea></div>
+    <div class="form-row"><label class="lbl">タスク内容</label><textarea class="inp" id="fm" rows="6" placeholder="詳細・備考など"></textarea></div>
     <div class="form-row"><label class="lbl">カテゴリ（複数選択可）</label><div class="cat-chips" id="cat-chips"></div></div>
     <div class="form-row"><label class="lbl">担当者 <span style="color:var(--red)">*</span></label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="中村">中村</option><option value="中">中</option><option value="櫻井">櫻井</option><option value="青木">青木</option></select></div></div>
     <div class="form-row"><label class="lbl">優先度</label><div class="sel-w"><select id="fp"><option value="">なし</option><option value="high">🔴 高</option><option value="mid">🟡 中</option><option value="low">🟢 低</option></select></div></div>
