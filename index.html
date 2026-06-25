@@ -1040,7 +1040,7 @@ function cardHTML(t,i){
   if(t.due){
     const dObj=new Date(t.due+"T00:00:00"),now=new Date();now.setHours(0,0,0,0);
     const diff=Math.round((dObj-now)/86400000);
-    const txt=diff<0?`${Math.abs(diff)}日超過`:diff===0?"今日":`残${diff}日`;
+    const txt=diff<0?`${Math.abs(diff)}日超過`:diff===0?(t.dueTime?`今日 ${t.dueTime}まで`:"今日"):`残${diff}日`;
     const todayCls=diff===0?' today':'';
     daysBadge=`<span class="days-badge${todayCls}">🚨 ${txt}</span>`;
   }
