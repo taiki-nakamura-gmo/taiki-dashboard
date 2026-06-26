@@ -1736,6 +1736,10 @@ const ANKEN_TARGETS={
   '2026-07':{nakamura:1100000,naka:800000,sakurai:300000,aoki:200000},
   '2026-08':{nakamura:1100000,naka:800000,sakurai:300000,aoki:200000},
   '2026-09':{nakamura:1100000,naka:800000,sakurai:300000,aoki:200000},
+  '2026-10':{nakamura:1100000,naka:800000,sakurai:300000,aoki:200000},
+  '2026-11':{nakamura:1100000,naka:800000,sakurai:300000,aoki:200000},
+  '2026-12':{nakamura:1100000,naka:800000,sakurai:300000,aoki:200000},
+  '2027-01':{nakamura:1100000,naka:800000,sakurai:300000,aoki:200000},
 };
 function getTargets(){return ANKEN_TARGETS[currentAnkenMonth]||ANKEN_TARGETS['2026-06'];}
 const ANKEN_SCOPES={nakamura:['nakamura','naka','sakurai','aoki'],naka:['naka','sakurai','aoki'],sakurai:['sakurai'],aoki:['aoki']};
@@ -1751,7 +1755,7 @@ let currentAnkenMonth=localStorage.getItem('canly_month')||'2026-06';
 function getMonthDeals(){return anken.filter(d=>d.month===currentAnkenMonth);}
 
 function getAvailableMonths(){
-  const months=new Set(['2026-06','2026-07','2026-08','2026-09']);
+  const months=new Set(['2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12','2027-01']);
   anken.forEach(d=>{if(d.month)months.add(d.month);});
   return [...months].sort();
 }
