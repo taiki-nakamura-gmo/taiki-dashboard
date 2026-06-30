@@ -1945,7 +1945,9 @@ function renderMemberCards(){
       const deals=getMonthDeals().filter(d=>d.prob===prob&&(d.fs===u.key||d.is===u.key));
       if(!deals.length)return '';
       const getAmt=d=>{let c=0;if(d.fs===u.key)c+=Number(d.amount)/2;if(d.is===u.key)c+=Number(d.amount)/2;return c;};
+      const getCnt=d=>{let c=0;if(d.fs===u.key)c+=0.5;if(d.is===u.key)c+=0.5;return c;};
       const amt=deals.reduce((s,d)=>s+getAmt(d),0);
+      const cnt=deals.reduce((s,d)=>s+getCnt(d),0);
       const pc=PROB_COLORS[prob]||{bg:'#f1f5f9',cl:'#64748b'};
       const did=`akd_${u.key}_${prob}`;
       const chevron=`<svg class="ak-prob-chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1l4 4 4-4"/></svg>`;
@@ -1954,7 +1956,7 @@ function renderMemberCards(){
       }).join('');
       return `<div class="ak-prob-row" id="row_${did}" onclick="toggleProbRow('${did}')">
         <span class="ak-prob-badge" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[prob]}</span>
-        <span class="ak-prob-cnt">${deals.length}件</span>
+        <span class="ak-prob-cnt">${Number.isInteger(cnt)?cnt:cnt.toFixed(1)}件</span>
         <span style="flex:1"></span>
         ${prob!=='lost'?`<span class="ak-prob-amt">${fmtAmt(amt)}</span>`:''}
         ${chevron}
