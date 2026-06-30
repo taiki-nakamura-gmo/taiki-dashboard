@@ -1941,11 +1941,13 @@ function renderMemberCards(){
   const isKeys=['naka','sakurai','aoki'];
   el.innerHTML=AUTH_USERS.map(u=>{
     const roles=[fsKeys.includes(u.key)?'FS':'',isKeys.includes(u.key)?'IS':''].filter(Boolean).join('/');
+    const isTeamLead=u.key==='nakamura';
+    const scope=ANKEN_SCOPES[u.key]||[u.key];
     const rows=PROB_ORDER.filter(p=>p!=='lost').map(prob=>{
-      const deals=getMonthDeals().filter(d=>d.prob===prob&&(d.fs===u.key||d.is===u.key));
+      const deals=getMonthDeals().filter(d=>d.prob===prob&&(isTeamLead?(scope.includes(d.fs)||scope.includes(d.is)):(d.fs===u.key||d.is===u.key)));
       if(!deals.length)return '';
-      const getAmt=d=>{let c=0;if(d.fs===u.key)c+=Number(d.amount)/2;if(d.is===u.key)c+=Number(d.amount)/2;return c;};
-      const getCnt=d=>{let c=0;if(d.fs===u.key)c+=0.5;if(d.is===u.key)c+=0.5;return c;};
+      const getAmt=d=>{if(isTeamLead)return Number(d.amount);let c=0;if(d.fs===u.key)c+=Number(d.amount)/2;if(d.is===u.key)c+=Number(d.amount)/2;return c;};
+      const getCnt=d=>{if(isTeamLead)return 1;let c=0;if(d.fs===u.key)c+=0.5;if(d.is===u.key)c+=0.5;return c;};
       const amt=deals.reduce((s,d)=>s+getAmt(d),0);
       const cnt=deals.reduce((s,d)=>s+getCnt(d),0);
       const pc=PROB_COLORS[prob]||{bg:'#f1f5f9',cl:'#64748b'};
