@@ -453,6 +453,18 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
+<!-- 案件Canly サブナビ（topbar直下・案件ページ時のみ表示） -->
+<div id="ak-secondary-nav" class="ak-subnav" style="display:none">
+  <button class="ak-subnav-btn active" id="ak-tab-summary" onclick="showAnkenTab('summary')">サマリー</button>
+  <button class="ak-subnav-btn" id="ak-tab-list" onclick="showAnkenTab('list')">ヨミ一覧</button>
+  <div style="flex:1"></div>
+  <div id="ak-month-tabs" style="display:flex;gap:4px;align-items:center;margin-right:10px"></div>
+  <button class="btn btn-primary btn-sm" onclick="openAnkenAdd()">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+    ヨミを追加
+  </button>
+</div>
+
 <div id="overdue-banner">⚠️ 期限超過のタスクが <strong id="overdue-cnt">0</strong> 件あります</div>
 
 <div class="stats-bar" id="stats-bar-wrap">
@@ -601,16 +613,6 @@ input[type=number]{-moz-appearance:textfield}
 
 <!-- ===== 案件Canly Page ===== -->
 <div id="anken-page" style="display:none">
-  <div class="ak-subnav">
-    <button class="ak-subnav-btn active" id="ak-tab-summary" onclick="showAnkenTab('summary')">サマリー</button>
-    <button class="ak-subnav-btn" id="ak-tab-list" onclick="showAnkenTab('list')">ヨミ一覧</button>
-    <div style="flex:1"></div>
-    <div id="ak-month-tabs" style="display:flex;gap:4px;align-items:center;margin-right:10px"></div>
-    <button class="btn btn-primary btn-sm" onclick="openAnkenAdd()">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
-      ヨミを追加
-    </button>
-  </div>
   <div id="ak-summary-view" class="ak-body">
     <div class="ak-section">
       <div class="ak-section-title">チームサマリー</div>
@@ -1796,6 +1798,8 @@ function switchPage(page){
   const ob=document.getElementById('overdue-banner');
   if(ob)ob.style.display=(isTask&&tasks.filter(t=>t.due&&t.due<today()).length>0)?'block':'none';
   document.getElementById('anken-page').style.display=isTask?'none':'';
+  const san=document.getElementById('ak-secondary-nav');
+  if(san)san.style.display=isTask?'none':'';
   document.getElementById('tab-task').classList.toggle('active',isTask);
   document.getElementById('tab-anken').classList.toggle('active',!isTask);
   document.querySelector('.brand-name').textContent=isTask?'タスクCanly':'案件Canly';
