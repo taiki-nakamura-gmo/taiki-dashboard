@@ -456,14 +456,18 @@ input[type=number]{-moz-appearance:textfield}
     </div>
   </div>
   <div class="topbar-row2" id="ak-secondary-nav">
-    <button class="ak-subnav-btn active" id="ak-tab-summary" onclick="showAnkenTab('summary')">サマリー</button>
-    <button class="ak-subnav-btn" id="ak-tab-list" onclick="showAnkenTab('list')">ヨミ一覧</button>
     <div style="flex:1"></div>
-    <div id="ak-month-tabs" style="display:flex;gap:4px;align-items:center;margin-right:10px"></div>
-    <button class="btn btn-primary btn-sm" onclick="openAnkenAdd()">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
-      ヨミを追加
-    </button>
+    <div style="display:flex;gap:8px">
+      <button class="ak-subnav-btn active" id="ak-tab-summary" onclick="showAnkenTab('summary')">サマリー</button>
+      <button class="ak-subnav-btn" id="ak-tab-list" onclick="showAnkenTab('list')">ヨミ一覧</button>
+    </div>
+    <div style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:8px">
+      <div id="ak-month-tabs" style="display:flex;gap:4px;align-items:center"></div>
+      <button class="btn btn-primary btn-sm" onclick="openAnkenAdd()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+        ヨミを追加
+      </button>
+    </div>
   </div>
 </div>
 
