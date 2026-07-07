@@ -1761,9 +1761,11 @@ let currentAnkenMonth=localStorage.getItem('canly_month')||'2026-06';
 
 function getMonthDeals(){return anken.filter(d=>d.month===currentAnkenMonth);}
 
+const MONTH_MIN='2026-06';
+const MONTH_MAX='2026-12';
 function getAvailableMonths(){
   const months=new Set(['2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12']);
-  anken.forEach(d=>{if(d.month)months.add(d.month);});
+  anken.forEach(d=>{if(d.month&&d.month>=MONTH_MIN&&d.month<=MONTH_MAX)months.add(d.month);});
   return [...months].sort();
 }
 
