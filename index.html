@@ -1776,9 +1776,10 @@ function initFirebaseData(){
     loaded=loaded.filter(c=>!removedIds.includes(c.id));
     let changed=loaded.length!==beforeLen;
     defaults.forEach(d=>{if(!loaded.find(c=>c.id===d.id)){loaded.push(d);changed=true;}});
+    const prevJson=JSON.stringify(cats);
     cats=loaded;
     if(changed)fbSet("cats",cats);
-    refresh();
+    if(JSON.stringify(cats)!==prevJson)refresh();
   });
   _onValue(_ref(_db,"cfg"),snap=>{
     const val=snap.val();if(val)appCfg=Object.assign(appCfg,val);applyAccent();applyFavicon();
