@@ -526,6 +526,13 @@ input[type=number]{-moz-appearance:textfield}
     <div class="form-row"><label class="lbl">案件名 <span style="color:var(--red)">*</span></label><input type="text" class="inp" id="fn" placeholder="例：株式会社〇〇"></div>
     <div class="form-row"><label class="lbl">タスク内容</label><textarea class="inp" id="fm" rows="6" placeholder="詳細・備考など"></textarea></div>
     <div class="form-row"><label class="lbl">カテゴリ（複数選択可）</label><div class="cat-chips" id="cat-chips"></div></div>
+    <div id="est-fields" style="display:none;border:1.5px solid #1A7A5030;border-radius:var(--r12);padding:12px;margin-bottom:6px;background:#1A7A5008">
+      <div style="font-size:11px;font-weight:700;color:#1A7A50;margin-bottom:10px">📄 見積書情報</div>
+      <div class="form-row" style="margin-bottom:8px"><label class="lbl">プラン</label><div class="sel-w"><select id="f-plan" class="inp"><option value="">選択してください</option><option>ローカル集客コンサル</option><option>スタンダードプラン</option><option>スモールプラン</option></select></div></div>
+      <div class="form-row" style="margin-bottom:8px"><label class="lbl">店舗数</label><div class="sel-w"><select id="f-stores" class="inp"><option value="">選択してください</option><option>～25店舗</option><option>～50店舗</option><option>～100店舗</option><option>～150店舗</option><option>～200店舗</option><option>201店舗以上</option></select></div></div>
+      <div class="form-row" style="margin-bottom:8px"><label class="lbl">見積もり有効期限</label><input type="date" class="inp" id="f-expiry"></div>
+      <div class="form-row"><label class="lbl">導入月</label><div class="sel-w"><select id="f-imonth" class="inp"><option value="">選択してください</option><option>1月</option><option>2月</option><option>3月</option><option>4月</option><option>5月</option><option>6月</option><option>7月</option><option>8月</option><option>9月</option><option>10月</option><option>11月</option><option>12月</option></select></div></div>
+    </div>
     <div class="form-row"><label class="lbl">担当者 <span style="color:var(--red)">*</span></label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="中村">中村</option><option value="中">中</option><option value="櫻井">櫻井</option><option value="青木">青木</option></select></div></div>
     <div class="form-row"><label class="lbl">優先度</label><div class="sel-w"><select id="fp"><option value="">なし</option><option value="high">🔴 高</option><option value="mid">🟡 中</option><option value="low">🟢 低</option></select></div></div>
     <div class="form-row"><label class="lbl">期日</label><div style="display:flex;gap:8px"><input type="date" class="inp" id="fd" style="flex:1"><input type="text" class="inp" id="ft" placeholder="例）10:00" style="flex:0 0 130px"></div></div>
@@ -1574,12 +1581,18 @@ function toggleCat(id,color){
   const i=_selectedCats.indexOf(id);
   if(i>=0)_selectedCats.splice(i,1);else _selectedCats.push(id);
   fillCats();
+  updateEstFields();
+}
+function updateEstFields(){
+  const el=document.getElementById('est-fields');
+  if(el)el.style.display=_selectedCats.includes('est')?'block':'none';
 }
 function openAdd(){
   document.getElementById("eid").value="";document.getElementById("mtitle").textContent="タスクを追加";
   ["fn","fm"].forEach(i=>document.getElementById(i).value="");
   ["fp","fd","ft","fa"].forEach(i=>document.getElementById(i).value="");
-  _selectedCats=[];fillCats();
+  _selectedCats=[];fillCats();updateEstFields();
+  ['f-plan','f-stores','f-expiry','f-imonth'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
 }
@@ -1589,7 +1602,11 @@ function openEdit(id){
   document.getElementById("fn").value=t.name;document.getElementById("fm").value=t.memo||"";
   document.getElementById("fp").value=t.priority||"";document.getElementById("fd").value=t.due||"";
   document.getElementById("ft").value=t.dueTime||"";document.getElementById("fa").value=t.assignee||"";
-  _selectedCats=t.cats?[...t.cats]:(t.cat?[t.cat]:[]);fillCats();
+  _selectedCats=t.cats?[...t.cats]:(t.cat?[t.cat]:[]);fillCats();updateEstFields();
+  document.getElementById('f-plan').value=t.estPlan||'';
+  document.getElementById('f-stores').value=t.estStores||'';
+  document.getElementById('f-expiry').value=t.estExpiry||'';
+  document.getElementById('f-imonth').value=t.estMonth||'';
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
 }
@@ -1600,7 +1617,8 @@ function saveTaskForm(){
   const assignee=document.getElementById("fa").value;
   if(!assignee){const el=document.getElementById("fa").closest(".sel-w").querySelector("select");el.style.borderColor="var(--red)";el.focus();setTimeout(()=>el.style.borderColor="",1500);return;}
   const eid=document.getElementById("eid").value;
-  const data={name,memo:document.getElementById("fm").value.trim(),cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:document.getElementById("fp").value,due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee};
+  const isEst=_selectedCats.includes('est');
+  const data={name,memo:document.getElementById("fm").value.trim(),cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:document.getElementById("fp").value,due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,estPlan:isEst?document.getElementById('f-plan').value:'',estStores:isEst?document.getElementById('f-stores').value:'',estExpiry:isEst?document.getElementById('f-expiry').value:'',estMonth:isEst?document.getElementById('f-imonth').value:''};
   if(eid){const t=tasks.find(t=>t.id==eid);if(t){Object.assign(t,data);window.saveTask(t);}}
   else{
     window.saveTask({id:Date.now(),createdAt:Date.now(),...data});
