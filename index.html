@@ -192,7 +192,7 @@ input[type=number]{-moz-appearance:textfield}
 .ak-month-sel:hover{border-color:var(--border2)}
 .ak-month-sel:focus{border-color:var(--accent)}
 .ak-lost-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 0;user-select:none}
-.ak-lost-toggle{padding:3px 10px;border:1px solid #fca5a5;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--red);font-family:var(--font);transition:all .12s}
+.ak-lost-toggle{padding:6px 18px;border:1.5px solid #fca5a5;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--red);font-family:var(--font);transition:all .12s}
 .ak-lost-toggle:hover{background:#fee2e2}
 .ak-body{padding:20px 24px}
 .ak-section{margin-bottom:32px}
@@ -653,7 +653,7 @@ input[type=number]{-moz-appearance:textfield}
     <div class="ak-section" id="ak-lost-section" style="display:none">
       <div class="ak-lost-header">
         <div class="ak-section-title" style="--accent:var(--red);margin-bottom:0">失注BOX <span id="ak-lost-cnt" style="font-size:10px;color:var(--text3);font-weight:500;margin-left:4px"></span></div>
-        <button class="ak-lost-toggle" id="ak-lost-toggle-btn">▶ 開く</button>
+        <button class="ak-lost-toggle" id="ak-lost-toggle-btn" onclick="toggleLostBox()">▶ 開く</button>
       </div>
       <div id="ak-lost-cards" style="display:none;margin-top:10px"></div>
     </div>
