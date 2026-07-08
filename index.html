@@ -2054,8 +2054,14 @@ function renderAnkenList(){
   const monthDeals=getMonthDeals();
   if(!monthDeals.length){el.innerHTML=`<div class="ak-empty">この月のヨミが登録されていません<br><span style="font-size:12px;margin-top:6px;display:block">「ヨミを追加」ボタンから登録できます</span></div>`;return;}
   const probRank=p=>{const i=PROB_ORDER.indexOf(p);return i===-1?9:i;};
-  const active=[...monthDeals].filter(d=>d.prob!=='lost').sort((a,b)=>probRank(a.prob)-probRank(b.prob));
-  const lost=[...monthDeals].filter(d=>d.prob==='lost');
+  const dealSort=(a,b)=>{
+    const rd=probRank(a.prob)-probRank(b.prob);if(rd!==0)return rd;
+    const aA=Number(a.amount||0),bA=Number(b.amount||0);
+    if(aA===0&&bA===0)return 0;if(aA===0)return 1;if(bA===0)return -1;
+    return bA-aA;
+  };
+  const active=[...monthDeals].filter(d=>d.prob!=='lost').sort(dealSort);
+  const lost=[...monthDeals].filter(d=>d.prob==='lost').sort((a,b)=>{const aA=Number(a.amount||0),bA=Number(b.amount||0);if(aA===0&&bA===0)return 0;if(aA===0)return 1;if(bA===0)return -1;return bA-aA;});
   const av=u=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:${u.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700">${u.initial}</span>${u.name}</span>`;
   const userOpts=(cur)=>AUTH_USERS.map(u=>`<option value="${u.key}"${cur===u.key?' selected':''}>${u.name}</option>`).join('');
   const avStatic=key=>{const u=AUTH_USERS.find(u=>u.key===key);return u?`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:${u.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700">${u.initial}</span>${u.name}</span>`:'—';};
