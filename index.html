@@ -194,6 +194,17 @@ input[type=number]{-moz-appearance:textfield}
 .ak-lost-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 0;user-select:none}
 .ak-lost-toggle{padding:6px 18px;border:1.5px solid #fca5a5;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--red);font-family:var(--font);transition:all .12s}
 .ak-lost-toggle:hover{background:#fee2e2}
+/* 回収済み */
+.ak-collected-wrap{padding:10px 16px 12px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.ak-collected-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3)}
+.ak-collected-amt{font-family:var(--mono);font-size:20px;font-weight:800;color:var(--text);line-height:1}
+.ak-collected-bar-track{height:5px;border-radius:3px;background:var(--surface2);overflow:hidden;margin-top:8px}
+.ak-collected-bar-fill{height:100%;border-radius:3px;background:#10b981;transition:width .5s ease}
+.ak-collected-celebrate{background:linear-gradient(135deg,#fdf6e3 0%,#fde8f0 50%,#e8f4fd 100%)}
+@keyframes float-petal{0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1}100%{transform:translateY(-72px) rotate(28deg) scale(.7);opacity:0}}
+.celebrate-flower{position:absolute;bottom:4px;font-size:15px;animation:float-petal 2.4s ease-out infinite;pointer-events:none}
+@keyframes rainbow-glow{0%{color:#f43f5e}20%{color:#f97316}40%{color:#eab308}60%{color:#22c55e}80%{color:#3b82f6}100%{color:#a855f7}}
+.ak-collect-done-msg{font-size:11.5px;font-weight:800;animation:rainbow-glow 1.2s linear infinite;margin-top:5px;letter-spacing:.04em}
 .ak-body{padding:20px 24px}
 .ak-section{margin-bottom:32px}
 .ak-section-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:8px}
@@ -1781,6 +1792,11 @@ function initFirebaseData(){
     if(changed)fbSet("cats",cats);
     if(JSON.stringify(cats)!==prevJson)refresh();
   });
+  _onValue(_ref(_db,"collected"),snap=>{
+    const val=snap.val()||{};
+    _collectedAll=val;
+    if(currentPage==='anken')renderTeamCards();
+  });
   _onValue(_ref(_db,"cfg"),snap=>{
     const val=snap.val();if(val)appCfg=Object.assign(appCfg,val);applyAccent();applyFavicon();
   });
@@ -1817,6 +1833,7 @@ const PROB_COLORS={confirmed:{bg:'#dcfce7',cl:'#16a34a'},'70':{bg:'#dbeafe',cl:'
 const PROB_ORDER=['confirmed','70','50','25','lost'];
 
 let anken=[];
+let _collectedAll={};
 let currentPage='task';
 let currentAnkenTab='summary';
 let currentAnkenMonth=localStorage.getItem('canly_month')||'2026-06';
@@ -1947,6 +1964,23 @@ function renderLostBox(){
   </div>`;
 }
 
+function getCollectedAmt(userKey){return Number((_collectedAll[currentAnkenMonth]||{})[userKey]||0);}
+function getScopeCollected(scopeKeys){return scopeKeys.reduce((s,k)=>s+getCollectedAmt(k),0);}
+function startEditCollected(userKey){
+  const el=document.getElementById('col-amt-'+userKey);if(!el)return;
+  const cur=getCollectedAmt(userKey);
+  el.outerHTML=`<input id="col-inp-${userKey}" class="ak-inline-inp" type="number" value="${cur||''}" style="font-family:var(--mono);font-weight:800;font-size:18px;width:110px" onblur="saveEditCollected('${userKey}',this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${cur||''}';this.blur();}">`;
+  const inp=document.getElementById('col-inp-'+userKey);if(inp){inp.focus();inp.select();}
+}
+function saveEditCollected(userKey,value){
+  if(value!==''){
+    const amt=Number(value);
+    if(!_collectedAll[currentAnkenMonth])_collectedAll[currentAnkenMonth]={};
+    _collectedAll[currentAnkenMonth][userKey]=amt;
+    fbSet('collected/'+currentAnkenMonth+'/'+userKey,amt);
+  }
+  renderTeamCards();
+}
 function renderTeamCards(){
   const el=document.getElementById('ak-team-cards');
   if(!el)return;
@@ -1958,6 +1992,18 @@ function renderTeamCards(){
     const con=getScopeYomi(scope,['70','confirmed']);
     const agrP=pct(agr,target);
     const conP=pct(con,target);
+    const col=getScopeCollected(scope);
+    const colP=pct(col,target);
+    const colDone=colP>=100;
+    const flowers=colDone?`
+      <span class="celebrate-flower" style="left:3%;animation-delay:0s">🌸</span>
+      <span class="celebrate-flower" style="left:14%;animation-delay:.5s">🎊</span>
+      <span class="celebrate-flower" style="left:26%;animation-delay:.9s">🌸</span>
+      <span class="celebrate-flower" style="left:40%;animation-delay:.2s">🌺</span>
+      <span class="celebrate-flower" style="left:55%;animation-delay:.7s">🎉</span>
+      <span class="celebrate-flower" style="left:68%;animation-delay:.4s">🌸</span>
+      <span class="celebrate-flower" style="left:80%;animation-delay:1s">✨</span>
+      <span class="celebrate-flower" style="left:92%;animation-delay:.6s">🌸</span>`:'';
     return `<div class="ak-team-card${conP>=100?' con-achieved':''}" style="border-top:3px solid ${u.color}">
       <div class="ak-card-head" style="background:${u.color}0d">
         <div class="ak-card-head-inner">
@@ -1967,6 +2013,22 @@ function renderTeamCards(){
             <div class="ak-target">${scopeLabel[u.key]} &nbsp;目標 ${fmtAmt(target)}</div>
           </div>
         </div>
+      </div>
+      <div class="ak-collected-wrap${colDone?' ak-collected-celebrate':''}">
+        ${flowers}
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+          <span class="ak-collected-label">🏦 回収済み</span>
+          <span style="margin-left:auto;font-size:11px;font-weight:700;color:#10b981">${colP}%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span id="col-amt-${u.key}" class="ak-collected-amt">${fmtAmt(col)}</span>
+          <span style="font-size:12px;color:var(--text3)">/ ${fmtAmt(target)}</span>
+          <button class="ak-amt-pencil" onclick="startEditCollected('${u.key}')" title="回収済みを編集" style="margin-left:4px">${_pencilSvg}</button>
+        </div>
+        <div class="ak-collected-bar-track"><div class="ak-collected-bar-fill" style="width:${Math.min(colP,100)}%"></div></div>
+        ${colDone
+          ?`<div class="ak-collect-done-msg">🌸🎊 目標回収達成！おめでとう！ 🎉🌸</div>`
+          :`<div style="font-size:11px;color:var(--text3);margin-top:4px">あと <strong>${fmtAmt(Math.max(0,target-col))}</strong></div>`}
       </div>
       <div class="ak-card-body">
         <div class="ak-prog-wrap">
