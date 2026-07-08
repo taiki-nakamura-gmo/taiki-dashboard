@@ -290,6 +290,9 @@ input[type=number]{-moz-appearance:textfield}
 .cat-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .12s;user-select:none}
 .cat-chip:hover{border-color:var(--border2);background:var(--surface)}
 .cat-chip.sel{font-weight:600}
+.wf-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid #A05C0040;background:var(--surface);color:#A05C00;transition:all .12s;user-select:none}
+.wf-chip:hover{background:#A05C0015}
+.wf-chip.sel{background:#A05C00;color:#fff;border-color:#A05C00;font-weight:600}
 .cat-chips-empty{font-size:12px;color:var(--text3);padding:4px 0}
 /* ステータスバッジ */
 .stbadge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;user-select:none;transition:all .12s;border:none;font-family:var(--font)}
@@ -525,6 +528,15 @@ input[type=number]{-moz-appearance:textfield}
     <input type="hidden" id="eid">
     <div class="form-row"><label class="lbl">案件名 <span style="color:var(--red)">*</span></label><input type="text" class="inp" id="fn" placeholder="例：株式会社〇〇"></div>
     <div class="form-row"><label class="lbl">カテゴリ（複数選択可）</label><div class="cat-chips" id="cat-chips"></div></div>
+    <div id="wf-fields" style="display:none;border:1.5px solid #A05C0030;border-radius:var(--r12);padding:12px;margin-bottom:6px;background:#A05C0008">
+      <div style="font-size:11px;font-weight:700;color:#A05C00;margin-bottom:8px">📋 WF種別（複数選択可）</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px" id="wf-type-chips">
+        <div class="wf-chip" data-wf="与信WF" onclick="toggleWfChip(this)">与信WF</div>
+        <div class="wf-chip" data-wf="イレギュラーWF" onclick="toggleWfChip(this)">イレギュラーWF</div>
+        <div class="wf-chip" data-wf="入金サイト延長WF" onclick="toggleWfChip(this)">入金サイト延長WF</div>
+        <div class="wf-chip" data-wf="売掛WF" onclick="toggleWfChip(this)">売掛WF</div>
+      </div>
+    </div>
     <div id="doc-fields" style="display:none;border:1.5px solid #3A5EE530;border-radius:var(--r12);padding:12px;margin-bottom:6px;background:#3A5EE508">
       <div style="font-size:11px;font-weight:700;color:#3A5EE5;margin-bottom:8px">📝 備考欄</div>
       <textarea class="inp" id="fm" rows="5" placeholder="詳細・備考など"></textarea>
@@ -1585,6 +1597,7 @@ function toggleCat(id,color){
   fillCats();
   updateEstFields();
   updateDocFields();
+  updateWfFields();
 }
 function updateEstFields(){
   const el=document.getElementById('est-fields');
@@ -1594,11 +1607,27 @@ function updateDocFields(){
   const el=document.getElementById('doc-fields');
   if(el)el.style.display=_selectedCats.includes('doc')?'block':'none';
 }
+function updateWfFields(){
+  const el=document.getElementById('wf-fields');
+  if(el)el.style.display=_selectedCats.includes('wf')?'block':'none';
+}
+function toggleWfChip(el){
+  el.classList.toggle('sel');
+}
+function getWfTypes(){
+  return [...document.querySelectorAll('#wf-type-chips .wf-chip.sel')].map(el=>el.dataset.wf);
+}
+function setWfTypes(types){
+  document.querySelectorAll('#wf-type-chips .wf-chip').forEach(el=>{
+    el.classList.toggle('sel',types.includes(el.dataset.wf));
+  });
+}
 function openAdd(){
   document.getElementById("eid").value="";document.getElementById("mtitle").textContent="タスクを追加";
   ["fn","fm"].forEach(i=>document.getElementById(i).value="");
   ["fp","fd","ft","fa"].forEach(i=>document.getElementById(i).value="");
-  _selectedCats=[];fillCats();updateEstFields();updateDocFields();
+  _selectedCats=[];fillCats();updateEstFields();updateDocFields();updateWfFields();
+  setWfTypes([]);
   ['fm','f-plan','f-stores','f-expiry','f-imonth'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
@@ -1609,7 +1638,8 @@ function openEdit(id){
   document.getElementById("fn").value=t.name;document.getElementById("fm").value=t.memo||"";
   document.getElementById("fp").value=t.priority||"";document.getElementById("fd").value=t.due||"";
   document.getElementById("ft").value=t.dueTime||"";document.getElementById("fa").value=t.assignee||"";
-  _selectedCats=t.cats?[...t.cats]:(t.cat?[t.cat]:[]);fillCats();updateEstFields();updateDocFields();
+  _selectedCats=t.cats?[...t.cats]:(t.cat?[t.cat]:[]);fillCats();updateEstFields();updateDocFields();updateWfFields();
+  setWfTypes(t.wfTypes||[]);
   document.getElementById('fm').value=t.memo||'';
   document.getElementById('f-plan').value=t.estPlan||'';
   document.getElementById('f-stores').value=t.estStores||'';
@@ -1627,7 +1657,8 @@ function saveTaskForm(){
   const eid=document.getElementById("eid").value;
   const isEst=_selectedCats.includes('est');
   const isDoc=_selectedCats.includes('doc');
-  const data={name,memo:isDoc?(document.getElementById("fm").value.trim()):'',cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:'',due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,estPlan:isEst?document.getElementById('f-plan').value:'',estStores:isEst?document.getElementById('f-stores').value:'',estExpiry:isEst?document.getElementById('f-expiry').value:'',estMonth:isEst?document.getElementById('f-imonth').value:''};
+  const isWf=_selectedCats.includes('wf');
+  const data={name,memo:isDoc?(document.getElementById("fm").value.trim()):'',cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:'',due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,wfTypes:isWf?getWfTypes():[],estPlan:isEst?document.getElementById('f-plan').value:'',estStores:isEst?document.getElementById('f-stores').value:'',estExpiry:isEst?document.getElementById('f-expiry').value:'',estMonth:isEst?document.getElementById('f-imonth').value:''};
   if(eid){const t=tasks.find(t=>t.id==eid);if(t){Object.assign(t,data);window.saveTask(t);}}
   else{
     window.saveTask({id:Date.now(),createdAt:Date.now(),...data});
@@ -1739,7 +1770,11 @@ function initFirebaseData(){
       {id:"sched",name:"日程調整",color:"#BE185D"},
       {id:"service",name:"役務提供",color:"#D97706"},
     ];
-    let changed=false;
+    // 旧カテゴリを除去
+    const removedIds=['credit','irreg'];
+    const beforeLen=loaded.length;
+    loaded=loaded.filter(c=>!removedIds.includes(c.id));
+    let changed=loaded.length!==beforeLen;
     defaults.forEach(d=>{if(!loaded.find(c=>c.id===d.id)){loaded.push(d);changed=true;}});
     cats=loaded;
     if(changed)fbSet("cats",cats);
