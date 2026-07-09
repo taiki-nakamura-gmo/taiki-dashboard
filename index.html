@@ -125,7 +125,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .check.on{background:var(--green);border-color:var(--green)}
 .ck{width:9px;height:9px;stroke:#fff;stroke-width:2.5;fill:none;display:none}
 .check.on .ck{display:block}
-.card-name{font-size:13px;font-weight:500;flex:1;line-height:1.4}
+.card-name{font-size:15px;font-weight:700;color:var(--text);flex:1;line-height:1.3;letter-spacing:-.01em}
+.card-cats{display:flex;flex-wrap:wrap;gap:4px;margin:7px 0 0;padding-left:26px}
+.card-details{margin:8px 0 0;padding:7px 10px 7px 12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.7;font-family:'游ゴシック','Yu Gothic',sans-serif}
+.card-detail-row{padding:0}
+.card-detail-sep{height:1px;background:var(--border);margin:5px 0}
 .card-memo{font-size:11.5px;color:var(--text2);margin-bottom:6px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .est-info{display:flex;flex-wrap:wrap;gap:3px 10px;margin:5px 0 4px;padding-left:26px;border-left:2px solid #1A7A5040}
 .est-info-item{font-size:11px;color:var(--text3);display:inline-flex;align-items:center;gap:2px}
@@ -1106,18 +1110,29 @@ function cardHTML(t,i){
           <svg class="ck" viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg>
         </div>
         <div class="card-name">${esc(t.name)}</div>
-        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          ${isNew?`<span class="new-badge">NEW</span>`:""}
-        </div>
+        ${isNew?`<span class="new-badge">NEW</span>`:""}
       </div>
-      ${t.memo?`<div class="card-memo">${esc(t.memo).replace(/\n/g,"<br>")}</div>`:""}
-      ${(()=>{if(!tCats.some(c=>c.id==='est'))return '';const items=[t.estQuotePrice?`<span class="est-info-item" style="color:#1A7A50;font-weight:700">💴 見積 <b>¥${Number(t.estQuotePrice).toLocaleString()}</b></span>`:'',t.estPlan?`<span class="est-info-item">📋 <b>${esc(t.estPlan)}</b></span>`:'',t.estStores?`<span class="est-info-item">🏪 <b>${esc(t.estStores)}</b></span>`:'',t.estMonth?`<span class="est-info-item">📅 導入<b>${esc(t.estMonth)}</b></span>`:'',t.estExpiry?`<span class="est-info-item">⏰ 有効期限<b>${t.estExpiry}</b></span>`:''].filter(Boolean);return `<div class="est-info">${items.length?items.join(''):'<span class="est-info-item" style="color:var(--text3)">詳細は編集から入力</span>'}</div>`;})()}
-      <div class="tags">
-        <div style="display:flex;flex-wrap:wrap;gap:4px">
-          ${tCats.map(c=>`<span class="tag" style="background:${c.color}18;color:${c.color}">${esc(c.name)}</span>`).join("")}
-          ${t.priority?`<span class="tag ${pt[t.priority]}">${ptl[t.priority]}</span>`:""}
-        </div>
+      <div class="card-cats">
+        ${tCats.map(c=>`<span class="tag" style="background:${c.color}18;color:${c.color}">${esc(c.name)}</span>`).join("")}
+        ${t.priority?`<span class="tag ${pt[t.priority]}">${ptl[t.priority]}</span>`:""}
       </div>
+      ${(()=>{
+        const isEst=tCats.some(c=>c.id==='est');
+        const isWf=tCats.some(c=>c.id==='wf');
+        const isDoc=tCats.some(c=>c.id==='doc');
+        const wfLines=(isWf&&t.wfTypes&&t.wfTypes.length)?t.wfTypes.map(w=>`<div class="card-detail-row">・${esc(w)}</div>`).join(''):'';
+        const estLines=isEst?[
+          t.estQuotePrice?`<div class="card-detail-row">見積　¥${Number(t.estQuotePrice).toLocaleString()}</div>`:'',
+          t.estPlan?`<div class="card-detail-row">${esc(t.estPlan)}</div>`:'',
+          t.estStores?`<div class="card-detail-row">${esc(t.estStores)}</div>`:'',
+          t.estMonth?`<div class="card-detail-row">導入月　${esc(t.estMonth)}</div>`:'',
+          t.estExpiry?`<div class="card-detail-row">有効期限　${t.estExpiry}</div>`:'',
+        ].filter(Boolean).join(''):'';
+        const docLine=(isDoc&&t.memo)?`<div class="card-detail-row" style="white-space:pre-wrap">${esc(t.memo)}</div>`:'';
+        const sep=(wfLines&&estLines)?'<div class="card-detail-sep"></div>':'';
+        const all=wfLines+sep+estLines+docLine;
+        return all?`<div class="card-details">${all}</div>`:'';
+      })()}
     </div>
     <div class="card-acts">
       <button class="ib" onclick="event.stopPropagation();openEdit(${t.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button>
