@@ -127,6 +127,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .check.on .ck{display:block}
 .card-name{font-size:13px;font-weight:500;flex:1;line-height:1.4}
 .card-memo{font-size:11.5px;color:var(--text2);margin-bottom:6px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.est-info{display:flex;flex-wrap:wrap;gap:3px 10px;margin:5px 0 4px;padding-left:26px;border-left:2px solid #1A7A5040}
+.est-info-item{font-size:11px;color:var(--text3);display:inline-flex;align-items:center;gap:2px}
+.est-info-item b{color:var(--text2);font-weight:600}
 .tags{display:flex;flex-wrap:wrap;gap:4px}
 .tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10.5px;font-weight:500}
 .tph{background:var(--red-bg);color:var(--red)}.tpm{background:var(--amber-bg);color:var(--amber)}.tpl{background:var(--green-bg);color:var(--green)}
@@ -1098,6 +1101,12 @@ function cardHTML(t,i){
         </div>
       </div>
       ${t.memo?`<div class="card-memo">${esc(t.memo).replace(/\n/g,"<br>")}</div>`:""}
+      ${tCats.some(c=>c.id==='est')&&(t.estPlan||t.estStores||t.estExpiry||t.estMonth)?`<div class="est-info">${[
+        t.estPlan?`<span class="est-info-item">📋 <b>${esc(t.estPlan)}</b></span>`:'',
+        t.estStores?`<span class="est-info-item">🏪 <b>${esc(t.estStores)}</b></span>`:'',
+        t.estMonth?`<span class="est-info-item">📅 導入<b>${esc(t.estMonth)}</b></span>`:'',
+        t.estExpiry?`<span class="est-info-item">⏰ 有効期限<b>${t.estExpiry}</b></span>`:'',
+      ].filter(Boolean).join('')}</div>`:''}
       <div class="tags" style="justify-content:space-between;align-items:center">
         <div style="display:flex;flex-wrap:wrap;gap:4px">
           ${tCats.map(c=>`<span class="tag" style="background:${c.color}18;color:${c.color}">${esc(c.name)}</span>`).join("")}
