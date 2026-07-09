@@ -1609,9 +1609,12 @@ function openDetail(id){
     const priceEl=document.getElementById('d-est-price');
     if(lp||qp){
       priceEl.style.display='flex';
-      priceEl.innerHTML=(lp?`<span style="font-size:12px;color:var(--text3)">定価</span><span style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--text2)">¥${lp.toLocaleString()}</span>`:'')
-        +(lp&&qp?`<span style="font-size:18px;color:var(--text3)">→</span>`:'')
-        +(qp?`<span style="font-size:12px;color:#1A7A50;font-weight:700">見積</span><span style="font-family:var(--mono);font-size:20px;font-weight:800;color:#1A7A50">¥${qp.toLocaleString()}</span>`:'');
+      const disc=(lp&&qp&&lp>0)?Math.round((1-qp/lp)*1000)/10:null;
+      const discStr=disc!==null?(Number.isInteger(disc)?disc+'%':disc.toFixed(1)+'%'):null;
+      priceEl.innerHTML=(lp?`<span style="font-size:11px;color:var(--text3);font-family:'游ゴシック','Yu Gothic',sans-serif;letter-spacing:.04em">定価</span><span style="font-family:'游ゴシック','Yu Gothic',sans-serif;font-size:17px;font-weight:700;color:var(--text2)">¥${lp.toLocaleString()}</span>`:'')
+        +(lp&&qp?`<span style="font-size:16px;color:var(--text3);margin:0 2px">→</span>`:'')
+        +(qp?`<span style="font-size:11px;color:#1A7A50;font-weight:700;font-family:'游ゴシック','Yu Gothic',sans-serif;letter-spacing:.04em">見積</span><span style="font-family:'游ゴシック','Yu Gothic',sans-serif;font-size:22px;font-weight:700;color:#1A7A50;letter-spacing:-.01em">¥${qp.toLocaleString()}</span>`:'')
+        +(discStr?`<span style="margin-left:8px;padding:3px 9px;background:#ef444420;color:#dc2626;border-radius:20px;font-size:12px;font-weight:700;font-family:'游ゴシック','Yu Gothic',sans-serif">▼ ${discStr} OFF</span>`:'');
     }else{priceEl.style.display='none';}
     const grid=document.getElementById('d-est-grid');
     const gi=(lbl,val)=>val?`<div class="di"><div class="dilbl">${lbl}</div><div class="dival">${val}</div></div>`:'';
