@@ -1101,12 +1101,7 @@ function cardHTML(t,i){
         </div>
       </div>
       ${t.memo?`<div class="card-memo">${esc(t.memo).replace(/\n/g,"<br>")}</div>`:""}
-      ${tCats.some(c=>c.id==='est')&&(t.estPlan||t.estStores||t.estExpiry||t.estMonth)?`<div class="est-info">${[
-        t.estPlan?`<span class="est-info-item">📋 <b>${esc(t.estPlan)}</b></span>`:'',
-        t.estStores?`<span class="est-info-item">🏪 <b>${esc(t.estStores)}</b></span>`:'',
-        t.estMonth?`<span class="est-info-item">📅 導入<b>${esc(t.estMonth)}</b></span>`:'',
-        t.estExpiry?`<span class="est-info-item">⏰ 有効期限<b>${t.estExpiry}</b></span>`:'',
-      ].filter(Boolean).join('')}</div>`:''}
+      ${(()=>{if(!tCats.some(c=>c.id==='est'))return '';const items=[t.estPlan?`<span class="est-info-item">📋 <b>${esc(t.estPlan)}</b></span>`:'',t.estStores?`<span class="est-info-item">🏪 <b>${esc(t.estStores)}</b></span>`:'',t.estMonth?`<span class="est-info-item">📅 導入<b>${esc(t.estMonth)}</b></span>`:'',t.estExpiry?`<span class="est-info-item">⏰ 有効期限<b>${t.estExpiry}</b></span>`:''].filter(Boolean);return `<div class="est-info">${items.length?items.join(''):'<span class="est-info-item" style="color:var(--text3)">詳細は編集から入力</span>'}</div>`;})()}
       <div class="tags" style="justify-content:space-between;align-items:center">
         <div style="display:flex;flex-wrap:wrap;gap:4px">
           ${tCats.map(c=>`<span class="tag" style="background:${c.color}18;color:${c.color}">${esc(c.name)}</span>`).join("")}
