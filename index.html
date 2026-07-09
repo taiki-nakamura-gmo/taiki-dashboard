@@ -1104,18 +1104,15 @@ function cardHTML(t,i){
         <div class="card-name">${esc(t.name)}</div>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
           ${isNew?`<span class="new-badge">NEW</span>`:""}
-          ${daysBadge}
         </div>
       </div>
       ${t.memo?`<div class="card-memo">${esc(t.memo).replace(/\n/g,"<br>")}</div>`:""}
       ${(()=>{if(!tCats.some(c=>c.id==='est'))return '';const items=[t.estQuotePrice?`<span class="est-info-item" style="color:#1A7A50;font-weight:700">💴 見積 <b>¥${Number(t.estQuotePrice).toLocaleString()}</b></span>`:'',t.estPlan?`<span class="est-info-item">📋 <b>${esc(t.estPlan)}</b></span>`:'',t.estStores?`<span class="est-info-item">🏪 <b>${esc(t.estStores)}</b></span>`:'',t.estMonth?`<span class="est-info-item">📅 導入<b>${esc(t.estMonth)}</b></span>`:'',t.estExpiry?`<span class="est-info-item">⏰ 有効期限<b>${t.estExpiry}</b></span>`:''].filter(Boolean);return `<div class="est-info">${items.length?items.join(''):'<span class="est-info-item" style="color:var(--text3)">詳細は編集から入力</span>'}</div>`;})()}
-      <div class="tags" style="justify-content:space-between;align-items:center">
+      <div class="tags">
         <div style="display:flex;flex-wrap:wrap;gap:4px">
           ${tCats.map(c=>`<span class="tag" style="background:${c.color}18;color:${c.color}">${esc(c.name)}</span>`).join("")}
           ${t.priority?`<span class="tag ${pt[t.priority]}">${ptl[t.priority]}</span>`:""}
-          ${due&&due.cls!=="over"?`<span class="tag tdue ${due.cls}">📅 ${due.label}</span>`:""}
         </div>
-        <button class="stbadge ${stCls[status]}" onclick="event.stopPropagation();toggleStatus(${t.id})">${stMap[status]}</button>
       </div>
     </div>
     <div class="card-acts">
@@ -1587,12 +1584,6 @@ function openDetail(id){
   let tags="";
   tCats2.forEach(c=>{tags+=`<span class="tag" style="background:${c.color}18;color:${c.color};font-size:12px">${esc(c.name)}</span>`;});
   if(t.priority)tags+=`<span class="tag ${t.priority==="high"?"tph":t.priority==="mid"?"tpm":"tpl"}" style="font-size:12px">${ptMap[t.priority]}</span>`;
-  if(t.assignee)tags+=`<span class="tag" style="background:${(mc[t.assignee]||"#9B99A4")}18;color:${mc[t.assignee]||"#9B99A4"};font-size:12px">👤 ${esc(t.assignee)}</span>`;
-  if(due)tags+=`<span class="tag tdue ${due.cls}" style="font-size:12px">📅 ${due.label}</span>`;
-  const stMap2={todo:"⬜ 未着手",doing:"🔵 進行中",done:"✅ 完了"};
-  const stCls2={todo:"st-todo",doing:"st-doing",done:"st-done2"};
-  const stVal=t.status||"todo";
-  tags+=`<button class="stbadge ${stCls2[stVal]}" style="font-size:12px" onclick="toggleStatus(${t.id});closeDetail()">${stMap2[stVal]}</button>`;
   document.getElementById("d-tags").innerHTML=tags;
   const ms=document.getElementById("d-memo-sec");
   if(t.memo){document.getElementById("d-memo").textContent=t.memo;ms.style.display="";}else{ms.style.display="none";}
