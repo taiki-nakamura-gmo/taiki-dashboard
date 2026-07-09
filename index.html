@@ -1792,11 +1792,7 @@ function initFirebaseData(){
     if(changed)fbSet("cats",cats);
     if(JSON.stringify(cats)!==prevJson)refresh();
   });
-  _onValue(_ref(_db,"collected"),snap=>{
-    const val=snap.val()||{};
-    _collectedAll=val;
-    if(currentPage==='anken')renderTeamCards();
-  });
+
   _onValue(_ref(_db,"cfg"),snap=>{
     const val=snap.val();if(val)appCfg=Object.assign(appCfg,val);applyAccent();applyFavicon();
   });
@@ -1833,7 +1829,6 @@ const PROB_COLORS={confirmed:{bg:'#dcfce7',cl:'#16a34a'},'70':{bg:'#dbeafe',cl:'
 const PROB_ORDER=['confirmed','70','50','25','lost'];
 
 let anken=[];
-let _collectedAll={};
 let currentPage='task';
 let currentAnkenTab='summary';
 let currentAnkenMonth=localStorage.getItem('canly_month')||'2026-06';
@@ -1964,23 +1959,7 @@ function renderLostBox(){
   </div>`;
 }
 
-function getCollectedAmt(userKey){return Number((_collectedAll[currentAnkenMonth]||{})[userKey]||0);}
-function getScopeCollected(scopeKeys){return scopeKeys.reduce((s,k)=>s+getCollectedAmt(k),0);}
-function startEditCollected(userKey){
-  const el=document.getElementById('col-amt-'+userKey);if(!el)return;
-  const cur=getCollectedAmt(userKey);
-  el.outerHTML=`<input id="col-inp-${userKey}" class="ak-inline-inp" type="number" value="${cur||''}" style="font-family:var(--mono);font-weight:800;font-size:18px;width:110px" onblur="saveEditCollected('${userKey}',this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${cur||''}';this.blur();}">`;
-  const inp=document.getElementById('col-inp-'+userKey);if(inp){inp.focus();inp.select();}
-}
-function saveEditCollected(userKey,value){
-  if(value!==''){
-    const amt=Number(value);
-    if(!_collectedAll[currentAnkenMonth])_collectedAll[currentAnkenMonth]={};
-    _collectedAll[currentAnkenMonth][userKey]=amt;
-    fbSet('collected/'+currentAnkenMonth+'/'+userKey,amt);
-  }
-  renderTeamCards();
-}
+
 function renderTeamCards(){
   const el=document.getElementById('ak-team-cards');
   if(!el)return;
@@ -1992,7 +1971,7 @@ function renderTeamCards(){
     const con=getScopeYomi(scope,['70','confirmed']);
     const agrP=pct(agr,target);
     const conP=pct(con,target);
-    const col=getScopeCollected(scope);
+    const col=getScopeYomi(scope,['confirmed']);
     const colP=pct(col,target);
     const colDone=colP>=100;
     const flowers=colDone?`
@@ -2023,7 +2002,6 @@ function renderTeamCards(){
         <div style="display:flex;align-items:center;gap:6px">
           <span id="col-amt-${u.key}" class="ak-collected-amt">${fmtAmt(col)}</span>
           <span style="font-size:12px;color:var(--text3)">/ ${fmtAmt(target)}</span>
-          <button class="ak-amt-pencil" onclick="startEditCollected('${u.key}')" title="回収済みを編集" style="margin-left:4px">${_pencilSvg}</button>
         </div>
         <div class="ak-collected-bar-track"><div class="ak-collected-bar-fill" style="width:${Math.min(colP,100)}%"></div></div>
         ${colDone
