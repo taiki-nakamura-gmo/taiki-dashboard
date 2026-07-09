@@ -559,6 +559,8 @@ input[type=number]{-moz-appearance:textfield}
       <div style="font-size:11px;font-weight:700;color:#1A7A50;margin-bottom:10px">📄 見積書情報</div>
       <div class="form-row" style="margin-bottom:8px"><label class="lbl">プラン</label><div class="sel-w"><select id="f-plan" class="inp"><option value="">選択してください</option><option>ローカル集客コンサル</option><option>スタンダードプラン</option><option>スモールプラン</option></select></div></div>
       <div class="form-row" style="margin-bottom:8px"><label class="lbl">店舗数</label><div class="sel-w"><select id="f-stores" class="inp"><option value="">選択してください</option><option>～25店舗</option><option>～50店舗</option><option>～100店舗</option><option>～150店舗</option><option>～200店舗</option><option>201店舗以上</option></select></div></div>
+      <div class="form-row" style="margin-bottom:8px"><label class="lbl">定価金額</label><input type="number" class="inp" id="f-listprice" placeholder="例）500000" min="0"></div>
+      <div class="form-row" style="margin-bottom:8px"><label class="lbl">見積金額</label><input type="number" class="inp" id="f-quoteprice" placeholder="例）450000" min="0"></div>
       <div class="form-row" style="margin-bottom:8px"><label class="lbl">見積もり有効期限</label><input type="date" class="inp" id="f-expiry"></div>
       <div class="form-row"><label class="lbl">導入月</label><div class="sel-w"><select id="f-imonth" class="inp"><option value="">選択してください</option><option>1月</option><option>2月</option><option>3月</option><option>4月</option><option>5月</option><option>6月</option><option>7月</option><option>8月</option><option>9月</option><option>10月</option><option>11月</option><option>12月</option></select></div></div>
     </div>
@@ -1101,7 +1103,7 @@ function cardHTML(t,i){
         </div>
       </div>
       ${t.memo?`<div class="card-memo">${esc(t.memo).replace(/\n/g,"<br>")}</div>`:""}
-      ${(()=>{if(!tCats.some(c=>c.id==='est'))return '';const items=[t.estPlan?`<span class="est-info-item">📋 <b>${esc(t.estPlan)}</b></span>`:'',t.estStores?`<span class="est-info-item">🏪 <b>${esc(t.estStores)}</b></span>`:'',t.estMonth?`<span class="est-info-item">📅 導入<b>${esc(t.estMonth)}</b></span>`:'',t.estExpiry?`<span class="est-info-item">⏰ 有効期限<b>${t.estExpiry}</b></span>`:''].filter(Boolean);return `<div class="est-info">${items.length?items.join(''):'<span class="est-info-item" style="color:var(--text3)">詳細は編集から入力</span>'}</div>`;})()}
+      ${(()=>{if(!tCats.some(c=>c.id==='est'))return '';const items=[t.estQuotePrice?`<span class="est-info-item" style="color:#1A7A50;font-weight:700">💴 見積 <b>¥${Number(t.estQuotePrice).toLocaleString()}</b></span>`:'',t.estPlan?`<span class="est-info-item">📋 <b>${esc(t.estPlan)}</b></span>`:'',t.estStores?`<span class="est-info-item">🏪 <b>${esc(t.estStores)}</b></span>`:'',t.estMonth?`<span class="est-info-item">📅 導入<b>${esc(t.estMonth)}</b></span>`:'',t.estExpiry?`<span class="est-info-item">⏰ 有効期限<b>${t.estExpiry}</b></span>`:''].filter(Boolean);return `<div class="est-info">${items.length?items.join(''):'<span class="est-info-item" style="color:var(--text3)">詳細は編集から入力</span>'}</div>`;})()}
       <div class="tags" style="justify-content:space-between;align-items:center">
         <div style="display:flex;flex-wrap:wrap;gap:4px">
           ${tCats.map(c=>`<span class="tag" style="background:${c.color}18;color:${c.color}">${esc(c.name)}</span>`).join("")}
@@ -1643,7 +1645,7 @@ function openAdd(){
   ["fp","fd","ft","fa"].forEach(i=>document.getElementById(i).value="");
   _selectedCats=[];fillCats();updateEstFields();updateDocFields();updateWfFields();
   setWfTypes([]);
-  ['fm','f-plan','f-stores','f-expiry','f-imonth'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['fm','f-plan','f-stores','f-listprice','f-quoteprice','f-expiry','f-imonth'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
 }
@@ -1658,6 +1660,8 @@ function openEdit(id){
   document.getElementById('fm').value=t.memo||'';
   document.getElementById('f-plan').value=t.estPlan||'';
   document.getElementById('f-stores').value=t.estStores||'';
+  document.getElementById('f-listprice').value=t.estListPrice||'';
+  document.getElementById('f-quoteprice').value=t.estQuotePrice||'';
   document.getElementById('f-expiry').value=t.estExpiry||'';
   document.getElementById('f-imonth').value=t.estMonth||'';
   document.getElementById("task-modal").classList.add("open");
@@ -1673,7 +1677,7 @@ function saveTaskForm(){
   const isEst=_selectedCats.includes('est');
   const isDoc=_selectedCats.includes('doc');
   const isWf=_selectedCats.includes('wf');
-  const data={name,memo:isDoc?(document.getElementById("fm").value.trim()):'',cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:'',due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,wfTypes:isWf?getWfTypes():[],estPlan:isEst?document.getElementById('f-plan').value:'',estStores:isEst?document.getElementById('f-stores').value:'',estExpiry:isEst?document.getElementById('f-expiry').value:'',estMonth:isEst?document.getElementById('f-imonth').value:''};
+  const data={name,memo:isDoc?(document.getElementById("fm").value.trim()):'',cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:'',due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,wfTypes:isWf?getWfTypes():[],estPlan:isEst?document.getElementById('f-plan').value:'',estStores:isEst?document.getElementById('f-stores').value:'',estListPrice:isEst?document.getElementById('f-listprice').value:'',estQuotePrice:isEst?document.getElementById('f-quoteprice').value:'',estExpiry:isEst?document.getElementById('f-expiry').value:'',estMonth:isEst?document.getElementById('f-imonth').value:''};
   if(eid){const t=tasks.find(t=>t.id==eid);if(t){Object.assign(t,data);window.saveTask(t);}}
   else{
     window.saveTask({id:Date.now(),createdAt:Date.now(),...data});
