@@ -595,6 +595,10 @@ input[type=number]{-moz-appearance:textfield}
         <div class="di"><div class="dilbl">カテゴリ</div><div class="dival" id="d-c">—</div></div>
       </div>
     </div>
+    <div class="dsec" id="d-wf-sec" style="display:none">
+      <div class="dlbl" style="color:#A05C00">📋 WF申請 種別</div>
+      <div id="d-wf-types" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div>
+    </div>
     <div class="dsec" id="d-est-sec" style="display:none">
       <div class="dlbl" style="color:#1A7A50">📄 見積書情報</div>
       <div id="d-est-price" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px 12px;background:#1A7A5008;border:1.5px solid #1A7A5020;border-radius:10px"></div>
@@ -1591,6 +1595,12 @@ function openDetail(id){
   document.getElementById("d-p").textContent=ptMap[t.priority]||"なし";
   document.getElementById("d-d").textContent=due?due.label:"未設定";
   document.getElementById("d-c").textContent=tCats2.map(c=>c.name).join("、")||"なし";
+  const isWf=tCats2.some(c=>c.id==='wf');
+  const wfSec=document.getElementById('d-wf-sec');
+  if(isWf&&t.wfTypes&&t.wfTypes.length){
+    wfSec.style.display='';
+    document.getElementById('d-wf-types').innerHTML=t.wfTypes.map(w=>`<span style="display:inline-flex;align-items:center;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;background:#A05C00;color:#fff;font-family:'游ゴシック','Yu Gothic',sans-serif">${esc(w)}</span>`).join('');
+  }else{wfSec.style.display='none';}
   const isEst=tCats2.some(c=>c.id==='est');
   const estSec=document.getElementById('d-est-sec');
   if(isEst){
