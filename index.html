@@ -1110,7 +1110,10 @@ function cardHTML(t,i){
           <svg class="ck" viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg>
         </div>
         <div class="card-name">${esc(t.name)}</div>
-        ${isNew?`<span class="new-badge">NEW</span>`:""}
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          ${isNew?`<span class="new-badge">NEW</span>`:""}
+          ${daysBadge}
+        </div>
       </div>
       <div class="card-cats">
         ${tCats.map(c=>`<span class="tag" style="background:${c.color}18;color:${c.color}">${esc(c.name)}</span>`).join("")}
