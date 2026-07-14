@@ -571,6 +571,7 @@ input[type=number]{-moz-appearance:textfield}
     <div class="form-row"><label class="lbl">担当者 <span style="color:var(--red)">*</span></label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="中村">中村</option><option value="中">中</option><option value="櫻井">櫻井</option><option value="青木">青木</option></select></div></div>
     <input type="hidden" id="fp" value="">
     <div class="form-row"><label class="lbl">期日</label><div style="display:flex;gap:8px"><input type="date" class="inp" id="fd" style="flex:1"><input type="text" class="inp" id="ft" placeholder="例）10:00" style="flex:0 0 130px"></div></div>
+    <div class="form-row"><label class="lbl">メモ</label><textarea class="inp" id="f-note" rows="3" placeholder="自由記入欄" style="resize:vertical;min-height:72px"></textarea></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
       <button class="btn btn-primary" onclick="saveTaskForm()">保存する</button>
@@ -589,6 +590,10 @@ input[type=number]{-moz-appearance:textfield}
     <div class="dsec" id="d-memo-sec">
       <div class="dlbl">メモ・詳細</div>
       <div class="dmemo" id="d-memo"></div>
+    </div>
+    <div class="dsec" id="d-note-sec" style="display:none">
+      <div class="dlbl">📝 メモ</div>
+      <div class="dmemo" id="d-note" style="white-space:pre-wrap"></div>
     </div>
     <div class="dsec">
       <div class="dlbl">タスク情報</div>
@@ -1132,8 +1137,9 @@ function cardHTML(t,i){
           t.estExpiry?`<div class="card-detail-row">有効期限　${t.estExpiry}</div>`:'',
         ].filter(Boolean).join(''):'';
         const docLine=(isDoc&&t.memo)?`<div class="card-detail-row" style="white-space:pre-wrap">${esc(t.memo)}</div>`:'';
+        const noteLine=t.note?`<div class="card-detail-row" style="white-space:pre-wrap;color:var(--text3)">📝 ${esc(t.note)}</div>`:'';
         const sep=(wfLines&&estLines)?'<div class="card-detail-sep"></div>':'';
-        const all=wfLines+sep+estLines+docLine;
+        const all=wfLines+sep+estLines+docLine+noteLine;
         return all?`<div class="card-details">${all}</div>`:'';
       })()}
     </div>
@@ -1609,6 +1615,8 @@ function openDetail(id){
   document.getElementById("d-tags").innerHTML=tags;
   const ms=document.getElementById("d-memo-sec");
   if(t.memo){document.getElementById("d-memo").textContent=t.memo;ms.style.display="";}else{ms.style.display="none";}
+  const ns=document.getElementById("d-note-sec");
+  if(t.note){document.getElementById("d-note").textContent=t.note;ns.style.display="";}else{ns.style.display="none";}
   document.getElementById("d-a").textContent=t.assignee||"未定";
   document.getElementById("d-p").textContent=ptMap[t.priority]||"なし";
   document.getElementById("d-d").textContent=due?due.label:"未設定";
@@ -1689,7 +1697,7 @@ function openAdd(){
   ["fp","fd","ft","fa"].forEach(i=>document.getElementById(i).value="");
   _selectedCats=[];fillCats();updateEstFields();updateDocFields();updateWfFields();
   setWfTypes([]);
-  ['fm','f-plan','f-stores','f-listprice','f-quoteprice','f-expiry','f-imonth'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['fm','f-plan','f-stores','f-listprice','f-quoteprice','f-expiry','f-imonth','f-note'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
 }
@@ -1708,6 +1716,7 @@ function openEdit(id){
   document.getElementById('f-quoteprice').value=t.estQuotePrice||'';
   document.getElementById('f-expiry').value=t.estExpiry||'';
   document.getElementById('f-imonth').value=t.estMonth||'';
+  document.getElementById('f-note').value=t.note||'';
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
 }
@@ -1721,7 +1730,7 @@ function saveTaskForm(){
   const isEst=_selectedCats.includes('est');
   const isDoc=_selectedCats.includes('doc');
   const isWf=_selectedCats.includes('wf');
-  const data={name,memo:isDoc?(document.getElementById("fm").value.trim()):'',cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:'',due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,wfTypes:isWf?getWfTypes():[],estPlan:isEst?document.getElementById('f-plan').value:'',estStores:isEst?document.getElementById('f-stores').value:'',estListPrice:isEst?document.getElementById('f-listprice').value:'',estQuotePrice:isEst?document.getElementById('f-quoteprice').value:'',estExpiry:isEst?document.getElementById('f-expiry').value:'',estMonth:isEst?document.getElementById('f-imonth').value:''};
+  const data={name,memo:isDoc?(document.getElementById("fm").value.trim()):'',cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:'',due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,wfTypes:isWf?getWfTypes():[],estPlan:isEst?document.getElementById('f-plan').value:'',estStores:isEst?document.getElementById('f-stores').value:'',estListPrice:isEst?document.getElementById('f-listprice').value:'',estQuotePrice:isEst?document.getElementById('f-quoteprice').value:'',estExpiry:isEst?document.getElementById('f-expiry').value:'',estMonth:isEst?document.getElementById('f-imonth').value:'',note:document.getElementById('f-note').value.trim()};
   if(eid){const t=tasks.find(t=>t.id==eid);if(t){Object.assign(t,data);window.saveTask(t);}}
   else{
     window.saveTask({id:Date.now(),createdAt:Date.now(),...data});
