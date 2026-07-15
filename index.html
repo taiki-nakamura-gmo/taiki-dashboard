@@ -289,6 +289,18 @@ input[type=number]{-moz-appearance:textfield}
 .ak-amt-pencil:hover{border-color:var(--accent);background:var(--surface)}
 .ak-amt-pencil svg{width:11px;height:11px;stroke:var(--text3)}
 .ak-amt-pencil:hover svg{stroke:var(--accent)}
+.ak-kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start}
+.ak-kol{background:var(--surface2);border-radius:var(--r12);overflow:hidden;border:1px solid var(--border)}
+.ak-kol-head{padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:var(--surface)}
+.ak-kol-cnt{font-size:11px;color:var(--text3)}
+.ak-kol-amt{font-size:13px;font-weight:800;font-family:var(--mono);letter-spacing:-.02em;margin-left:auto}
+.ak-kol-body{padding:8px;display:flex;flex-direction:column;gap:8px;min-height:60px}
+.ak-deal-card{background:var(--surface);border-radius:10px;padding:10px 12px;border:1px solid var(--border)}
+.ak-deal-card.ak-deal-confirmed{background:#f0fdf4;border-color:#86efac}
+.ak-co-cell{font-size:13px;font-weight:700;margin-bottom:4px}
+.ak-deal-amount{margin-bottom:5px;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:13px}
+.ak-deal-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text2)}
+.ak-deal-actions{margin-top:8px;display:flex;align-items:center;gap:6px;padding-top:7px;border-top:1px solid var(--border)}
 .ak-inline-sel{border:none;border-bottom:1.5px solid transparent;padding:3px 18px 3px 2px;font-family:var(--font);font-size:13px;font-weight:600;background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239B99A4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 2px center;color:var(--text);outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .14s}
 .ak-inline-sel:hover{border-bottom-color:var(--border2)}
 .ak-inline-sel:focus{border-bottom-color:var(--accent)}
@@ -399,6 +411,9 @@ input[type=number]{-moz-appearance:textfield}
   /* 案件ページ */
   .ak-body{padding:12px 10px}
   .topbar-row2{padding:8px 0}
+  /* ヨミ一覧カンバン */
+  #ak-list-view{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .ak-kanban{grid-template-columns:repeat(4,240px)}
 }
 </style>
 </head>
@@ -2182,62 +2197,62 @@ function renderAnkenList(){
   if(!el)return;
   const monthDeals=getMonthDeals();
   if(!monthDeals.length){el.innerHTML=`<div class="ak-empty">この月のヨミが登録されていません<br><span style="font-size:12px;margin-top:6px;display:block">「ヨミを追加」ボタンから登録できます</span></div>`;return;}
-  const probRank=p=>{const i=PROB_ORDER.indexOf(p);return i===-1?9:i;};
-  const dealSort=(a,b)=>{
-    const rd=probRank(a.prob)-probRank(b.prob);if(rd!==0)return rd;
-    const aA=Number(a.amount||0),bA=Number(b.amount||0);
-    if(aA===0&&bA===0)return 0;if(aA===0)return 1;if(bA===0)return -1;
-    return bA-aA;
-  };
-  const active=[...monthDeals].filter(d=>d.prob!=='lost').sort(dealSort);
-  const lost=[...monthDeals].filter(d=>d.prob==='lost').sort((a,b)=>{const aA=Number(a.amount||0),bA=Number(b.amount||0);if(aA===0&&bA===0)return 0;if(aA===0)return 1;if(bA===0)return -1;return bA-aA;});
-  const av=u=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:${u.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700">${u.initial}</span>${u.name}</span>`;
+  const amtSort=(a,b)=>{const aA=Number(a.amount||0),bA=Number(b.amount||0);if(aA===0&&bA===0)return 0;if(aA===0)return 1;if(bA===0)return -1;return bA-aA;};
   const userOpts=(cur)=>AUTH_USERS.map(u=>`<option value="${u.key}"${cur===u.key?' selected':''}>${u.name}</option>`).join('');
-  const avStatic=key=>{const u=AUTH_USERS.find(u=>u.key===key);return u?`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:${u.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700">${u.initial}</span>${u.name}</span>`:'—';};
-  const editBtn=`<button class="ib" onclick="openAnkenEdit(${0})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button>`;
-  const delBtn=`<button class="ib del" onclick="deleteAnken(${0})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button>`;
-  const makeRow=(d,dim=false)=>{
+  const avBadge=key=>{const u=AUTH_USERS.find(u=>u.key===key);return u?`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:${u.color};color:#fff;font-size:9px;font-weight:700" title="${u.name}">${u.initial}</span>`:''};
+  const avName=key=>{const u=AUTH_USERS.find(u=>u.key===key);return u?u.name:'—'};
+  const makeCard=(d)=>{
     const pc=PROB_COLORS[d.prob]||{bg:'#f1f5f9',cl:'#64748b'};
-    const confirmed=d.prob==='confirmed';
-    if(confirmed){
-      return `<tr style="background:#f0fdf4">
-        <td style="font-weight:700">${esc(d.company)}</td>
-        <td style="font-family:var(--mono);font-weight:600">${fmtAmt(Number(d.amount))}</td>
-        <td>${avStatic(d.fs)}</td>
-        <td>${avStatic(d.is)}</td>
-        <td style="color:var(--text2)">${d.month||'—'}</td>
-        <td><span class="ak-prob-chip" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[d.prob]}</span></td>
-        <td><button class="ib" onclick="openAnkenEdit(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button></td>
-      </tr>`;
-    }
-    return `<tr${dim?' style="opacity:.6"':''}>
-      <td id="ak-co-${d.id}"><span class="ak-amt-wrap"><span class="ak-amt-display" style="font-weight:700;min-width:100px;display:inline-block">${esc(d.company)}</span><button class="ak-amt-pencil" onclick="startEditCo(${d.id},this.closest('td'))" title="会社名を編集"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button></span></td>
-      <td id="ak-amt-${d.id}" class="ak-amt-cell"><span class="ak-amt-wrap"><span class="ak-amt-display">${fmtAmt(Number(d.amount||0))}</span><button class="ak-amt-pencil" onclick="startEditAmt(${d.id},${d.amount||0},this.closest('td'))" title="金額を編集"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button></span></td>
-      <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'fs',this.value)">${userOpts(d.fs)}</select></td>
-      <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'is',this.value)">${userOpts(d.is)}</select></td>
-      <td><input class="ak-inline-inp" type="month" value="${d.month||''}" onchange="updateAnkenField(${d.id},'month',this.value)" style="width:110px;color:var(--text2)"></td>
-      <td><select class="ak-prob-select" style="background:${pc.bg};color:${pc.cl}" onchange="updateAnkenProb(${d.id},this.value,this)">${PROB_ORDER.map(p=>`<option value="${p}"${d.prob===p?' selected':''}>${PROB_LABELS[p]}</option>`).join('')}</select></td>
-      <td><button class="ib del" onclick="deleteAnken(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button></td>
-    </tr>`;
+    const isConf=d.prob==='confirmed';
+    return `<div class="ak-deal-card${isConf?' ak-deal-confirmed':''}">
+      <div id="ak-co-${d.id}" class="ak-co-cell"><span class="ak-amt-wrap"><span class="ak-amt-display">${esc(d.company)}</span>${!isConf?`<button class="ak-amt-pencil" onclick="startEditCo(${d.id},this.closest('.ak-co-cell'))" title="会社名を編集"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button>`:''}</span></div>
+      <div id="ak-amt-${d.id}" class="ak-amt-cell ak-deal-amount"><span class="ak-amt-wrap"><span class="ak-amt-display">${fmtAmt(Number(d.amount||0))}</span>${!isConf?`<button class="ak-amt-pencil" onclick="startEditAmt(${d.id},${d.amount||0},this.closest('.ak-amt-cell'))" title="金額を編集"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button>`:''}</span></div>
+      <div class="ak-deal-meta">
+        <span>${avBadge(d.fs)}<span style="margin-left:3px">${avName(d.fs)}</span></span>
+        <span style="color:var(--border2)">|</span>
+        <span>${avBadge(d.is)}<span style="margin-left:3px">${avName(d.is)}</span></span>
+        ${d.month?`<span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:5px;margin-left:auto">${d.month}</span>`:''}
+      </div>
+      ${!isConf?`<div class="ak-deal-actions">
+        <select class="ak-prob-select" style="background:${pc.bg};color:${pc.cl}" onchange="updateAnkenProb(${d.id},this.value,this)">${PROB_ORDER.map(p=>`<option value="${p}"${d.prob===p?' selected':''}>${PROB_LABELS[p]}</option>`).join('')}</select>
+        <button class="ib del" style="margin-left:auto" onclick="deleteAnken(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button>
+      </div>`:''}
+    </div>`;
   };
-  const activeHtml=active.length
-    ?`<div class="ak-table-wrap"><table class="ak-table">
-        <thead><tr><th>会社名</th><th>提案金額</th><th>FS担当</th><th>IS担当</th><th>導入月</th><th>確度</th><th></th></tr></thead>
-        <tbody>${active.map(d=>makeRow(d)).join('')}</tbody>
-      </table></div>`
-    :`<div class="ak-empty">アクティブなヨミがありません</div>`;
-  const lostHtml=lost.length
-    ?`<div style="margin-top:20px">
-        <div class="ak-section-title" style="--accent:var(--red);margin-bottom:10px">失注BOX</div>
-        <div style="background:var(--surface);border:1.5px solid #fca5a5;border-radius:var(--r12);overflow:hidden">
-          <table class="ak-table">
-            <thead><tr><th>会社名</th><th>提案金額</th><th>FS担当</th><th>IS担当</th><th>導入月</th><th>確度</th><th></th></tr></thead>
-            <tbody>${lost.map(d=>makeRow(d,true)).join('')}</tbody>
-          </table>
-        </div>
-      </div>`
-    :'';
-  el.innerHTML=activeHtml+lostHtml;
+  const COL_ORDER=['25','50','70','confirmed'];
+  const cols=COL_ORDER.map(prob=>{
+    const deals=[...monthDeals].filter(d=>d.prob===prob).sort(amtSort);
+    const pc=PROB_COLORS[prob]||{bg:'#f1f5f9',cl:'#64748b'};
+    const total=deals.reduce((s,d)=>s+Number(d.amount||0),0);
+    return `<div class="ak-kol">
+      <div class="ak-kol-head" style="border-top:3px solid ${pc.cl}">
+        <span class="ak-prob-badge" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[prob]}</span>
+        <span class="ak-kol-cnt">${deals.length}件</span>
+        <span class="ak-kol-amt" style="color:${pc.cl}">${fmtAmt(total)}</span>
+      </div>
+      <div class="ak-kol-body">
+        ${deals.length?deals.map(d=>makeCard(d)).join(''):'<div style="padding:16px 4px;font-size:12px;color:var(--text3);text-align:center">—</div>'}
+      </div>
+    </div>`;
+  }).join('');
+  const lost=[...monthDeals].filter(d=>d.prob==='lost').sort(amtSort);
+  const lostHtml=lost.length?`<div style="margin-top:20px">
+    <div class="ak-section-title" style="--accent:var(--red);margin-bottom:10px">失注BOX</div>
+    <div style="background:var(--surface);border:1.5px solid #fca5a5;border-radius:var(--r12);overflow:hidden">
+      <table class="ak-table">
+        <thead><tr><th>会社名</th><th>提案金額</th><th>FS担当</th><th>IS担当</th><th>導入月</th><th></th></tr></thead>
+        <tbody>${lost.map(d=>`<tr style="opacity:.6">
+          <td style="font-weight:700">${esc(d.company)}</td>
+          <td style="font-family:var(--mono)">${fmtAmt(Number(d.amount||0))}</td>
+          <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'fs',this.value)">${userOpts(d.fs)}</select></td>
+          <td><select class="ak-inline-sel" onchange="updateAnkenField(${d.id},'is',this.value)">${userOpts(d.is)}</select></td>
+          <td style="color:var(--text2)">${d.month||'—'}</td>
+          <td><button class="ib del" onclick="deleteAnken(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  </div>`:'';
+  el.innerHTML=`<div class="ak-kanban">${cols}</div>${lostHtml}`;
 }
 
 function initAnkenData(){
@@ -2290,7 +2305,7 @@ function saveEditCo(id,value){
   const name=value.trim()||d.company;
   if(value.trim())updateAnkenField(id,'company',value.trim());
   const cell=document.getElementById('ak-co-'+id);if(!cell)return;
-  cell.innerHTML=`<span class="ak-amt-wrap"><span class="ak-amt-display" style="font-weight:700;min-width:100px;display:inline-block">${esc(name)}</span><button class="ak-amt-pencil" onclick="startEditCo(${id},this.closest('td'))" title="会社名を編集">${_pencilSvg}</button></span>`;
+  cell.innerHTML=`<span class="ak-amt-wrap"><span class="ak-amt-display">${esc(name)}</span><button class="ak-amt-pencil" onclick="startEditCo(${id},this.closest('.ak-co-cell'))" title="会社名を編集">${_pencilSvg}</button></span>`;
 }
 function startEditAmt(id,cur,cell){
   cell.innerHTML=`<input class="ak-inline-inp" type="number" value="${cur||''}" style="font-family:var(--mono);font-weight:600;width:90px" onblur="saveEditAmt(${id},this.value,${cur||0})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${cur||''}';this.blur();}">`;
@@ -2300,7 +2315,7 @@ function saveEditAmt(id,value,prev){
   const amt=value!==''?value:prev;
   if(value!=='')updateAnkenField(id,'amount',value);
   const cell=document.getElementById('ak-amt-'+id);if(!cell)return;
-  cell.innerHTML=`<span class="ak-amt-wrap"><span class="ak-amt-display">${fmtAmt(Number(amt||0))}</span><button class="ak-amt-pencil" onclick="startEditAmt(${id},${amt||0},this.closest('td'))" title="金額を編集">${_pencilSvg}</button></span>`;
+  cell.innerHTML=`<span class="ak-amt-wrap"><span class="ak-amt-display">${fmtAmt(Number(amt||0))}</span><button class="ak-amt-pencil" onclick="startEditAmt(${id},${amt||0},this.closest('.ak-amt-cell'))" title="金額を編集">${_pencilSvg}</button></span>`;
 }
 function updateAnkenProb(id,prob,el){
   const d=anken.find(d=>d.id===id);if(!d)return;
