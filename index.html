@@ -778,6 +778,8 @@ input[type=number]{-moz-appearance:textfield}
       </div>
     </div>
     <div class="modal-footer">
+      <button id="ak-modal-del-btn" class="btn btn-ghost" style="color:var(--red);display:none" onclick="if(_editAnkenId!=null){closeAnkenModal();deleteAnken(_editAnkenId);}">削除</button>
+      <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeAnkenModal()">キャンセル</button>
       <button class="btn btn-primary" onclick="saveAnkenForm()">保存する</button>
     </div>
@@ -2220,10 +2222,7 @@ function renderAnkenList(){
         <span>${avBadge(d.is)}<span style="margin-left:3px">${avName(d.is)}</span></span>
         ${d.month?`<span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:5px;margin-left:auto">${d.month}</span>`:''}
       </div>
-      ${!isConf?`<div class="ak-deal-actions">
-        <select class="ak-prob-select" style="background:${pc.bg};color:${pc.cl}" onchange="updateAnkenProb(${d.id},this.value,this)">${PROB_ORDER.map(p=>`<option value="${p}"${d.prob===p?' selected':''}>${PROB_LABELS[p]}</option>`).join('')}</select>
-        <button class="ib del" style="margin-left:auto" onclick="deleteAnken(${d.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button>
-      </div>`:''}
+      <div style="margin-top:6px"><span class="ak-prob-badge" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[d.prob]}</span></div>
     </div>`;
   };
   const COL_ORDER=['25','50','70','confirmed'];
@@ -2273,6 +2272,7 @@ function initAnkenData(){
 let _editAnkenId=null;
 function openAnkenAdd(){
   _editAnkenId=null;
+  document.getElementById('ak-modal-del-btn').style.display='none';
   document.getElementById('ak-modal-title').textContent='ヨミを追加';
   document.getElementById('ak-company').value='';
   document.getElementById('ak-amount').value='';
@@ -2286,6 +2286,7 @@ function openAnkenAdd(){
 function openAnkenEdit(id){
   const d=anken.find(d=>d.id===id);if(!d)return;
   _editAnkenId=id;
+  document.getElementById('ak-modal-del-btn').style.display='';
   document.getElementById('ak-modal-title').textContent='ヨミを編集';
   document.getElementById('ak-company').value=d.company||'';
   document.getElementById('ak-amount').value=d.amount||'';
