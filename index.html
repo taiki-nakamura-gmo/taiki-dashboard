@@ -2106,7 +2106,7 @@ function renderTeamCards(){
         ${flowers}
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
           <span class="ak-collected-label">🏦 回収済み</span>
-          <span class="ak-prog-pct ak-prog-pct-r" style="margin-left:auto">${colP}%</span>
+          <span class="ak-prog-pct ak-prog-pct-r" style="margin-left:auto">達成率${colP}%</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
           <span id="col-amt-${u.key}" class="ak-collected-amt">${fmtAmt(col)}</span>
@@ -2123,7 +2123,7 @@ function renderTeamCards(){
             <span class="ak-prog-letter ak-prog-letter-c">C</span>
             <span class="ak-prog-name">コンサバ</span>
             <span class="ak-prog-hint">70％以上</span>
-            <span class="ak-prog-pct ak-prog-pct-c">${conP}%</span>
+            <span class="ak-prog-pct ak-prog-pct-c">達成率${conP}%</span>
           </div>
           <div class="ak-goal-row">
             <span class="ak-goal-cur">${fmtAmt(con)}</span>
@@ -2141,7 +2141,7 @@ function renderTeamCards(){
             <span class="ak-prog-letter ak-prog-letter-a">A</span>
             <span class="ak-prog-name">アグレッシブ</span>
             <span class="ak-prog-hint">50％以上</span>
-            <span class="ak-prog-pct ak-prog-pct-a">${agrP}%</span>
+            <span class="ak-prog-pct ak-prog-pct-a">達成率${agrP}%</span>
           </div>
           <div class="ak-goal-row">
             <span class="ak-goal-cur">${fmtAmt(agr)}</span>
