@@ -616,7 +616,7 @@ input[type=number]{-moz-appearance:textfield}
     </div>
     <div class="form-row"><label class="lbl">担当者 <span style="color:var(--red)">*</span></label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="中村">中村</option><option value="中">中</option><option value="櫻井">櫻井</option><option value="青木">青木</option></select></div></div>
     <input type="hidden" id="fp" value="">
-    <div class="form-row"><label class="lbl">期日</label><div style="display:flex;gap:8px"><input type="date" class="inp" id="fd" style="flex:1"><input type="text" class="inp" id="ft" placeholder="例）10:00" style="flex:0 0 130px"></div></div>
+    <div class="form-row"><label class="lbl">期日</label><input type="date" class="inp" id="fd"><input type="hidden" id="ft" value=""></div>
     <div class="form-row"><label class="lbl">メモ</label><textarea class="inp" id="f-note" rows="3" placeholder="自由記入欄" style="resize:vertical;min-height:72px"></textarea></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
