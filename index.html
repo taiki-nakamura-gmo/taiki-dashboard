@@ -420,6 +420,20 @@ input[type=number]{-moz-appearance:textfield}
   #ak-list-view{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .ak-kanban{grid-template-columns:repeat(4,240px)}
 }
+
+/* ===== コックピットへ戻る(ヘッダー・切替トグルの右) ===== */
+.page-nav{display:flex;align-items:center;gap:12px}
+.cockpit-link{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--accent);color:#fff;text-decoration:none;
+  border:none;border-radius:var(--r8);padding:6px 14px;
+  font-family:var(--font);font-size:13px;font-weight:600;
+  box-shadow:0 1px 3px rgba(58,94,229,.3);
+  transition:all .14s;cursor:pointer;white-space:nowrap;
+}
+.cockpit-link:hover{background:#2f4fca;box-shadow:0 3px 10px rgba(58,94,229,.35);transform:translateY(-1px)}
+.cockpit-link .c-icon{font-size:14px}
+@media(max-width:600px){.cockpit-link .c-label{display:none}.cockpit-link{padding:6px 10px}}
 </style>
 </head>
 <body>
@@ -495,9 +509,15 @@ input[type=number]{-moz-appearance:textfield}
       <div class="brand-icon">&#10022;</div>
       <div class="brand-name">タスクCanly</div>
     </div>
-    <div class="page-tabs">
-      <button class="page-tab active" id="tab-task" onclick="switchPage('task')">タスクCanly</button>
-      <button class="page-tab" id="tab-anken" onclick="switchPage('anken')">案件Canly</button>
+    <div class="page-nav">
+      <div class="page-tabs">
+        <button class="page-tab active" id="tab-task" onclick="switchPage('task')">タスクCanly</button>
+        <button class="page-tab" id="tab-anken" onclick="switchPage('anken')">案件Canly</button>
+      </div>
+      <a class="cockpit-link" href="http://localhost:8787/" title="無限会社中村 コックピットへ戻る">
+        <span class="c-icon">🏢</span>
+        <span class="c-label">コックピットへ戻る</span>
+      </a>
     </div>
     <div class="topbar-right">
       <div id="user-badge" class="user-badge"></div>
@@ -2383,5 +2403,6 @@ function deleteAnken(id){
 }
 
 </script>
+
 </body>
 </html>
