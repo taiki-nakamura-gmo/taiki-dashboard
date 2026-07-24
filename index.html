@@ -629,6 +629,12 @@ input[type=number]{-moz-appearance:textfield}
       <div style="font-size:11px;font-weight:700;color:#1A7A50;margin-bottom:10px">📄 見積書情報</div>
       <div class="form-row" style="margin-bottom:8px"><label class="lbl">プラン</label><div class="sel-w"><select id="f-plan" class="inp" onchange="updateEstPrice()"><option value="">選択してください</option><option>ローカル集客コンサル</option><option>スタンダードプラン</option><option>スモールプラン</option><option>プレミアム120</option><option>プレミアム96</option><option>プレミアム72</option><option>Local GEO Dash! お試し</option><option>Local GEO Dash! ミドル</option><option>Local GEO Dash! フルマネージド</option></select></div></div>
       <div class="form-row" style="margin-bottom:8px"><label class="lbl">店舗数</label><div class="sel-w"><select id="f-stores" class="inp" onchange="updateEstPrice()"><option value="">選択してください</option><option>〜25店舗</option><option>〜50店舗</option><option>〜100店舗</option><option>〜150店舗</option><option>〜200店舗</option><option>201店舗以上</option></select></div></div>
+      <div id="est-plan2-wrap" style="display:none;background:#f8f8f5;border-radius:8px;padding:8px;margin-bottom:8px">
+        <div style="font-size:10.5px;font-weight:700;color:var(--text3);margin-bottom:6px">プラン2</div>
+        <div class="form-row" style="margin-bottom:6px"><label class="lbl">プラン</label><div class="sel-w"><select id="f-plan2" class="inp" onchange="updateEstPrice()"><option value="">選択してください</option><option>ローカル集客コンサル</option><option>スタンダードプラン</option><option>スモールプラン</option><option>プレミアム120</option><option>プレミアム96</option><option>プレミアム72</option><option>Local GEO Dash! お試し</option><option>Local GEO Dash! ミドル</option><option>Local GEO Dash! フルマネージド</option></select></div></div>
+        <div class="form-row"><label class="lbl">店舗数</label><div class="sel-w"><select id="f-stores2" class="inp" onchange="updateEstPrice()"><option value="">選択してください</option><option>〜25店舗</option><option>〜50店舗</option><option>〜100店舗</option><option>〜150店舗</option><option>〜200店舗</option><option>201店舗以上</option></select></div></div>
+      </div>
+      <button type="button" id="add-plan2-btn" onclick="togglePlan2()" style="width:100%;font-size:11px;color:var(--accent);background:none;border:1.5px dashed var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;margin-bottom:8px">＋ プランを追加</button>
       <div class="form-row" style="margin-bottom:8px"><label class="lbl">定価金額</label><input type="number" class="inp" id="f-listprice" placeholder="例）500000" min="0"></div>
       <div class="form-row" style="margin-bottom:8px"><label class="lbl">見積金額</label><input type="number" class="inp" id="f-quoteprice" placeholder="例）450000" min="0"></div>
       <div class="form-row" style="margin-bottom:8px"><label class="lbl">見積もり有効期限</label><input type="date" class="inp" id="f-expiry"></div>
@@ -1200,8 +1206,8 @@ function cardHTML(t,i){
         const wfLines=(isWf&&t.wfTypes&&t.wfTypes.length)?t.wfTypes.map(w=>`<div class="card-detail-row">・${esc(w)}</div>`).join(''):'';
         const estLines=isEst?[
           t.estQuotePrice?`<div class="card-detail-row">見積　¥${Number(t.estQuotePrice).toLocaleString()}</div>`:'',
-          t.estPlan?`<div class="card-detail-row">${esc(t.estPlan)}</div>`:'',
-          t.estStores?`<div class="card-detail-row">${esc(t.estStores)}</div>`:'',
+          (t.estPlan||t.estPlan2)?`<div class="card-detail-row">${[t.estPlan,t.estPlan2].filter(Boolean).map(esc).join(' ＋ ')}</div>`:'',
+          (t.estStores||t.estStores2)?`<div class="card-detail-row">${[t.estStores,t.estStores2].filter(Boolean).map(esc).join(' / ')}</div>`:'',
           t.estMonth?`<div class="card-detail-row">導入月　${esc(t.estMonth)}</div>`:'',
           t.estExpiry?`<div class="card-detail-row">有効期限　${t.estExpiry}</div>`:'',
         ].filter(Boolean).join(''):'';
@@ -1714,7 +1720,8 @@ function openDetail(id){
     }else{priceEl.style.display='none';}
     const grid=document.getElementById('d-est-grid');
     const gi=(lbl,val)=>val?`<div class="di"><div class="dilbl">${lbl}</div><div class="dival">${val}</div></div>`:'';
-    grid.innerHTML=gi('プラン',t.estPlan)+gi('店舗数',t.estStores)+gi('導入月',t.estMonth)+gi('有効期限',t.estExpiry);
+    const _planStr=[t.estPlan,t.estPlan2].filter(Boolean).join(' ＋ ');const _storesStr=[t.estStores,t.estStores2].filter(Boolean).join(' / ');
+    grid.innerHTML=gi('プラン',_planStr)+gi('店舗数',_storesStr)+gi('導入月',t.estMonth)+gi('有効期限',t.estExpiry);
   }else{estSec.style.display='none';}
   document.getElementById("d-edit").onclick=()=>{closeDetail();openEdit(id);};
   document.getElementById("detail-modal").classList.add("open");
@@ -1766,7 +1773,9 @@ function openAdd(){
   ["fp","fd","ft","fa"].forEach(i=>document.getElementById(i).value="");
   _selectedCats=[];fillCats();updateEstFields();updateDocFields();updateWfFields();
   setWfTypes([]);
-  ['fm','f-plan','f-stores','f-listprice','f-quoteprice','f-expiry','f-imonth','f-note'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['fm','f-plan','f-stores','f-plan2','f-stores2','f-listprice','f-quoteprice','f-expiry','f-imonth','f-note'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  const _p2w=document.getElementById('est-plan2-wrap');if(_p2w)_p2w.style.display='none';
+  const _p2b=document.getElementById('add-plan2-btn');if(_p2b)_p2b.textContent='＋ プランを追加';
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
 }
@@ -1781,6 +1790,11 @@ function openEdit(id){
   document.getElementById('fm').value=t.memo||'';
   document.getElementById('f-plan').value=t.estPlan||'';
   document.getElementById('f-stores').value=t.estStores||'';
+  document.getElementById('f-plan2').value=t.estPlan2||'';
+  document.getElementById('f-stores2').value=t.estStores2||'';
+  const _lp2w=document.getElementById('est-plan2-wrap');const _lp2b=document.getElementById('add-plan2-btn');
+  if(t.estPlan2){if(_lp2w)_lp2w.style.display='';if(_lp2b)_lp2b.textContent='－ プランを削除';}
+  else{if(_lp2w)_lp2w.style.display='none';if(_lp2b)_lp2b.textContent='＋ プランを追加';}
   document.getElementById('f-listprice').value=t.estListPrice||'';
   document.getElementById('f-quoteprice').value=t.estQuotePrice||'';
   document.getElementById('f-expiry').value=t.estExpiry||'';
@@ -1798,14 +1812,27 @@ const PLAN_PRICES={
   'Local GEO Dash! お試し':80000,'Local GEO Dash! ミドル':150000,'Local GEO Dash! フルマネージド':500000,
 };
 function updateEstPrice(){
-  const plan=document.getElementById('f-plan').value;
-  const stores=document.getElementById('f-stores').value;
-  const lp=PLAN_PRICES[plan];
-  if(!plan||lp===undefined)return;
-  if(typeof lp==='number'){
-    document.getElementById('f-listprice').value=lp;
-  } else if(stores&&lp[stores]!==undefined){
-    document.getElementById('f-listprice').value=lp[stores];
+  const getPrice=(pid,sid)=>{
+    const plan=document.getElementById(pid).value;
+    const stores=document.getElementById(sid).value;
+    const lp=PLAN_PRICES[plan];
+    if(!plan||lp===undefined)return 0;
+    if(typeof lp==='number')return lp;
+    return(stores&&lp[stores]!==undefined)?lp[stores]:0;
+  };
+  const total=getPrice('f-plan','f-stores')+getPrice('f-plan2','f-stores2');
+  if(total>0)document.getElementById('f-listprice').value=total;
+}
+function togglePlan2(){
+  const wrap=document.getElementById('est-plan2-wrap');
+  const btn=document.getElementById('add-plan2-btn');
+  if(wrap.style.display==='none'){
+    wrap.style.display='';btn.textContent='－ プランを削除';
+  } else {
+    wrap.style.display='none';btn.textContent='＋ プランを追加';
+    document.getElementById('f-plan2').value='';
+    document.getElementById('f-stores2').value='';
+    updateEstPrice();
   }
 }
 function saveTaskForm(){
@@ -1817,7 +1844,7 @@ function saveTaskForm(){
   const isEst=_selectedCats.includes('est');
   const isDoc=_selectedCats.includes('doc');
   const isWf=_selectedCats.includes('wf');
-  const data={name,memo:isDoc?(document.getElementById("fm").value.trim()):'',cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:'',due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,wfTypes:isWf?getWfTypes():[],estPlan:isEst?document.getElementById('f-plan').value:'',estStores:isEst?document.getElementById('f-stores').value:'',estListPrice:isEst?document.getElementById('f-listprice').value:'',estQuotePrice:isEst?document.getElementById('f-quoteprice').value:'',estExpiry:isEst?document.getElementById('f-expiry').value:'',estMonth:isEst?document.getElementById('f-imonth').value:'',note:document.getElementById('f-note').value.trim()};
+  const data={name,memo:isDoc?(document.getElementById("fm").value.trim()):'',cats:[..._selectedCats],cat:_selectedCats[0]||"",priority:'',due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee,wfTypes:isWf?getWfTypes():[],estPlan:isEst?document.getElementById('f-plan').value:'',estStores:isEst?document.getElementById('f-stores').value:'',estPlan2:isEst?document.getElementById('f-plan2').value:'',estStores2:isEst?document.getElementById('f-stores2').value:'',estListPrice:isEst?document.getElementById('f-listprice').value:'',estQuotePrice:isEst?document.getElementById('f-quoteprice').value:'',estExpiry:isEst?document.getElementById('f-expiry').value:'',estMonth:isEst?document.getElementById('f-imonth').value:'',note:document.getElementById('f-note').value.trim()};
   if(eid){const t=tasks.find(t=>t.id==eid);if(t){Object.assign(t,data);window.saveTask(t);}}
   else{
     window.saveTask({id:Date.now(),createdAt:Date.now(),...data});
