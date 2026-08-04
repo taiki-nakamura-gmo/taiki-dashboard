@@ -306,6 +306,12 @@ input[type=number]{-moz-appearance:textfield}
 .ak-deal-amount{margin-bottom:5px;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:13px}
 .ak-deal-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text2)}
 .ak-deal-actions{margin-top:8px;display:flex;align-items:center;gap:6px;padding-top:7px;border-top:1px solid var(--border)}
+.ak-deal-card{cursor:grab}
+.ak-deal-card.ak-dragging{opacity:.35;cursor:grabbing;transform:scale(.97)}
+.ak-kol-body.ak-drag-over{background:var(--accent-bg);outline:2px dashed var(--accent);outline-offset:-4px;border-radius:8px}
+.ak-kol-body.ak-drag-blocked{background:#fee2e2;outline:2px dashed var(--red);outline-offset:-4px;border-radius:8px}
+.ak-kol-drop-hint{font-size:11px;color:var(--text3);text-align:center;padding:10px 0;display:none}
+.ak-kol-body.ak-drag-over .ak-kol-drop-hint{display:block}
 .ak-inline-sel{border:none;border-bottom:1.5px solid transparent;padding:3px 18px 3px 2px;font-family:var(--font);font-size:13px;font-weight:600;background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239B99A4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 2px center;color:var(--text);outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .14s}
 .ak-inline-sel:hover{border-bottom-color:var(--border2)}
 .ak-inline-sel:focus{border-bottom-color:var(--accent)}
@@ -2285,7 +2291,7 @@ function renderAnkenList(){
   const makeCard=(d)=>{
     const pc=PROB_COLORS[d.prob]||{bg:'#f1f5f9',cl:'#64748b'};
     const isConf=d.prob==='confirmed';
-    return `<div class="ak-deal-card${isConf?' ak-deal-confirmed':''}">
+    return `<div class="ak-deal-card${isConf?' ak-deal-confirmed':''}" draggable="true" ondragstart="onDealDragStart(event,${d.id})" ondragend="onDealDragEnd(event)">
       <button class="ak-card-edit-btn" onclick="openAnkenEdit(${d.id})" title="編集">${pencilSvg}</button>
       <div class="ak-co-cell">${esc(d.company)}</div>
       <div class="ak-deal-amount">${fmtAmt(Number(d.amount||0))}</div>
@@ -2307,13 +2313,18 @@ function renderAnkenList(){
     const deals=[...monthDeals].filter(d=>d.prob===prob).sort(amtSort);
     const pc=PROB_COLORS[prob]||{bg:'#f1f5f9',cl:'#64748b'};
     const total=deals.reduce((s,d)=>s+Number(d.amount||0),0);
+    const isConf=prob==='confirmed';
+    const dropAttrs=isConf
+      ?`ondragover="onColDragOver(event,'${prob}')" ondragleave="onColDragLeave(event)" ondrop="onColDrop(event,'${prob}')"`
+      :`ondragover="onColDragOver(event,'${prob}')" ondragleave="onColDragLeave(event)" ondrop="onColDrop(event,'${prob}')"`;
     return `<div class="ak-kol">
       <div class="ak-kol-head" style="border-top:3px solid ${pc.cl}">
         <span class="ak-prob-badge" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[prob]}</span>
         <span class="ak-kol-cnt">${deals.length}件</span>
         <span class="ak-kol-amt" style="color:${pc.cl}">${fmtAmt(total)}</span>
+        ${isConf?`<span style="font-size:10px;color:var(--text3);margin-left:4px">🔒</span>`:''}
       </div>
-      <div class="ak-kol-body">
+      <div class="ak-kol-body" ${dropAttrs}>
         ${deals.length?deals.map(d=>makeCard(d)).join(''):'<div style="padding:16px 4px;font-size:12px;color:var(--text3);text-align:center">—</div>'}
       </div>
     </div>`;
@@ -2414,6 +2425,37 @@ function updateAnkenProb(id,prob,el){
   el.style.background=pc.bg;el.style.color=pc.cl;
 }
 
+let _dragAnkenId=null;
+function onDealDragStart(e,id){
+  _dragAnkenId=id;
+  e.currentTarget.classList.add('ak-dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+function onDealDragEnd(e){
+  e.currentTarget.classList.remove('ak-dragging');
+  document.querySelectorAll('.ak-kol-body').forEach(el=>el.classList.remove('ak-drag-over','ak-drag-blocked'));
+}
+function onColDragOver(e,prob){
+  e.preventDefault();
+  const body=e.currentTarget;
+  body.classList.remove('ak-drag-over','ak-drag-blocked');
+  if(prob==='confirmed'){body.classList.add('ak-drag-blocked');e.dataTransfer.dropEffect='none';}
+  else{body.classList.add('ak-drag-over');e.dataTransfer.dropEffect='move';}
+}
+function onColDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget)){
+    e.currentTarget.classList.remove('ak-drag-over','ak-drag-blocked');
+  }
+}
+function onColDrop(e,prob){
+  e.currentTarget.classList.remove('ak-drag-over','ak-drag-blocked');
+  if(prob==='confirmed'||!_dragAnkenId)return;
+  const d=anken.find(d=>d.id===_dragAnkenId);
+  if(!d||d.prob===prob)return;
+  d.prob=prob;
+  fbSet('anken/'+d.id,d);
+  _dragAnkenId=null;
+}
 function toggleYakumuSection(){
   const prob=document.getElementById('ak-prob').value;
   document.getElementById('ak-yakumu-section').style.display=prob==='confirmed'?'':'none';
