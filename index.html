@@ -755,11 +755,9 @@ input[type=number]{-moz-appearance:textfield}
 <div id="anken-page" style="display:none">
   <div id="ak-summary-view" class="ak-body">
     <div class="ak-section">
-      <div class="ak-section-title">チームサマリー</div>
-      <div class="ak-team-grid" id="ak-team-cards"></div>
+      <div id="ak-scope-hero"></div>
     </div>
     <div class="ak-section">
-      <div class="ak-section-title">個人ヨミ</div>
       <div class="ak-member-grid" id="ak-member-cards"></div>
     </div>
     <div class="ak-section" id="ak-lost-section" style="display:none">
@@ -2024,6 +2022,7 @@ let anken=[];
 let currentPage='task';
 let currentAnkenTab='summary';
 let currentAnkenMonth=localStorage.getItem('canly_month')||'2026-06';
+let _selectedScopeKey='nakamura';
 
 function getMonthDeals(){return anken.filter(d=>d.month===currentAnkenMonth);}
 
@@ -2112,9 +2111,93 @@ function renderAnken(){
 }
 
 function renderAnkenSummary(){
-  renderTeamCards();
+  renderScopeHero();
   renderMemberCards();
   renderLostBox();
+}
+
+function renderScopeHero(){
+  const el=document.getElementById('ak-scope-hero');
+  if(!el)return;
+  const scopeLabel={nakamura:'全チーム',naka:'3人チーム',sakurai:'個人',aoki:'個人'};
+  const stageColors={confirmed:'#16a34a','70':'#0284c7','50':'#7c3aed','25':'#b45309'};
+  const stageBgColors={confirmed:'#dcfce7','70':'#dbeafe','50':'#ede9fe','25':'#fef3c7'};
+  const stageTextColors={confirmed:'#166534','70':'#1d4ed8','50':'#4c1d95','25':'#78350f'};
+
+  const selHTML=AUTH_USERS.map(u=>{
+    const scope=ANKEN_SCOPES[u.key];
+    const target=getTargets()[u.key];
+    const col=getScopeYomi(scope,['confirmed']);
+    const p=pct(col,target);
+    const isActive=u.key===_selectedScopeKey;
+    return `<button onclick="selectScope('${u.key}')" style="display:flex;align-items:center;gap:7px;flex:1;padding:9px 10px;border-radius:10px;border:2px solid ${isActive?u.color+'40':'transparent'};background:${isActive?u.color+'10':'transparent'};cursor:pointer;transition:all .18s">
+      <div class="avatar" style="background:${u.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${u.initial}</div>
+      <div style="text-align:left;min-width:0">
+        <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap">${u.name}</div>
+        <div style="font-size:10px;font-weight:600;color:${isActive?u.color:'var(--text3)'};white-space:nowrap">${scopeLabel[u.key]} · ${p}%</div>
+      </div>
+    </button>`;
+  }).join('');
+
+  const u=AUTH_USERS.find(u=>u.key===_selectedScopeKey);
+  const scope=ANKEN_SCOPES[u.key];
+  const target=getTargets()[u.key];
+  const col=getScopeYomi(scope,['confirmed']);
+  const colP=pct(col,target);
+  const achieved=colP>=100;
+
+  const stageAmts=PROB_ORDER.filter(p=>p!=='lost').map(prob=>({prob,amt:getScopeYomi(scope,[prob])}));
+  const totalPipe=stageAmts.reduce((s,x)=>s+x.amt,0);
+
+  const stackSegs=stageAmts.filter(s=>s.amt>0).map(s=>{
+    const w=totalPipe>0?Math.round(s.amt/totalPipe*100):0;
+    return `<div style="flex:${w};min-width:4px;height:100%;background:${stageColors[s.prob]}"></div>`;
+  }).join('<div style="width:2px;height:100%;background:var(--surface)"></div>');
+
+  const chips=stageAmts.filter(s=>s.amt>0).map(s=>
+    `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;background:${stageBgColors[s.prob]};color:${stageTextColors[s.prob]}"><span style="width:6px;height:6px;border-radius:50%;background:${stageColors[s.prob]};display:inline-block"></span>${PROB_LABELS[s.prob]} ${fmtAmt(s.amt)}</span>`
+  ).join('');
+
+  const pipeRows=stageAmts.map(s=>
+    `<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0">
+      <span style="width:7px;height:7px;border-radius:50%;background:${stageColors[s.prob]};flex-shrink:0;display:inline-block"></span>
+      <span style="flex:1;color:var(--text2)">${PROB_LABELS[s.prob]}</span>
+      <span style="font-family:var(--mono);font-weight:700;color:var(--text)">${fmtAmt(s.amt)}</span>
+    </div>`
+  ).join('');
+
+  el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+    <div style="display:flex;gap:6px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface2)">${selHTML}</div>
+    <div style="padding:18px 20px">
+      <div style="display:flex;gap:20px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:5px">受注金額 — ${scopeLabel[u.key]}</div>
+          <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;line-height:1;font-family:var(--mono);color:${achieved?'var(--green)':'var(--text)'}">${fmtAmt(col)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:3px;font-family:var(--mono)">目標 ${fmtAmt(target)}</div>
+          <div style="height:8px;background:var(--surface2);border-radius:50px;margin:11px 0 5px;overflow:hidden;border:1px solid var(--border)">
+            <div style="height:100%;border-radius:50px;width:${Math.min(colP,100)}%;background:${u.color};transition:width .5s ease"></div>
+          </div>
+          <div style="font-size:11.5px;font-weight:700;color:${achieved?'var(--green)':colP>=70?'#d97706':'var(--text3)'}">
+            ${achieved?'🎊':'📈'} 達成率 ${colP}%${achieved?'&nbsp;&nbsp;目標達成！':'&nbsp;&nbsp;— あと '+fmtAmt(Math.max(0,target-col))}
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">${chips}</div>
+        </div>
+        <div style="width:1px;background:var(--border);align-self:stretch;flex-shrink:0"></div>
+        <div style="width:190px;flex-shrink:0">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">パイプライン総額</div>
+          <div style="height:14px;border-radius:7px;overflow:hidden;display:flex;background:var(--surface2);border:1px solid var(--border);margin-bottom:10px">
+            ${stackSegs||'<div style="flex:1;height:100%;background:var(--surface2)"></div>'}
+          </div>
+          ${pipeRows}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function selectScope(key){
+  _selectedScopeKey=key;
+  renderScopeHero();
 }
 
 function renderLostBox(){
@@ -2244,12 +2327,17 @@ function renderTeamCards(){
 function renderMemberCards(){
   const el=document.getElementById('ak-member-cards');
   if(!el)return;
+  const scopeLabel={nakamura:'全チーム',naka:'3人チーム',sakurai:'個人',aoki:'個人'};
   const fsKeys=['nakamura','naka'];
   const isKeys=['naka','sakurai','aoki'];
   el.innerHTML=AUTH_USERS.map(u=>{
     const roles=[fsKeys.includes(u.key)?'FS':'',isKeys.includes(u.key)?'IS':''].filter(Boolean).join('/');
     const isTeamLead=u.key==='nakamura';
     const scope=ANKEN_SCOPES[u.key]||[u.key];
+    const target=getTargets()[u.key];
+    const col=getScopeYomi(scope,['confirmed']);
+    const colP=pct(col,target);
+    const achieved=colP>=100;
     const rows=PROB_ORDER.filter(p=>p!=='lost').map(prob=>{
       const deals=getMonthDeals().filter(d=>d.prob===prob&&(isTeamLead?(scope.includes(d.fs)||scope.includes(d.is)):(d.fs===u.key||d.is===u.key)));
       if(!deals.length)return '';
@@ -2267,17 +2355,30 @@ function renderMemberCards(){
         <span class="ak-prob-badge" style="background:${pc.bg};color:${pc.cl}">${PROB_LABELS[prob]}</span>
         <span class="ak-prob-cnt">${Number.isInteger(cnt)?cnt:cnt.toFixed(1)}件</span>
         <span style="flex:1"></span>
-        ${prob!=='lost'?`<span class="ak-prob-amt">${fmtAmt(amt)}</span>`:''}
+        <span class="ak-prob-amt">${fmtAmt(amt)}</span>
         ${chevron}
       </div><div class="ak-prob-detail" id="${did}">${detail}</div>`;
     }).join('');
     return `<div class="ak-member-card" style="border-top:3px solid ${u.color}">
       <div class="ak-member-head" style="background:${u.color}0d">
         <div class="avatar" style="background:${u.color}">${u.initial}</div>
-        <div class="ak-member-name">${u.name}</div>
+        <div style="flex:1;min-width:0">
+          <div class="ak-member-name">${u.name}</div>
+          <div style="font-size:10px;color:var(--text3)">${scopeLabel[u.key]} · 目標 ${fmtAmt(target)}</div>
+        </div>
         <span class="ak-member-role">${roles}</span>
       </div>
-      <div class="ak-prob-list">${rows||'<div style="padding:14px 16px;font-size:12px;color:var(--text3)">ヨミなし</div>'}</div>
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
+          <span style="font-size:18px;font-weight:800;font-family:var(--mono);color:${achieved?'var(--green)':'var(--text)'}">${fmtAmt(col)}</span>
+          <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">/ ${fmtAmt(target)}</span>
+        </div>
+        <div style="height:5px;background:var(--surface2);border-radius:50px;overflow:hidden;border:1px solid var(--border);margin-bottom:4px">
+          <div style="height:100%;border-radius:50px;width:${Math.min(colP,100)}%;background:${u.color}"></div>
+        </div>
+        <div style="font-size:10.5px;font-weight:700;color:${achieved?'var(--green)':colP>=70?'#d97706':'var(--text3)'}">達成率 ${colP}%${achieved?' ✓&nbsp;目標達成！':''}</div>
+      </div>
+      <div class="ak-prob-list">${rows||'<div style="padding:10px 16px;font-size:12px;color:var(--text3)">ヨミなし</div>'}</div>
     </div>`;
   }).join('');
 }
