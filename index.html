@@ -2393,11 +2393,20 @@ function openAnkenEdit(id){
   document.getElementById('ak-amount').value=d.amount||'';
   document.getElementById('ak-month').value=d.month||'';
   document.getElementById('ak-prob').value=d.prob||'50';
+  const probEl=document.getElementById('ak-prob');
+  const isLocked=d.prob==='confirmed';
+  probEl.disabled=isLocked;
+  probEl.style.opacity=isLocked?'0.5':'';
+  probEl.title=isLocked?'受注済みの確度は変更できません':'';
   document.getElementById('ak-fs').value=d.fs||'nakamura';
   document.getElementById('ak-is').value=d.is||'sakurai';
   document.getElementById('ak-modal').classList.add('open');
 }
-function closeAnkenModal(){document.getElementById('ak-modal').classList.remove('open');}
+function closeAnkenModal(){
+  document.getElementById('ak-modal').classList.remove('open');
+  const probEl=document.getElementById('ak-prob');
+  probEl.disabled=false;probEl.style.opacity='';probEl.title='';
+}
 function updateAnkenField(id,field,value){
   const d=anken.find(d=>d.id===id);if(!d)return;
   d[field]=value;
