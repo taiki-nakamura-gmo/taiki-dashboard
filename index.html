@@ -45,17 +45,7 @@ window.dispatchEvent(new Event("fb-ready"));
   --font:"Instrument Sans",sans-serif;--mono:monospace;
   --cn:#C0253A;--cm:#D97706;--cs:#0E7490;--ca:#1A7A50;
 }
-body.anken-mode{
-  --bg:#0B1222;--surface:#142035;--surface2:#1B2C47;
-  --border:#253a58;--border2:#345070;
-  --text:#FFFFFF;--text2:#B0C8E8;--text3:#6A88AA;
-  --accent:#5B7EF5;--accent-bg:#1a2560;
-  --green:#22C47A;--green-bg:#0C2D1E;
-  --amber:#F0A030;--amber-bg:#2A1E08;
-  --red:#E04060;--red-bg:#2D0E1A;
-  --purple:#9B72F5;
-  background:#0B1222;
-}
+
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
 
 /* ===== Auth Screen ===== */
@@ -770,10 +760,7 @@ input[type=number]{-moz-appearance:textfield}
 <div id="anken-page" style="display:none">
   <div id="ak-summary-view" class="ak-body">
     <div class="ak-section">
-      <div id="ak-scope-hero"></div>
-    </div>
-    <div class="ak-section">
-      <div class="ak-member-grid" id="ak-member-cards"></div>
+      <div id="ak-gauge-hero"></div>
     </div>
     <div class="ak-section" id="ak-lost-section" style="display:none">
       <div class="ak-lost-header">
@@ -2037,7 +2024,7 @@ let anken=[];
 let currentPage='task';
 let currentAnkenTab='summary';
 let currentAnkenMonth=localStorage.getItem('canly_month')||'2026-06';
-let _selectedScopeKey='nakamura';
+let _summaryUser=null;
 
 function getMonthDeals(){return anken.filter(d=>d.month===currentAnkenMonth);}
 
@@ -2080,7 +2067,6 @@ function switchPage(page){
   currentPage=page;
   localStorage.setItem('canly_page',page);
   const isTask=page==='task';
-  document.body.classList.toggle('anken-mode',!isTask);
   document.getElementById('main').style.display=isTask?'':'none';
   document.getElementById('stats-bar-wrap').style.display=isTask?'':'none';
   const ob=document.getElementById('overdue-banner');
@@ -2126,10 +2112,137 @@ function renderAnken(){
   else renderAnkenList();
 }
 
+function initSummaryUser(){
+  if(!_summaryUser) _summaryUser=(currentUser&&currentUser.key)||'nakamura';
+}
+
 function renderAnkenSummary(){
-  renderScopeHero();
-  renderMemberCards();
+  initSummaryUser();
+  renderGaugeSummary();
   renderLostBox();
+}
+
+function fmtShort(n){
+  if(n>=1000000)return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+  if(n>=1000)return Math.round(n/1000)+'K';
+  return n>0?String(n):'0';
+}
+
+function makeGaugeSVG(id,label,sub,color){
+  const cx=150,cy=150,r=110,needleLen=95;
+  const initNx=cx+needleLen*Math.cos(Math.PI);
+  const initNy=cy-needleLen*Math.sin(Math.PI);
+  const arcLen=Math.PI*r;
+  const ticks=[0,.25,.5,.75,1].map(f=>{
+    const ang=Math.PI*(1-f);
+    const x1=(cx+(r-4)*Math.cos(ang)).toFixed(1);
+    const y1=(cy-(r-4)*Math.sin(ang)).toFixed(1);
+    const x2=(cx+(r+10)*Math.cos(ang)).toFixed(1);
+    const y2=(cy-(r+10)*Math.sin(ang)).toFixed(1);
+    const lx=(cx+(r+26)*Math.cos(ang)).toFixed(1);
+    const ly=(cy-(r+26)*Math.sin(ang)).toFixed(1);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ccc" stroke-width="1.5"/>
+            <text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#9B99A4" id="tick_${id}_${Math.round(f*100)}">—</text>`;
+  }).join('');
+  return `<div style="text-align:center">
+    <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:1px">${label}</div>
+    <div style="font-size:10.5px;color:var(--text3);margin-bottom:4px">${sub}</div>
+    <svg viewBox="0 0 300 228" style="width:100%;max-width:300px;overflow:visible">
+      <path d="M ${cx-r},${cy} A ${r},${r} 0 0 1 ${cx+r},${cy}" fill="none" stroke="#E2DFD6" stroke-width="22" stroke-linecap="butt"/>
+      <path d="M ${cx-r},${cy} A ${r},${r} 0 0 1 ${cx+r},${cy}" fill="none" stroke="#BBF7D0" stroke-width="22" stroke-linecap="butt"
+            stroke-dasharray="${(arcLen*.08).toFixed(1)} ${arcLen}" stroke-dashoffset="${-(arcLen*.92).toFixed(1)}"/>
+      <path id="gf_${id}" d="M ${cx-r},${cy} A ${r},${r} 0 0 1 ${cx+r},${cy}" fill="none" stroke="${color}" stroke-width="22" stroke-linecap="butt"
+            stroke-dasharray="0 ${arcLen}"/>
+      ${ticks}
+      <circle cx="${cx+r}" cy="${cy}" r="9" fill="#1A7A50"/>
+      <line id="gn_${id}" x1="${cx}" y1="${cy}" x2="${initNx.toFixed(1)}" y2="${initNy.toFixed(1)}"
+            stroke="#222" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="${cx}" cy="${cy}" r="9" fill="#222"/>
+      <text id="gv_${id}" x="${cx}" y="${cy+52}" text-anchor="middle" font-size="23" font-weight="800" fill="#9B99A4" font-family="monospace">¥0</text>
+      <text id="gp_${id}" x="${cx}" y="${cy+72}" text-anchor="middle" font-size="14" font-weight="700" fill="#9B99A4" font-family="monospace">(0%)</text>
+    </svg>
+  </div>`;
+}
+
+function animateGauge(id,amt,target,color){
+  const arcLen=Math.PI*110;
+  const maxPct=target>0?amt/target:0;
+  const clampedPct=Math.min(maxPct,1);
+  const displayPct=Math.round(maxPct*100);
+  const achieved=displayPct>=100;
+  const textColor=achieved?'#1A7A50':'#C0253A';
+  const duration=1400;
+  const start=performance.now();
+  const cx=150,cy=150,needleLen=95;
+  function update(now){
+    const t=Math.min((now-start)/duration,1);
+    const ease=1-Math.pow(1-t,3);
+    const cur=ease*clampedPct;
+    const fill=document.getElementById('gf_'+id);
+    if(fill)fill.setAttribute('stroke-dasharray',`${(cur*arcLen).toFixed(1)} ${arcLen}`);
+    const needle=document.getElementById('gn_'+id);
+    if(needle){
+      const ang=Math.PI*(1-cur);
+      needle.setAttribute('x2',(cx+needleLen*Math.cos(ang)).toFixed(1));
+      needle.setAttribute('y2',(cy-needleLen*Math.sin(ang)).toFixed(1));
+    }
+    const valEl=document.getElementById('gv_'+id);
+    if(valEl)valEl.textContent='¥'+Math.round(ease*amt).toLocaleString();
+    const pctEl=document.getElementById('gp_'+id);
+    if(pctEl)pctEl.textContent=`(${Math.round(ease*displayPct)}%)`;
+    if(t<1){requestAnimationFrame(update);}
+    else{
+      if(valEl){valEl.textContent=fmtAmt(amt);valEl.setAttribute('fill',textColor);}
+      if(pctEl){pctEl.textContent=`(${displayPct}%)`;pctEl.setAttribute('fill',textColor);}
+    }
+  }
+  requestAnimationFrame(update);
+}
+
+function renderGaugeSummary(){
+  const el=document.getElementById('ak-gauge-hero');
+  if(!el)return;
+  const u=AUTH_USERS.find(u=>u.key===_summaryUser)||AUTH_USERS[0];
+  const scope=ANKEN_SCOPES[u.key];
+  const target=getTargets()[u.key];
+  const col=getScopeYomi(scope,['confirmed']);
+  const con=getScopeYomi(scope,['70','confirmed']);
+  const agr=getScopeYomi(scope,['50','70','confirmed']);
+  const scopeLabel={nakamura:'全チーム',naka:'3人チーム',sakurai:'個人',aoki:'個人'};
+  const gaugeData=[
+    {id:'g_col',label:'受注のみ',sub:'confirmed',amt:col,color:'#C0253A'},
+    {id:'g_con',label:'コンサバ',sub:'70%以上',amt:con,color:'#0E7490'},
+    {id:'g_agr',label:'アグレッシブ',sub:'50%以上',amt:agr,color:'#6B35C8'},
+  ];
+  const selector=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+    <div class="avatar" style="background:${u.color};width:42px;height:42px;font-size:17px;flex-shrink:0">${u.initial}</div>
+    <div style="flex:1">
+      <div style="font-size:18px;font-weight:800;color:var(--text)">${u.name}</div>
+      <div style="font-size:12px;color:var(--text2)">${scopeLabel[u.key]}&nbsp;&nbsp;目標 ${fmtAmt(target)}</div>
+    </div>
+    <select onchange="selectGaugeUser(this.value)" style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:13px;font-weight:600;color:var(--text);background:var(--surface);cursor:pointer;outline:none;transition:border-color .14s">
+      ${AUTH_USERS.map(mu=>`<option value="${mu.key}"${mu.key===u.key?' selected':''}>${mu.name}${mu.key==='nakamura'?' (全チーム)':mu.key==='naka'?' (3人)':' (個人)'}</option>`).join('')}
+    </select>
+  </div>`;
+  el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);padding:24px 28px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+    ${selector}
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">${gaugeData.map(g=>makeGaugeSVG(g.id,g.label,g.sub,g.color)).join('')}</div>
+  </div>`;
+  // Update tick labels with actual amounts, then animate
+  gaugeData.forEach(g=>{
+    [0,.25,.5,.75,1].forEach(f=>{
+      const tickEl=document.getElementById(`tick_${g.id}_${Math.round(f*100)}`);
+      if(tickEl)tickEl.textContent=fmtShort(Math.round(target*f));
+    });
+  });
+  setTimeout(()=>{
+    gaugeData.forEach(g=>animateGauge(g.id,g.amt,target,g.color));
+  },60);
+}
+
+function selectGaugeUser(key){
+  _summaryUser=key;
+  renderGaugeSummary();
 }
 
 function renderScopeHero(){
