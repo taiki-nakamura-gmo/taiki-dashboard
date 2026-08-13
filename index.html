@@ -311,7 +311,7 @@ input[type=number]{-moz-appearance:textfield}
 .ak-kol-amt{font-size:13px;font-weight:800;font-family:var(--mono);letter-spacing:-.02em;margin-left:auto}
 .ak-kol-body{padding:8px;display:flex;flex-direction:column;gap:8px;min-height:60px}
 .ak-deal-card{background:var(--surface);border-radius:10px;padding:10px 12px;border:1px solid var(--border);position:relative}
-.ak-deal-card.ak-deal-confirmed{background:#f0fdf4;border-color:#86efac}
+.ak-deal-card.ak-deal-confirmed{background:var(--green-bg);border-color:var(--green)}
 .ak-card-edit-btn{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;transition:border-color .14s;flex-shrink:0;opacity:0;transition:opacity .15s,border-color .14s}
 .ak-deal-card:hover .ak-card-edit-btn{opacity:1}
 .ak-card-edit-btn:hover{border-color:var(--accent);background:var(--surface)}
@@ -2162,6 +2162,11 @@ function renderScopeHero(){
   const colP=pct(col,target);
   const achieved=colP>=100;
 
+  const con=getScopeYomi(scope,['70','confirmed']);
+  const agr=getScopeYomi(scope,['50','70','confirmed']);
+  const conP=pct(con,target);
+  const agrP=pct(agr,target);
+
   const stageAmts=PROB_ORDER.filter(p=>p!=='lost').map(prob=>({prob,amt:getScopeYomi(scope,[prob])}));
   const totalPipe=stageAmts.reduce((s,x)=>s+x.amt,0);
 
@@ -2197,6 +2202,33 @@ function renderScopeHero(){
             ${achieved?'🎊':'📈'} 達成率 ${colP}%${achieved?'&nbsp;&nbsp;目標達成！':'&nbsp;&nbsp;— あと '+fmtAmt(Math.max(0,target-col))}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">${chips}</div>
+          <div style="display:flex;gap:10px;margin-top:13px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
+                <span style="width:18px;height:18px;border-radius:5px;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">C</span>
+                <span style="font-size:11px;font-weight:600;color:var(--text2)">コンサバ</span>
+                <span style="font-size:10px;color:var(--text3);flex:1">70%以上</span>
+                <span style="font-size:11px;font-weight:700;color:${conP>=100?'var(--green)':'var(--text)'}">${conP}%</span>
+              </div>
+              <div style="height:5px;background:var(--surface2);border-radius:50px;overflow:hidden;border:1px solid var(--border);margin-bottom:4px">
+                <div style="height:100%;border-radius:50px;width:${Math.min(conP,100)}%;background:var(--green)"></div>
+              </div>
+              <div style="font-size:10px;font-family:var(--mono);color:var(--text3)">${fmtAmt(con)} / ${fmtAmt(target)}</div>
+            </div>
+            <div style="width:1px;background:var(--border);flex-shrink:0"></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
+                <span style="width:18px;height:18px;border-radius:5px;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">A</span>
+                <span style="font-size:11px;font-weight:600;color:var(--text2)">アグレッシブ</span>
+                <span style="font-size:10px;color:var(--text3);flex:1">50%以上</span>
+                <span style="font-size:11px;font-weight:700;color:${agrP>=100?'var(--accent)':'var(--text)'}">${agrP}%</span>
+              </div>
+              <div style="height:5px;background:var(--surface2);border-radius:50px;overflow:hidden;border:1px solid var(--border);margin-bottom:4px">
+                <div style="height:100%;border-radius:50px;width:${Math.min(agrP,100)}%;background:var(--accent)"></div>
+              </div>
+              <div style="font-size:10px;font-family:var(--mono);color:var(--text3)">${fmtAmt(agr)} / ${fmtAmt(target)}</div>
+            </div>
+          </div>
         </div>
         <div style="width:1px;background:var(--border);align-self:stretch;flex-shrink:0"></div>
         <div style="width:280px;flex-shrink:0">
