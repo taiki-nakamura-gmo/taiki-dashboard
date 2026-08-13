@@ -2210,10 +2210,46 @@ function renderGaugeSummary(){
   const agr=getScopeYomi(scope,['50','70','confirmed']);
   const scopeLabel={nakamura:'全チーム',naka:'3人チーム',sakurai:'個人',aoki:'個人'};
   const gaugeData=[
-    {id:'g_col',label:'受注のみ',sub:'confirmed',amt:col,color:'#C0253A'},
+    {id:'g_col',label:'回収済み',sub:'confirmed',amt:col,color:'#C0253A'},
     {id:'g_con',label:'コンサバ',sub:'70%以上',amt:con,color:'#0E7490'},
     {id:'g_agr',label:'アグレッシブ',sub:'50%以上',amt:agr,color:'#6B35C8'},
   ];
+  // 詳細 deal lists
+  const isTeamLead=u.key==='nakamura';
+  const getAmt=d=>{if(isTeamLead)return Number(d.amount);let c=0;if(d.fs===u.key)c+=Number(d.amount)/2;if(d.is===u.key)c+=Number(d.amount)/2;return c;};
+  const inScope=d=>isTeamLead?(scope.includes(d.fs)||scope.includes(d.is)):(d.fs===u.key||d.is===u.key);
+  const md=getMonthDeals().filter(inScope);
+  const colDeals=md.filter(d=>d.prob==='confirmed').sort((a,b)=>getAmt(b)-getAmt(a));
+  const conDeals=md.filter(d=>['confirmed','70'].includes(d.prob)).sort((a,b)=>getAmt(b)-getAmt(a));
+  const agrDeals=md.filter(d=>['confirmed','70','50'].includes(d.prob)).sort((a,b)=>getAmt(b)-getAmt(a));
+  const mkList=deals=>{
+    if(!deals.length)return '<div style="font-size:12px;color:var(--text3);padding:8px 0">ヨミなし</div>';
+    return deals.map(d=>{
+      const pc=PROB_COLORS[d.prob]||{bg:'#f1f5f9',cl:'#64748b'};
+      return `<div style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:8px">
+        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${pc.bg};color:${pc.cl};flex-shrink:0">${PROB_LABELS[d.prob]}</span>
+        <span style="flex:1;font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.company)}</span>
+        <span style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text);flex-shrink:0">${fmtAmt(getAmt(d))}</span>
+      </div>`;
+    }).join('');
+  };
+  const detailSection=`<div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+    <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:14px">詳細</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+      ${[
+        {title:'回収済み',deals:colDeals,amt:col,color:'#C0253A'},
+        {title:'コンサバ',deals:conDeals,amt:con,color:'#0E7490'},
+        {title:'アグレッシブ',deals:agrDeals,amt:agr,color:'#6B35C8'},
+      ].map(s=>`<div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ${s.color}40">
+          <span style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></span>
+          <span style="font-size:12px;font-weight:700;color:var(--text)">${s.title}</span>
+          <span style="font-size:13px;font-weight:800;font-family:var(--mono);color:${s.color};margin-left:auto">${fmtAmt(s.amt)}</span>
+        </div>
+        ${mkList(s.deals)}
+      </div>`).join('')}
+    </div>
+  </div>`;
   const selector=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)">
     <div class="avatar" style="background:${u.color};width:42px;height:42px;font-size:17px;flex-shrink:0">${u.initial}</div>
     <div style="flex:1">
@@ -2227,6 +2263,7 @@ function renderGaugeSummary(){
   el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);padding:24px 28px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
     ${selector}
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">${gaugeData.map(g=>makeGaugeSVG(g.id,g.label,g.sub,g.color)).join('')}</div>
+    ${detailSection}
   </div>`;
   // Update tick labels with actual amounts, then animate
   gaugeData.forEach(g=>{
