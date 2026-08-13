@@ -2388,11 +2388,11 @@ function openAnkenEdit(id){
   document.getElementById('ak-modal-title').textContent='ヨミを編集';
   document.getElementById('ak-sf-done').checked=!!d.sfDone;
   document.getElementById('ak-yakumu-done').checked=!!d.yakumuDone;
-  toggleYakumuSection();
   document.getElementById('ak-company').value=d.company||'';
   document.getElementById('ak-amount').value=d.amount||'';
   document.getElementById('ak-month').value=d.month||'';
   document.getElementById('ak-prob').value=d.prob||'50';
+  toggleYakumuSection();
   const probEl=document.getElementById('ak-prob');
   const isLocked=d.prob==='confirmed';
   probEl.disabled=isLocked;
