@@ -2179,11 +2179,15 @@ function renderScopeHero(){
     `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;background:${stageBgColors[s.prob]};color:${stageTextColors[s.prob]}"><span style="width:6px;height:6px;border-radius:50%;background:${stageColors[s.prob]};display:inline-block"></span>${PROB_LABELS[s.prob]} ${fmtAmt(s.amt)}</span>`
   ).join('');
 
-  const pipeRows=stageAmts.map(s=>
-    `<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0">
-      <span style="width:7px;height:7px;border-radius:50%;background:${stageColors[s.prob]};flex-shrink:0;display:inline-block"></span>
-      <span style="flex:1;color:var(--text2)">${PROB_LABELS[s.prob]}</span>
-      <span style="font-family:var(--mono);font-weight:700;color:var(--text)">${fmtAmt(s.amt)}</span>
+  const pipeRows=[
+    {label:'回収済み', amt:col,  color:'var(--green)'},
+    {label:'コンサバ', amt:con,  color:'#0E7490'},
+    {label:'アグレッシブ', amt:agr, color:'var(--accent)'},
+  ].map(r=>
+    `<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0">
+      <span style="width:7px;height:7px;border-radius:50%;background:${r.color};flex-shrink:0;display:inline-block"></span>
+      <span style="flex:1;color:var(--text2)">${r.label}</span>
+      <span style="font-family:var(--mono);font-weight:700;color:var(--text)">${fmtAmt(r.amt)}</span>
     </div>`
   ).join('');
 
