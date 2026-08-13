@@ -31,6 +31,21 @@ window.dispatchEvent(new Event("fb-ready"));
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
+  --bg:#F0EFE9;--surface:#FFF;--surface2:#EFEDE6;
+  --border:#E2DFD6;--border2:#C9C6BC;
+  --text:#18171A;--text2:#5C5A62;--text3:#9B99A4;
+  --accent:#3A5EE5;--accent-bg:#EDF0FC;
+  --green:#1A7A50;--green-bg:#E8F5EE;
+  --amber:#A05C00;--amber-bg:#FEF4E3;
+  --red:#C0253A;--red-bg:#FDEAED;
+  --purple:#6B35C8;
+  --r8:8px;--r12:12px;--r16:16px;
+  --shadow:0 1px 4px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05);
+  --font:"Instrument Sans",sans-serif;--mono:monospace;
+  --cn:#C0253A;--cm:#D97706;--cs:#0E7490;--ca:#1A7A50;
+}
+body.anken-mode{
   --bg:#0B1222;--surface:#142035;--surface2:#1B2C47;
   --border:#253a58;--border2:#345070;
   --text:#E8F0FF;--text2:#8099C0;--text3:#506080;
@@ -39,11 +54,7 @@ window.dispatchEvent(new Event("fb-ready"));
   --amber:#F0A030;--amber-bg:#2A1E08;
   --red:#E04060;--red-bg:#2D0E1A;
   --purple:#9B72F5;
-  --r8:8px;--r12:12px;--r16:16px;
-  --shadow:0 1px 4px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06);
-  --shadow-lg:0 8px 24px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05);
-  --font:"Instrument Sans",sans-serif;--mono:monospace;
-  --cn:#C0253A;--cm:#D97706;--cs:#0E7490;--ca:#1A7A50;
+  background:#0B1222;
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
 
@@ -2065,6 +2076,7 @@ function switchPage(page){
   currentPage=page;
   localStorage.setItem('canly_page',page);
   const isTask=page==='task';
+  document.body.classList.toggle('anken-mode',!isTask);
   document.getElementById('main').style.display=isTask?'':'none';
   document.getElementById('stats-bar-wrap').style.display=isTask?'':'none';
   const ob=document.getElementById('overdue-banner');
