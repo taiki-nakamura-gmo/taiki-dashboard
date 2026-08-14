@@ -2147,7 +2147,7 @@ function makeGaugeSVG(id,label,sub,color){
   return `<div style="text-align:center">
     <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:1px">${label}</div>
     <div style="font-size:10.5px;color:var(--text3);margin-bottom:4px">${sub}</div>
-    <svg viewBox="0 0 300 228" style="width:100%;max-width:300px;overflow:visible">
+    <svg viewBox="0 0 300 248" style="width:100%;max-width:300px;overflow:visible">
       <path d="M ${cx-r},${cy} A ${r},${r} 0 0 1 ${cx+r},${cy}" fill="none" stroke="#E2DFD6" stroke-width="22" stroke-linecap="butt"/>
       <path d="M ${cx-r},${cy} A ${r},${r} 0 0 1 ${cx+r},${cy}" fill="none" stroke="#BBF7D0" stroke-width="22" stroke-linecap="butt"
             stroke-dasharray="${(arcLen*.08).toFixed(1)} ${arcLen}" stroke-dashoffset="${-(arcLen*.92).toFixed(1)}"/>
@@ -2160,6 +2160,7 @@ function makeGaugeSVG(id,label,sub,color){
       <circle cx="${cx}" cy="${cy}" r="9" fill="#222"/>
       <text id="gv_${id}" x="${cx}" y="${cy+52}" text-anchor="middle" font-size="23" font-weight="800" fill="#9B99A4" style="font-family:var(--mono)">¥0</text>
       <text id="gp_${id}" x="${cx}" y="${cy+72}" text-anchor="middle" font-size="14" font-weight="700" fill="#9B99A4" style="font-family:var(--mono)">(0%)</text>
+      <text id="gr_${id}" x="${cx}" y="${cy+90}" text-anchor="middle" font-size="11" fill="#9B99A4" style="font-family:var(--mono)"></text>
     </svg>
   </div>`;
 }
@@ -2194,6 +2195,11 @@ function animateGauge(id,amt,target,color){
     else{
       if(valEl){valEl.textContent=fmtAmt(amt);valEl.setAttribute('fill',textColor);}
       if(pctEl){pctEl.textContent=`(${displayPct}%)`;pctEl.setAttribute('fill',textColor);}
+      const remEl=document.getElementById('gr_'+id);
+      if(remEl){
+        if(achieved){remEl.textContent='目標達成';remEl.setAttribute('fill','#1A7A50');}
+        else{remEl.textContent='残り '+fmtAmt(target-amt);remEl.setAttribute('fill','#9B99A4');}
+      }
     }
   }
   requestAnimationFrame(update);
@@ -2210,9 +2216,9 @@ function renderGaugeSummary(){
   const agr=getScopeYomi(scope,['50','70','confirmed']);
   const scopeLabel={nakamura:'全チーム',naka:'3人チーム',sakurai:'個人',aoki:'個人'};
   const gaugeData=[
-    {id:'g_col',label:'回収済み',sub:'confirmed',amt:col,color:'#C0253A'},
-    {id:'g_con',label:'コンサバ',sub:'70%以上',amt:con,color:'#0E7490'},
     {id:'g_agr',label:'アグレッシブ',sub:'50%以上',amt:agr,color:'#6B35C8'},
+    {id:'g_con',label:'コンサバ',sub:'70%以上',amt:con,color:'#0E7490'},
+    {id:'g_col',label:'回収済み',sub:'confirmed',amt:col,color:'#C0253A'},
   ];
   // 詳細 deal lists
   const isTeamLead=u.key==='nakamura';
@@ -2237,9 +2243,9 @@ function renderGaugeSummary(){
     <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:14px">詳細</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
       ${[
-        {title:'回収済み',deals:colDeals,amt:col,color:'#C0253A'},
-        {title:'コンサバ',deals:conDeals,amt:con,color:'#0E7490'},
         {title:'アグレッシブ',deals:agrDeals,amt:agr,color:'#6B35C8'},
+        {title:'コンサバ',deals:conDeals,amt:con,color:'#0E7490'},
+        {title:'回収済み',deals:colDeals,amt:col,color:'#C0253A'},
       ].map(s=>`<div>
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ${s.color}40">
           <span style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></span>
