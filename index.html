@@ -2198,7 +2198,7 @@ function animateGauge(id,amt,target,color){
       const remEl=document.getElementById('gr_'+id);
       if(remEl){
         if(achieved){remEl.textContent='目標達成';remEl.setAttribute('fill','#1A7A50');}
-        else{remEl.textContent='残り '+fmtAmt(target-amt);remEl.setAttribute('fill','#9B99A4');}
+        else{remEl.textContent='残り '+fmtAmt(target-amt);remEl.setAttribute('fill','var(--text)');}
       }
     }
   }
