@@ -2158,8 +2158,8 @@ function makeGaugeSVG(id,label,sub,color){
       <line id="gn_${id}" x1="${cx}" y1="${cy}" x2="${initNx.toFixed(1)}" y2="${initNy.toFixed(1)}"
             stroke="#222" stroke-width="3.5" stroke-linecap="round"/>
       <circle cx="${cx}" cy="${cy}" r="9" fill="#222"/>
-      <text id="gv_${id}" x="${cx}" y="${cy+52}" text-anchor="middle" font-size="23" font-weight="800" fill="#9B99A4" font-family="monospace">¥0</text>
-      <text id="gp_${id}" x="${cx}" y="${cy+72}" text-anchor="middle" font-size="14" font-weight="700" fill="#9B99A4" font-family="monospace">(0%)</text>
+      <text id="gv_${id}" x="${cx}" y="${cy+52}" text-anchor="middle" font-size="23" font-weight="800" fill="#9B99A4" style="font-family:var(--mono)">¥0</text>
+      <text id="gp_${id}" x="${cx}" y="${cy+72}" text-anchor="middle" font-size="14" font-weight="700" fill="#9B99A4" style="font-family:var(--mono)">(0%)</text>
     </svg>
   </div>`;
 }
