@@ -2123,7 +2123,7 @@ function renderAnkenSummary(){
 }
 
 function fmtShort(n){
-  if(n>=1000000)return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+  if(n>=10000)return Math.round(n/10000)+'万';
   if(n>=1000)return Math.round(n/1000)+'K';
   return n>0?String(n):'0';
 }
