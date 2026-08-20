@@ -2220,10 +2220,10 @@ function renderGaugeSummary(){
     {id:'g_con',label:'コンサバ',sub:'70%以上',amt:con,color:'#0E7490'},
     {id:'g_col',label:'回収済み',sub:'confirmed',amt:col,color:'#C0253A'},
   ];
-  // 詳細 deal lists
+  // 詳細 deal lists — scope配列で統一（getScopeYomiと同じ50/50クレジット方式）
   const isTeamLead=u.key==='nakamura';
-  const getAmt=d=>{if(isTeamLead)return Number(d.amount);let c=0;if(d.fs===u.key)c+=Number(d.amount)/2;if(d.is===u.key)c+=Number(d.amount)/2;return c;};
-  const inScope=d=>isTeamLead?(scope.includes(d.fs)||scope.includes(d.is)):(d.fs===u.key||d.is===u.key);
+  const getAmt=d=>{let c=0;if(scope.includes(d.fs))c+=Number(d.amount)/2;if(scope.includes(d.is))c+=Number(d.amount)/2;return c;};
+  const inScope=d=>scope.includes(d.fs)||scope.includes(d.is);
   const md=getMonthDeals().filter(inScope);
   const colDeals=md.filter(d=>d.prob==='confirmed').sort((a,b)=>getAmt(b)-getAmt(a));
   const conDeals=md.filter(d=>['confirmed','70'].includes(d.prob)).sort((a,b)=>getAmt(b)-getAmt(a));
