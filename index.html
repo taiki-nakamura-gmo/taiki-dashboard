@@ -2266,9 +2266,49 @@ function renderGaugeSummary(){
       ${AUTH_USERS.map(mu=>`<option value="${mu.key}"${mu.key===u.key?' selected':''}>${mu.name}${mu.key==='nakamura'?' (全チーム)':mu.key==='naka'?' (3人)':' (個人)'}</option>`).join('')}
     </select>
   </div>`;
+  const memberSection=isTeamLead?(()=>{
+    const members=AUTH_USERS.filter(mu=>mu.key!=='nakamura');
+    const tgt=getTargets();
+    const rows=members.map(mu=>{
+      const ms=ANKEN_SCOPES[mu.key];
+      const mt=tgt[mu.key];
+      const mc=getScopeYomi(ms,['confirmed']);
+      const mn=getScopeYomi(ms,['70','confirmed']);
+      const ma=getScopeYomi(ms,['50','70','confirmed']);
+      const pct=mt>0?Math.round(mc/mt*100):0;
+      const achieved=pct>=100;
+      return `<div style="display:grid;grid-template-columns:160px 1fr 1fr 1fr 80px;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="avatar" style="background:${mu.color};width:34px;height:34px;font-size:13px;flex-shrink:0">${mu.initial}</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${mu.name}</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">目標 ${fmtAmt(mt)}</div>
+          </div>
+        </div>
+        ${[{amt:ma,color:'#6B35C8'},{amt:mn,color:'#0E7490'},{amt:mc,color:'#C0253A'}].map(s=>`
+        <div style="text-align:center">
+          <div style="font-size:15px;font-weight:800;font-family:var(--mono);color:${s.color}">${fmtAmt(s.amt)}</div>
+        </div>`).join('')}
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:800;color:${achieved?'#1A7A50':'var(--text)'}">${pct}%</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${achieved?'目標達成':'残り '+fmtAmt(mt-mc)}</div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:4px">メンバー別</div>
+      <div style="display:grid;grid-template-columns:160px 1fr 1fr 1fr 80px;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div></div>
+        ${[{label:'アグレッシブ',color:'#6B35C8'},{label:'コンサバ',color:'#0E7490'},{label:'回収済み',color:'#C0253A'}].map(s=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${s.color}">${s.label}</div>`).join('')}
+        <div></div>
+      </div>
+      ${rows}
+    </div>`;
+  })():'';
   el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);padding:24px 28px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
     ${selector}
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">${gaugeData.map(g=>makeGaugeSVG(g.id,g.label,g.sub,g.color)).join('')}</div>
+    ${memberSection}
     ${detailSection}
   </div>`;
   // Update tick labels with actual amounts, then animate
