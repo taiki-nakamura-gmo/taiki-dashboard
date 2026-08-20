@@ -2133,16 +2133,19 @@ function makeGaugeSVG(id,label,sub,color){
   const initNx=cx+needleLen*Math.cos(Math.PI);
   const initNy=cy-needleLen*Math.sin(Math.PI);
   const arcLen=Math.PI*r;
-  const ticks=[0,.25,.5,.75,1].map(f=>{
-    const ang=Math.PI*(1-f);
+  // 目盛り：0〜100%の目標を弧の0〜5/6に配置（2時位置が目標）、目標tick(f=1)は緑で強調
+  const ticks=[0,.25,.5,.75,1].map((f,i)=>{
+    const arcFrac=f*5/6; // 目標(f=1)が弧の5/6(=2時)になるようマッピング
+    const ang=Math.PI*(1-arcFrac);
+    const isGoal=i===4;
     const x1=(cx+(r-4)*Math.cos(ang)).toFixed(1);
     const y1=(cy-(r-4)*Math.sin(ang)).toFixed(1);
-    const x2=(cx+(r+10)*Math.cos(ang)).toFixed(1);
-    const y2=(cy-(r+10)*Math.sin(ang)).toFixed(1);
-    const lx=(cx+(r+26)*Math.cos(ang)).toFixed(1);
-    const ly=(cy-(r+26)*Math.sin(ang)).toFixed(1);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ccc" stroke-width="1.5"/>
-            <text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#9B99A4" id="tick_${id}_${Math.round(f*100)}">—</text>`;
+    const x2=(cx+(r+(isGoal?14:10))*Math.cos(ang)).toFixed(1);
+    const y2=(cy-(r+(isGoal?14:10))*Math.sin(ang)).toFixed(1);
+    const lx=(cx+(r+28)*Math.cos(ang)).toFixed(1);
+    const ly=(cy-(r+28)*Math.sin(ang)).toFixed(1);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isGoal?'#1A7A50':'#ccc'}" stroke-width="${isGoal?2.5:1.5}"/>
+            <text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="${isGoal?'#1A7A50':'#9B99A4'}" font-weight="${isGoal?'700':'400'}" id="tick_${id}_${Math.round(f*100)}">—</text>`;
   }).join('');
   return `<div style="text-align:center">
     <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:1px">${label}</div>
@@ -2150,7 +2153,7 @@ function makeGaugeSVG(id,label,sub,color){
     <svg viewBox="0 0 300 248" style="width:100%;max-width:300px;overflow:visible">
       <path d="M ${cx-r},${cy} A ${r},${r} 0 0 1 ${cx+r},${cy}" fill="none" stroke="#E2DFD6" stroke-width="22" stroke-linecap="butt"/>
       <path d="M ${cx-r},${cy} A ${r},${r} 0 0 1 ${cx+r},${cy}" fill="none" stroke="#BBF7D0" stroke-width="22" stroke-linecap="butt"
-            stroke-dasharray="${(arcLen*.08).toFixed(1)} ${arcLen}" stroke-dashoffset="${-(arcLen*.92).toFixed(1)}"/>
+            stroke-dasharray="${(arcLen/6).toFixed(1)} ${arcLen}" stroke-dashoffset="${-(arcLen*5/6).toFixed(1)}"/>
       <path id="gf_${id}" d="M ${cx-r},${cy} A ${r},${r} 0 0 1 ${cx+r},${cy}" fill="none" stroke="${color}" stroke-width="22" stroke-linecap="butt"
             stroke-dasharray="0 ${arcLen}"/>
       ${ticks}
@@ -2168,7 +2171,8 @@ function makeGaugeSVG(id,label,sub,color){
 function animateGauge(id,amt,target,color){
   const arcLen=Math.PI*110;
   const maxPct=target>0?amt/target:0;
-  const clampedPct=Math.min(maxPct,1);
+  // 目標(100%)が弧の5/6(2時位置)になるようスケール。120%で満タン。
+  const clampedPct=Math.min(target>0?amt/(target*1.2):0,1);
   const displayPct=Math.round(maxPct*100);
   const achieved=displayPct>=100;
   const textColor=achieved?'#1A7A50':'#C0253A';
