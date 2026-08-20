@@ -2006,7 +2006,7 @@ else window.addEventListener("fb-ready",initFirebase);
 
 // ===== 案件Canly =====
 const ANKEN_TARGETS={
-  '2026-06':{nakamura:1000000,naka:700000,sakurai:300000,aoki:100000},
+  '2026-06':{nakamura:1250000,naka:750000,sakurai:200000,aoki:200000},
   '2026-07':{nakamura:1250000,naka:750000,sakurai:200000,aoki:200000},
   '2026-08':{nakamura:1250000,naka:750000,sakurai:200000,aoki:200000},
   '2026-09':{nakamura:1250000,naka:750000,sakurai:200000,aoki:200000},
@@ -2023,7 +2023,7 @@ const PROB_ORDER=['confirmed','70','50','25','lost'];
 let anken=[];
 let currentPage='task';
 let currentAnkenTab='summary';
-let currentAnkenMonth=localStorage.getItem('canly_month')||'2026-06';
+let currentAnkenMonth=localStorage.getItem('canly_month')||(()=>{const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;})();
 let _summaryUser=null;
 
 function getMonthDeals(){return anken.filter(d=>d.month===currentAnkenMonth);}
