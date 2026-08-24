@@ -2295,7 +2295,7 @@ function renderGaugeSummary(){
         </div>`).join('')}
         <div style="text-align:right">
           <div style="font-size:13px;font-weight:800;color:${achieved?'#1A7A50':'var(--text)'}">${pct}%</div>
-          <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${achieved?'目標達成':'残り '+fmtAmt(mt-mc)}</div>
+          <div style="font-size:10px;font-weight:600;color:${achieved?'#1A7A50':'var(--red)'};font-family:var(--mono)">${achieved?'目標達成':'残り '+fmtAmt(mt-mc)}</div>
         </div>
       </div>`;
     }).join('');
