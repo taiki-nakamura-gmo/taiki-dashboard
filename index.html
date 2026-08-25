@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js";
 import { getDatabase, ref, set, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 const cfg = {
   apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
@@ -23,6 +24,11 @@ const cfg = {
   appId: "1:679381676234:web:20b54086cd302494c0c433"
 };
 const app = initializeApp(cfg);
+// App Check(reCAPTCHA v3): 第三者のURL直叩きをブロック。ログイン画面は増えない(チームの使い勝手は不変)
+initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider("6LeBcpctAAAAAFUv0nKLpia0xLoFo2JNH6d86tWt"),
+  isTokenAutoRefreshEnabled: true
+});
 const db = getDatabase(app);
 window._fb = { db, ref, set, remove, onValue, get };
 window._fbReady = true;
