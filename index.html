@@ -2235,9 +2235,11 @@ function renderGaugeSummary(){
   const getAmt=d=>{let c=0;if(scope.includes(d.fs))c+=Number(d.amount)/2;if(scope.includes(d.is))c+=Number(d.amount)/2;return c;};
   const inScope=d=>scope.includes(d.fs)||scope.includes(d.is);
   const md=getMonthDeals().filter(inScope);
+  // 排他的な内訳（各案件は1列にのみ表示）
   const colDeals=md.filter(d=>d.prob==='confirmed').sort((a,b)=>getAmt(b)-getAmt(a));
-  const conDeals=md.filter(d=>['confirmed','70'].includes(d.prob)).sort((a,b)=>getAmt(b)-getAmt(a));
-  const agrDeals=md.filter(d=>['confirmed','70','50'].includes(d.prob)).sort((a,b)=>getAmt(b)-getAmt(a));
+  const conDeals=md.filter(d=>d.prob==='70').sort((a,b)=>getAmt(b)-getAmt(a));
+  const agrDeals=md.filter(d=>d.prob==='50').sort((a,b)=>getAmt(b)-getAmt(a));
+  const conOnly=con-col, agrOnly=agr-con, pipeline=agr-col;
   const mkList=deals=>{
     if(!deals.length)return '<div style="font-size:12px;color:var(--text3);padding:8px 0">ヨミなし</div>';
     return deals.map(d=>{
@@ -2250,16 +2252,37 @@ function renderGaugeSummary(){
     }).join('');
   };
   const detailSection=`<div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
-    <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:14px">詳細</div>
+    <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:12px">詳細</div>
+    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px 16px;margin-bottom:16px;background:var(--surface2);border-radius:var(--r8)">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--text3)">回収済み</div>
+        <div style="font-size:19px;font-weight:800;font-family:var(--mono);color:#C0253A;line-height:1.2">${fmtAmt(col)}</div>
+      </div>
+      <div style="font-size:17px;color:var(--text3)">+</div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--text3)">残ヨミ (50%以上)</div>
+        <div style="font-size:19px;font-weight:800;font-family:var(--mono);color:#6B35C8;line-height:1.2">${fmtAmt(pipeline)}</div>
+      </div>
+      <div style="font-size:17px;color:var(--text3)">=</div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--text3)">着地見込み</div>
+        <div style="font-size:19px;font-weight:800;font-family:var(--mono);color:var(--text);line-height:1.2">${fmtAmt(agr)}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div style="font-size:10px;font-weight:700;color:var(--text3)">目標 ${fmtAmt(target)}</div>
+        <div style="font-size:13px;font-weight:700;font-family:var(--mono);color:${col>=target?'#1A7A50':'var(--red)'}">${col>=target?'目標達成':'あと '+fmtAmt(target-col)+' 回収必要'}</div>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
       ${[
-        {title:'アグレッシブ',deals:agrDeals,amt:agr,color:'#6B35C8'},
-        {title:'コンサバ',deals:conDeals,amt:con,color:'#0E7490'},
-        {title:'回収済み',deals:colDeals,amt:col,color:'#C0253A'},
+        {title:'アグレッシブ',sub:'50%のみ',deals:agrDeals,amt:agrOnly,color:'#6B35C8'},
+        {title:'コンサバ',sub:'70%のみ',deals:conDeals,amt:conOnly,color:'#0E7490'},
+        {title:'回収済み',sub:'受注',deals:colDeals,amt:col,color:'#C0253A'},
       ].map(s=>`<div>
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ${s.color}40">
           <span style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></span>
           <span style="font-size:12px;font-weight:700;color:var(--text)">${s.title}</span>
+          <span style="font-size:10px;color:var(--text3)">${s.sub}</span>
           <span style="font-size:13px;font-weight:800;font-family:var(--mono);color:${s.color};margin-left:auto">${fmtAmt(s.amt)}</span>
         </div>
         ${mkList(s.deals)}
