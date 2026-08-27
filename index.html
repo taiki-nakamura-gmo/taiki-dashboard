@@ -805,9 +805,13 @@ input[type=number]{-moz-appearance:textfield}
         <input type="checkbox" id="ak-sf-done" style="width:16px;height:16px;accent-color:#2563eb;cursor:pointer">
         SF受注完了
       </label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;margin-bottom:8px">
         <input type="checkbox" id="ak-yakumu-done" style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer">
         役務提供済み
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
+        <input type="checkbox" id="ak-sheet-done" style="width:16px;height:16px;accent-color:#a05c00;cursor:pointer">
+        当月シート/コンサル与件シート記載済み
       </label>
     </div>
     <div class="f2">
@@ -2694,6 +2698,9 @@ function renderAnkenList(){
         ${isConf?(d.yakumuDone
           ?`<span style="font-size:10.5px;font-weight:700;color:#16a34a;background:#dcfce7;padding:2px 8px;border-radius:20px">✅ 提供済み</span>`
           :`<span style="font-size:10.5px;font-weight:600;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:20px">⏳ 役務提供待ち</span>`):''}
+        ${isConf?(d.sheetDone
+          ?`<span style="font-size:10.5px;font-weight:700;color:#a05c00;background:#fef4e3;padding:2px 8px;border-radius:20px">✅ シート記載済み</span>`
+          :`<span style="font-size:10.5px;font-weight:600;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:20px">⏳ シート未記載</span>`):''}
       </div>
     </div>`;
   };
@@ -2753,6 +2760,7 @@ function openAnkenAdd(){
   document.getElementById('ak-yakumu-section').style.display='none';
   document.getElementById('ak-sf-done').checked=false;
   document.getElementById('ak-yakumu-done').checked=false;
+  document.getElementById('ak-sheet-done').checked=false;
   document.getElementById('ak-modal-title').textContent='ヨミを追加';
   document.getElementById('ak-company').value='';
   document.getElementById('ak-amount').value='';
@@ -2770,6 +2778,7 @@ function openAnkenEdit(id){
   document.getElementById('ak-modal-title').textContent='ヨミを編集';
   document.getElementById('ak-sf-done').checked=!!d.sfDone;
   document.getElementById('ak-yakumu-done').checked=!!d.yakumuDone;
+  document.getElementById('ak-sheet-done').checked=!!d.sheetDone;
   document.getElementById('ak-company').value=d.company||'';
   document.getElementById('ak-amount').value=d.amount||'';
   document.getElementById('ak-month').value=d.month||'';
@@ -2874,6 +2883,7 @@ function saveAnkenForm(){
     is:document.getElementById('ak-is').value,
     sfDone:document.getElementById('ak-prob').value==='confirmed'?document.getElementById('ak-sf-done').checked:false,
     yakumuDone:document.getElementById('ak-prob').value==='confirmed'?document.getElementById('ak-yakumu-done').checked:false,
+    sheetDone:document.getElementById('ak-prob').value==='confirmed'?document.getElementById('ak-sheet-done').checked:false,
   };
   if(_editAnkenId){
     const d=anken.find(d=>d.id===_editAnkenId);
