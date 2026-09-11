@@ -2771,7 +2771,8 @@ function openAnkenAdd(){
   document.getElementById('ak-modal-title').textContent='ヨミを追加';
   document.getElementById('ak-company').value='';
   document.getElementById('ak-amount').value='';
-  document.getElementById('ak-month').value='';
+  const _now=new Date();
+  document.getElementById('ak-month').value=`${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
   document.getElementById('ak-prob').value='50';
   document.getElementById('ak-fs').value='nakamura';
   document.getElementById('ak-is').value='sakurai';
