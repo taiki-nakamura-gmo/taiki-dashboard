@@ -1700,7 +1700,6 @@ function complete(id){
   if(!confirm("このタスクを完了してゴミ箱に移動しますか？"))return;
   const ck=document.getElementById("ck"+id);const card=document.getElementById("tc"+id);
   ck.classList.add("on");card.classList.add("done");
-  startBalloonGame();
   setTimeout(()=>{const t=tasks.find(t=>t.id===id);if(!t)return;t.deletedAt=new Date().toLocaleDateString("ja-JP");saveTrash(t);delTask(id);},340);
 }
 function toTrash(id){
