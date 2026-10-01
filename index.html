@@ -10,7 +10,6 @@
 <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;タスクCanly&quot;,&quot;short_name&quot;:&quot;タスクCanly&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23ffffff&quot;,&quot;theme_color&quot;:&quot;%233A5EE5&quot;}">
 <link rel="icon" id="favicon-link" href="data:,"  type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js";
@@ -769,6 +768,7 @@ input[type=number]{-moz-appearance:textfield}
         <option value="70">70%</option>
         <option value="50" selected>50%</option>
         <option value="25">30%</option>
+        <option value="yukou">有効商談枠</option>
         <option value="lost">失注</option>
       </select></div>
     </div>
@@ -1609,95 +1609,9 @@ const ANKEN_TARGETS={
 };
 function getTargets(){return ANKEN_TARGETS[currentAnkenMonth]||ANKEN_TARGETS['2026-06'];}
 const ANKEN_SCOPES={nakamura:['nakamura','naka','sakurai','aoki'],naka:['naka','sakurai','aoki'],sakurai:['sakurai'],aoki:['aoki']};
-const PROB_LABELS={confirmed:'受注','70':'70%','50':'50%','25':'30%',lost:'失注'};
-const PROB_COLORS={confirmed:{bg:'#dcfce7',cl:'#16a34a'},'70':{bg:'#dbeafe',cl:'#1d4ed8'},'50':{bg:'#fef9c3',cl:'#a16207'},'25':{bg:'#f1f5f9',cl:'#64748b'},lost:{bg:'#fee2e2',cl:'#dc2626'}};
+const PROB_LABELS={confirmed:'受注','70':'70%','50':'50%','25':'30%',yukou:'有効商談枠',lost:'失注'};
+const PROB_COLORS={confirmed:{bg:'#dcfce7',cl:'#16a34a'},'70':{bg:'#dbeafe',cl:'#1d4ed8'},'50':{bg:'#fef9c3',cl:'#a16207'},'25':{bg:'#f1f5f9',cl:'#64748b'},yukou:{bg:'#FEF4E3',cl:'#A05C00'},lost:{bg:'#fee2e2',cl:'#dc2626'}};
 const PROB_ORDER=['confirmed','70','50','25','lost'];
-
-// ===== 有効商談枠（Googleスプシ連携） =====
-const GSHEET_ID='1Mxz70nKNkXoZOCiz1NIjETWJPWUEM1nQM1NtAd2kDO0';
-const GSHEET_YUKOU_GID=689994905; // 「有効商談」ブロックが載っているタブ
-const GOOGLE_CLIENT_ID='611747258540-rbsuv7cmbo9cb2j3ncpmpr4e9q13mdmh.apps.googleusercontent.com';
-const GSHEET_SCOPE='https://www.googleapis.com/auth/spreadsheets.readonly';
-const GSHEET_TOKEN_KEY='gsheet_token_v1';
-let _gsheetAccessToken=null;
-let _gsheetTokenClient=null;
-let _sheetYukouDeals=[]; // {company,plan,amount,is,fs,note}
-let _sheetFetchErr=null;
-const NAME_TO_KEY={};
-AUTH_USERS.forEach(u=>{NAME_TO_KEY[u.name]=u.key;});
-
-function loadCachedGsheetToken(){
-  try{
-    const c=JSON.parse(sessionStorage.getItem(GSHEET_TOKEN_KEY)||'null');
-    if(c&&c.token&&c.exp>Date.now())return c.token;
-  }catch(e){}
-  return null;
-}
-function ensureGsheetTokenClient(){
-  if(_gsheetTokenClient)return _gsheetTokenClient;
-  if(!window.google||!google.accounts||!google.accounts.oauth2)return null;
-  _gsheetTokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:GOOGLE_CLIENT_ID,
-    scope:GSHEET_SCOPE,
-    callback:(resp)=>{
-      if(resp.error){_sheetFetchErr='Google認証に失敗しました';renderAnken();return;}
-      _gsheetAccessToken=resp.access_token;
-      try{sessionStorage.setItem(GSHEET_TOKEN_KEY,JSON.stringify({token:resp.access_token,exp:Date.now()+(resp.expires_in*1000)-60000}));}catch(e){}
-      fetchYukouShoudan();
-    }
-  });
-  return _gsheetTokenClient;
-}
-function connectGoogleSheet(){
-  const cached=loadCachedGsheetToken();
-  if(cached){_gsheetAccessToken=cached;fetchYukouShoudan();return;}
-  const client=ensureGsheetTokenClient();
-  if(!client){_sheetFetchErr='Googleログイン機能の読み込み中です。少し待って再度お試しください';renderAnken();return;}
-  client.requestAccessToken();
-}
-async function fetchYukouShoudan(){
-  _sheetFetchErr=null;
-  try{
-    const metaRes=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${GSHEET_ID}?fields=sheets.properties`,{headers:{Authorization:'Bearer '+_gsheetAccessToken}});
-    if(!metaRes.ok)throw new Error('meta '+metaRes.status);
-    const meta=await metaRes.json();
-    const sheet=(meta.sheets||[]).find(s=>s.properties.sheetId===GSHEET_YUKOU_GID);
-    if(!sheet)throw new Error('sheet not found');
-    const title=sheet.properties.title;
-    const range=`${title}!B4:G300`;
-    const valRes=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${GSHEET_ID}/values/${encodeURIComponent(range)}`,{headers:{Authorization:'Bearer '+_gsheetAccessToken}});
-    if(!valRes.ok)throw new Error('values '+valRes.status);
-    const valData=await valRes.json();
-    const rows=valData.values||[];
-    _sheetYukouDeals=rows.filter(r=>r[0]&&String(r[0]).trim()).map(r=>({
-      company:String(r[0]||'').trim(),
-      plan:String(r[1]||'').trim(),
-      amount:String(r[2]||'').replace(/[¥,]/g,'').trim(),
-      is:String(r[3]||'').trim(),
-      fs:String(r[4]||'').trim(),
-      note:String(r[5]||'').trim(),
-    }));
-    renderAnken();
-  }catch(e){
-    if(String(e.message).includes('401')){_gsheetAccessToken=null;try{sessionStorage.removeItem(GSHEET_TOKEN_KEY);}catch(e2){}}
-    _sheetFetchErr='スプシの取得に失敗しました。再度ログインをお試しください';
-    renderAnken();
-  }
-}
-function getMissingSheetDeals(){
-  const md=getMonthDeals();
-  const existing=new Set(md.map(d=>(d.company||'').trim()));
-  return _sheetYukouDeals.filter(sd=>!existing.has(sd.company));
-}
-function openAnkenAddFromSheet(idx){
-  const sd=getMissingSheetDeals()[idx];
-  if(!sd)return;
-  openAnkenAdd();
-  document.getElementById('ak-company').value=sd.company;
-  if(sd.amount)document.getElementById('ak-amount').value=parseInt(sd.amount)||'';
-  if(NAME_TO_KEY[sd.fs])document.getElementById('ak-fs').value=NAME_TO_KEY[sd.fs];
-  if(NAME_TO_KEY[sd.is])document.getElementById('ak-is').value=NAME_TO_KEY[sd.is];
-}
 
 let anken=[];
 let currentPage='task';
@@ -2373,41 +2287,8 @@ function renderAnkenList(){
       </div>
     </div>`;
   };
-  const yukouHtml=(()=>{
-    const connected=!!_gsheetAccessToken;
-    const missing=connected?getMissingSheetDeals():[];
-    let body;
-    if(_sheetFetchErr){
-      body=`<div style="padding:16px 10px;text-align:center">
-        <div style="font-size:12px;color:var(--red);margin-bottom:8px">${_sheetFetchErr}</div>
-        <button class="btn btn-ghost btn-sm" onclick="connectGoogleSheet()">再試行</button>
-      </div>`;
-    }else if(!connected){
-      body=`<div style="padding:20px 10px;text-align:center">
-        <div style="font-size:11.5px;color:var(--text3);margin-bottom:10px;line-height:1.6">スプシの「有効商談」を自動取得して<br>記載漏れをチェックします</div>
-        <button class="btn btn-primary btn-sm" onclick="connectGoogleSheet()">🔗 Googleでログイン</button>
-      </div>`;
-    }else if(!missing.length){
-      body=`<div style="padding:20px 4px;font-size:12px;color:var(--text3);text-align:center">✅ 全て登録済み</div>`;
-    }else{
-      body=missing.map((sd,i)=>`<div style="background:var(--surface);border:1.5px solid var(--amber);border-radius:var(--r12);padding:10px 12px;position:relative">
-        <button onclick="openAnkenAddFromSheet(${i})" title="Canlyに追加" style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:6px;border:none;background:var(--amber-bg);color:var(--amber);font-weight:800;cursor:pointer;font-size:14px;line-height:1">+</button>
-        <div style="font-weight:700;font-size:13px;padding-right:26px">${esc(sd.company)}</div>
-        ${sd.amount?`<div style="font-family:var(--mono);font-weight:700;font-size:13px;margin-top:3px">${fmtAmt(Number(sd.amount)||0)}</div>`:''}
-        ${(sd.fs||sd.is)?`<div style="font-size:11px;color:var(--text3);margin-top:4px">${sd.fs?('FS '+esc(sd.fs)):''}${sd.fs&&sd.is?' / ':''}${sd.is?('IS '+esc(sd.is)):''}</div>`:''}
-      </div>`).join('');
-    }
-    return `<div class="ak-kol">
-      <div class="ak-kol-head" style="border-top:3px solid var(--amber)">
-        <span class="ak-prob-badge" style="background:var(--amber-bg);color:var(--amber)">有効商談枠</span>
-        ${connected&&!_sheetFetchErr?`<span class="ak-kol-cnt">${missing.length}件未登録</span>`:''}
-        ${connected&&!_sheetFetchErr?`<button onclick="connectGoogleSheet()" title="再取得" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px">⟳</button>`:''}
-      </div>
-      <div class="ak-kol-body">${body}</div>
-    </div>`;
-  })();
-  const COL_ORDER=['25','50','70','confirmed'];
-  const cols=yukouHtml+COL_ORDER.map(prob=>{
+  const COL_ORDER=['yukou','25','50','70','confirmed'];
+  const cols=COL_ORDER.map(prob=>{
     const deals=[...monthDeals].filter(d=>d.prob===prob).sort(amtSort);
     const pc=PROB_COLORS[prob]||{bg:'#f1f5f9',cl:'#64748b'};
     const total=deals.reduce((s,d)=>s+Number(d.amount||0),0);
