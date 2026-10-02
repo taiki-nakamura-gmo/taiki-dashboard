@@ -175,17 +175,14 @@ const PAGES = {
     {c:'承認',       t:'承認キュー', d:'AI社員からの承認依頼を確認・承認する', s:'ok'},
     {c:'エージェント', t:'秘書エージェント', d:'議事録・タスク登録などの秘書業務', s:'ok'},
   ]},
-  mitsumori:{ title:'見積もり書', cats:['全て','新規作成','テンプレート','作成履歴'], items:[
-    {c:'新規作成',    t:'見積もり書作成', d:'プラン・店舗数・初期費用から見積もり書を作成', s:'todo'},
-    {c:'テンプレート', t:'料金テーブル', d:'ローカル集客コンサル／MEO Dashboard の月額テーブル', s:'todo'},
-    {c:'作成履歴',    t:'作成履歴', d:'過去に作成した見積もり書の一覧', s:'todo'},
+  mitsumori:{ title:'見積もり書', cats:['全て','新規作成','テンプレート','作成履歴'], items:[  // 中身はユーザーと一緒に作る（右側は空）
   ]},
 };
 // 既存ツールの埋め込み先（A案：既存画面をそのままiframe表示）
 PAGES.task.frame  = '../index.html?page=task&embed=1';
 PAGES.anken.frame = '../index.html?page=anken&embed=1';
 // コックピットは公開しない方針のため、このPCで起動中のローカルサーバーを表示するだけ
-PAGES.mugen.frame = 'http://localhost:8787/';
+PAGES.mugen.frame = 'http://localhost:8787/?embed=1';
 PAGES.mugen.note  = 'コックピットはこのPCで起動しているときだけ表示されます（localhost:8787）。表示されない場合は「コックピット起動.bat」を実行してから <a onclick="reloadFrame(\'mugen\')">再読み込み</a>';
 const ORDER = ['task','anken','mugen','mitsumori'];
 let state = {page:'home', cat:'全て', q:''};
@@ -228,11 +225,7 @@ function pageView(p){
     <div class="cat-col"><div class="col-title">分類</div>
       <div class="cat-list">${d.cats.map(c=>`<div class="${c===state.cat?'sel':''}" onclick="pickCat('${c}')">${c}</div>`).join('')}</div>
     </div>
-    <div class="list-col"><div class="col-title">機能検索</div>
-      <input id="q" class="search">
-      <div class="cards" id="list"></div>
-      <div class="placeholder"><b>${d.title}</b> は既存ツールがまだないため、画面内容はこれから決定します。</div>
-    </div></div>`;
+    <div class="list-col"></div></div>`;
 }
 function pickCat(c){ state.cat = c; render(); }
 
