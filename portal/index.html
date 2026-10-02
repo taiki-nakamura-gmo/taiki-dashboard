@@ -236,14 +236,16 @@ function showFrame(p){
     el = document.createElement('div');
     el.className = 'tool show'; el.id = 'tool-'+p;
     el.innerHTML = (PAGES[p].note ? `<div class="note">${PAGES[p].note}</div>` : '')
-      + `<iframe src="${PAGES[p].frame}" title="${PAGES[p].title}"></iframe>`;
+      + `<iframe src="${bust(PAGES[p].frame)}" title="${PAGES[p].title}"></iframe>`;
     document.getElementById('content').appendChild(el);
   }
 }
 function reloadFrame(p){
   const f = document.querySelector('#tool-'+p+' iframe');
-  if(f) f.src = PAGES[p].frame;
+  if(f) f.src = bust(PAGES[p].frame);
 }
+// GitHub Pagesは10分キャッシュされ、ポータルを再読み込みしても埋め込み側が古いまま残るため毎回付与
+function bust(url){ return url + (url.includes('?')?'&':'?') + 't=' + Date.now(); }
 
 function rows(){
   const p = state.page;
