@@ -2516,7 +2516,7 @@ function deleteAnken(id){
       while(el.scrollWidth>el.clientWidth&&fs>10){fs-=0.5;el.style.fontSize=fs+'px';}
     });
   }
-  var raf=0; function schedule(){cancelAnimationFrame(raf);raf=requestAnimationFrame(fitNames);}
+  var tm=0; function schedule(){clearTimeout(tm);tm=setTimeout(fitNames,30);}
   new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});
   window.addEventListener('resize',schedule);
 })();
