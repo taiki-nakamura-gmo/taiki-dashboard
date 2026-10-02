@@ -427,11 +427,17 @@ input[type=number]{-moz-appearance:textfield}
 .cockpit-link .c-icon{font-size:14px}
 @media(max-width:600px){.cockpit-link .c-label{display:none}.cockpit-link{padding:6px 10px}}
 html.embed .brand,html.embed .auth-brand,html.embed .page-tabs,html.embed .cockpit-link{display:none!important}
+/* 埋め込み時は上部を凝縮（タスク画面では案件用の2段目を詰める） */
+html.embed .topbar-row1{padding:6px 0}
+html.embed .topbar-row2{padding:6px 0}
+html.embed[data-page=task] .topbar-row2{display:none}
+html.embed .stats-bar{padding:6px 20px}
 </style>
 <script>
 // ポータル(portal/)からiframeで開かれたとき: ?embed=1 でページ切替タブ等を隠す
 var IS_EMBED=new URLSearchParams(location.search).get('embed')==='1';
 if(IS_EMBED)document.documentElement.classList.add('embed');
+document.documentElement.dataset.page='task';
 </script>
 </head>
 <body>
@@ -1666,6 +1672,7 @@ function toggleLostBox(){
 
 function switchPage(page){
   currentPage=page;
+  document.documentElement.dataset.page=page;
   if(!IS_EMBED)localStorage.setItem('canly_page',page);
   const isTask=page==='task';
   document.getElementById('main').style.display=isTask?'':'none';
