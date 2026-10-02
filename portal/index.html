@@ -38,12 +38,8 @@
 
   /* ===== メイン ===== */
   #main{flex:1;display:flex;flex-direction:column;min-width:0}
-  #top{height:28px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 10px;font-size:11px;color:#555;gap:16px}
-  #top .toggle{cursor:pointer;font-size:14px;color:#333;user-select:none}
-  #top .right{margin-left:auto;display:flex;gap:16px;align-items:center}
-  #top .right span{display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
-  #top .right span:hover{color:var(--accent)}
-  #head{height:42px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 14px}
+  #head .toggle{cursor:pointer;font-size:14px;color:#333;user-select:none;margin-right:4px}
+  #head{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 14px}
   #head h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
   #head h1 svg{width:17px;height:17px;fill:var(--brand-dark)}
   #head .guide{color:var(--brand-dark);font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer}
@@ -86,7 +82,6 @@
   @media (max-width:700px){
     body.mob-auto #side{width:48px}
     body.mob-auto #side .t1,body.mob-auto #side .t2,body.mob-auto #side .sec,body.mob-auto #side .label,body.mob-auto #side .ext,body.mob-auto #side .support span:last-child{display:none}
-    #top .right span.hide-sm{display:none}
     .split{flex-direction:column}
     .cat-col{width:100%}
   }
@@ -130,17 +125,8 @@
 
 <!-- ===== メイン ===== -->
 <div id="main">
-  <div id="top">
-    <span class="toggle" onclick="toggleSide()">«</span>
-    <div class="right">
-      <span class="hide-sm">📢 新機能のお知らせ</span>
-      <span class="hide-sm">ⓘ サポートサイト</span>
-      <span class="hide-sm">▦ 中村ツール群 ▾</span>
-      <span>🏢 GMO TECH株式会社 ▾</span>
-      <span>👤 中村 ▾</span>
-    </div>
-  </div>
   <div id="head">
+    <span class="toggle" onclick="toggleSide()" title="メニューを折りたたむ">«</span>
     <h1 id="ptitle"></h1>
     <span class="guide"><b>?</b>ガイド</span>
   </div>
@@ -269,7 +255,7 @@ const _render = render; render = function(){ _render(); renderList(); };
 function toggleSide(){
   document.body.classList.remove('mob-auto');
   document.body.classList.toggle('collapsed');
-  document.querySelector('#top .toggle').textContent = document.body.classList.contains('collapsed') ? '»' : '«';
+  document.querySelector('#head .toggle').textContent = document.body.classList.contains('collapsed') ? '»' : '«';
 }
 
 function fromHash(){
