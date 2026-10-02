@@ -768,7 +768,7 @@ input[type=number]{-moz-appearance:textfield}
         <option value="70">70%</option>
         <option value="50" selected>50%</option>
         <option value="25">30%</option>
-        <option value="yukou">有効商談枠</option>
+        <option value="yukou">有効商談</option>
         <option value="lost">失注</option>
       </select></div>
     </div>
@@ -1609,7 +1609,7 @@ const ANKEN_TARGETS={
 };
 function getTargets(){return ANKEN_TARGETS[currentAnkenMonth]||ANKEN_TARGETS['2026-06'];}
 const ANKEN_SCOPES={nakamura:['nakamura','naka','sakurai','aoki'],naka:['naka','sakurai','aoki'],sakurai:['sakurai'],aoki:['aoki']};
-const PROB_LABELS={confirmed:'受注','70':'70%','50':'50%','25':'30%',yukou:'有効商談枠',lost:'失注'};
+const PROB_LABELS={confirmed:'受注','70':'70%','50':'50%','25':'30%',yukou:'有効商談',lost:'失注'};
 const PROB_COLORS={confirmed:{bg:'#dcfce7',cl:'#16a34a'},'70':{bg:'#dbeafe',cl:'#1d4ed8'},'50':{bg:'#fef9c3',cl:'#a16207'},'25':{bg:'#f1f5f9',cl:'#64748b'},yukou:{bg:'#FEF4E3',cl:'#A05C00'},lost:{bg:'#fee2e2',cl:'#dc2626'}};
 const PROB_ORDER=['confirmed','70','50','25','lost'];
 
