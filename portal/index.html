@@ -42,8 +42,6 @@
   #head{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 14px}
   #head h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
   #head h1 svg{width:17px;height:17px;fill:var(--brand-dark)}
-  #head .guide{color:var(--brand-dark);font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer}
-  #head .guide b{width:13px;height:13px;border:1px solid var(--brand-dark);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px}
   #content{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
   #listview{flex:1;overflow:auto;padding:14px}
   .tool{flex:1;display:none;flex-direction:column;min-height:0}
@@ -128,7 +126,6 @@
   <div id="head">
     <span class="toggle" onclick="toggleSide()" title="メニューを折りたたむ">«</span>
     <h1 id="ptitle"></h1>
-    <span class="guide"><b>?</b>ガイド</span>
   </div>
   <div id="content"><div id="listview"></div></div>
 </div>
