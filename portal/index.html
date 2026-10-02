@@ -190,7 +190,10 @@ PAGES.mugen.note  = 'コックピットはこのPCで起動しているときだ
 const ORDER = ['task','anken','mugen','mitsumori'];
 let state = {page:'home', cat:'全て', q:''};
 
-function go(p){ state = {page:p, cat:'全て', q:''}; location.hash = p; render(); }
+function go(p){
+  state = {page:p, cat:'全て', q:''};
+  if(location.hash.slice(1)!==p) location.hash = p; else render();
+}
 
 function render(){
   const p = state.page;
@@ -274,9 +277,13 @@ function toggleSide(){
   document.querySelector('#top .toggle').textContent = document.body.classList.contains('collapsed') ? '»' : '«';
 }
 
-const h = location.hash.slice(1);
-state.page = PAGES[h] ? h : 'home';
-render();
+function fromHash(){
+  const h = location.hash.slice(1), p = PAGES[h] ? h : 'home';
+  if(p!==state.page){ state = {page:p, cat:'全て', q:''}; }
+  render();
+}
+window.addEventListener('hashchange', fromHash);
+state.page = null; fromHash();
 </script>
 </body>
 </html>
