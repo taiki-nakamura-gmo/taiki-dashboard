@@ -426,7 +426,13 @@ input[type=number]{-moz-appearance:textfield}
 .cockpit-link:hover{background:#2f4fca;box-shadow:0 3px 10px rgba(58,94,229,.35);transform:translateY(-1px)}
 .cockpit-link .c-icon{font-size:14px}
 @media(max-width:600px){.cockpit-link .c-label{display:none}.cockpit-link{padding:6px 10px}}
+html.embed .page-tabs,html.embed .cockpit-link{display:none!important}
 </style>
+<script>
+// ポータル(portal/)からiframeで開かれたとき: ?embed=1 でページ切替タブ等を隠す
+var IS_EMBED=new URLSearchParams(location.search).get('embed')==='1';
+if(IS_EMBED)document.documentElement.classList.add('embed');
+</script>
 </head>
 <body>
 
@@ -1053,7 +1059,9 @@ function enterApp() {
   initFirebaseData();
   const savedMonth=localStorage.getItem('canly_month');
   if(savedMonth)currentAnkenMonth=savedMonth;
-  if(localStorage.getItem('canly_page')==='anken'){
+  // ポータル埋め込み対応: ?page=task|anken で表示ページを指定
+  const forcedPage=new URLSearchParams(location.search).get('page');
+  if((forcedPage||localStorage.getItem('canly_page'))==='anken'){
     switchPage('anken');
     const savedTab=localStorage.getItem('canly_tab');
     if(savedTab==='list')showAnkenTab('list');
@@ -1658,7 +1666,7 @@ function toggleLostBox(){
 
 function switchPage(page){
   currentPage=page;
-  localStorage.setItem('canly_page',page);
+  if(!IS_EMBED)localStorage.setItem('canly_page',page);
   const isTask=page==='task';
   document.getElementById('main').style.display=isTask?'':'none';
   document.getElementById('stats-bar-wrap').style.display=isTask?'':'none';

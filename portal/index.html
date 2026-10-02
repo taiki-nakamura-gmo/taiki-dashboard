@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>中村ポータル</title>
+<style>
+  :root{
+    --side-bg:#4d4d4d; --side-text:#e9e9e9; --side-label:#bdbdbd; --side-hover:#5c5c5c; --side-line:#666;
+    --brand:#2f9e5b; --brand-dark:#1f7a43;
+    --accent:#1a7fe0; --text:#333; --muted:#777; --line:#dcdcdc; --bg:#fff; --panel:#fafafa;
+    --font:"Hiragino Kaku Gothic ProN","Hiragino Sans","Meiryo","Yu Gothic UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:var(--font);font-size:13px;color:var(--text);background:var(--bg);display:flex;overflow:hidden}
+  a{color:inherit;text-decoration:none}
+
+  /* ===== サイドバー ===== */
+  #side{width:206px;flex-shrink:0;background:var(--side-bg);color:var(--side-text);display:flex;flex-direction:column;transition:width .2s;position:relative}
+  #side .logo{height:52px;background:#fff;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);cursor:pointer}
+  #side .logo svg{flex-shrink:0}
+  #side .logo .t1{font-size:9px;color:#555;line-height:1;letter-spacing:.5px}
+  #side .logo .t2{font-size:15px;font-weight:700;color:var(--brand-dark);line-height:1.2;white-space:nowrap}
+  #side .sec{font-size:10px;color:var(--side-label);padding:12px 8px 4px;white-space:nowrap}
+  #side .item{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;font-size:12px;cursor:pointer;white-space:nowrap;position:relative}
+  #side .item:hover{background:var(--side-hover)}
+  #side .item.active{background:#fff;color:var(--text)}
+  #side .item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
+  #side .item svg{width:15px;height:15px;flex-shrink:0;fill:currentColor}
+  #side .item .ext{margin-left:auto;width:12px;height:12px;opacity:.8}
+  #side hr{border:0;border-top:1px solid var(--side-line);margin:4px 0}
+  #side .support{position:absolute;left:8px;bottom:14px;background:#2ea37b;color:#fff;border-radius:20px;height:32px;padding:0 22px 0 10px;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;white-space:nowrap}
+  #side .support .q{width:18px;height:18px;border:1.5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px}
+  body.collapsed #side{width:48px}
+  body.collapsed #side .t1,body.collapsed #side .t2,body.collapsed #side .sec,body.collapsed #side .label,body.collapsed #side .ext,body.collapsed #side .support span:last-child{display:none}
+  body.collapsed #side .support{padding:0 7px}
+
+  /* ===== メイン ===== */
+  #main{flex:1;display:flex;flex-direction:column;min-width:0}
+  #top{height:28px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 10px;font-size:11px;color:#555;gap:16px}
+  #top .toggle{cursor:pointer;font-size:14px;color:#333;user-select:none}
+  #top .right{margin-left:auto;display:flex;gap:16px;align-items:center}
+  #top .right span{display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
+  #top .right span:hover{color:var(--accent)}
+  #head{height:42px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 14px}
+  #head h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+  #head h1 svg{width:17px;height:17px;fill:var(--brand-dark)}
+  #head .guide{color:var(--brand-dark);font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer}
+  #head .guide b{width:13px;height:13px;border:1px solid var(--brand-dark);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px}
+  #content{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  #listview{flex:1;overflow:auto;padding:14px}
+  .tool{flex:1;display:none;flex-direction:column;min-height:0}
+  .tool.show{display:flex}
+  .tool iframe{flex:1;width:100%;border:0;display:block}
+  .tool .note{font-size:11px;color:#6b5a00;background:#fff8e1;border-bottom:1px solid #f0e2a8;padding:6px 14px;display:flex;gap:12px;align-items:center}
+  .tool .note a{color:var(--accent);text-decoration:underline;cursor:pointer}
+
+  /* ===== 共通パーツ（キャプチャの「申請する」画面を踏襲） ===== */
+  .split{display:flex;gap:14px;align-items:flex-start}
+  .cat-col{width:122px;flex-shrink:0}
+  .col-title{font-size:11px;font-weight:700;margin-bottom:6px}
+  .cat-list{border:1px solid var(--line);max-height:150px;overflow-y:auto}
+  .cat-list div{padding:7px 8px;font-size:10.5px;border-bottom:1px solid #eee;cursor:pointer}
+  .cat-list div:last-child{border-bottom:0}
+  .cat-list div:hover{background:#f2f7fd}
+  .cat-list div.sel{background:var(--accent);color:#fff}
+  .list-col{flex:1;min-width:0}
+  .search{width:160px;height:30px;border:1px solid var(--line);border-radius:2px;padding:0 8px;font-size:12px;margin-bottom:14px;font-family:var(--font)}
+  .search:focus{outline:none;border-color:var(--accent)}
+  .cards{border:1px solid var(--line);border-radius:2px}
+  .card{display:flex;align-items:center;padding:9px 10px;border-bottom:1px solid #eee}
+  .card:last-child{border-bottom:0}
+  .card .ttl{font-size:11px;font-weight:700;margin-bottom:3px}
+  .card .desc{font-size:10px;color:var(--muted)}
+  .card .btn{margin-left:auto;flex-shrink:0;border:1px solid #888;border-radius:3px;background:#fff;font-size:10px;padding:2px 6px;cursor:pointer;font-family:var(--font)}
+  .card .btn:hover{background:#f2f2f2}
+  .card .tag{display:inline-block;font-size:9px;padding:1px 5px;border-radius:2px;margin-left:6px;font-weight:400;vertical-align:1px}
+  .tag.ok{background:#e3f4ea;color:var(--brand-dark)}
+  .tag.todo{background:#fff1d6;color:#a56a00}
+  .empty{padding:24px;text-align:center;color:var(--muted);font-size:11px}
+
+  .placeholder{border:1px dashed #c8c8c8;border-radius:4px;background:var(--panel);padding:18px;margin-top:16px;color:var(--muted);font-size:12px;line-height:1.8}
+  .placeholder b{color:var(--text)}
+
+  @media (max-width:700px){
+    body.mob-auto #side{width:48px}
+    body.mob-auto #side .t1,body.mob-auto #side .t2,body.mob-auto #side .sec,body.mob-auto #side .label,body.mob-auto #side .ext,body.mob-auto #side .support span:last-child{display:none}
+    #top .right span.hide-sm{display:none}
+    .split{flex-direction:column}
+    .cat-col{width:100%}
+  }
+</style>
+</head>
+<body class="mob-auto">
+
+<!-- ===== サイドバー ===== -->
+<nav id="side">
+  <div class="logo" onclick="go('home')">
+    <svg width="34" height="22" viewBox="0 0 34 22"><path d="M0 22 L34 0 L34 22Z" fill="#2f9e5b"/><path d="M6 22 L34 4 L34 9 L14 22Z" fill="#7cc79a"/></svg>
+    <div><div class="t1">Nakamura</div><div class="t2">業務ポータル</div></div>
+  </div>
+
+  <div class="sec">業務管理</div>
+  <a class="item" data-page="task" onclick="go('task')">
+    <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+    <span class="label">タスクCanly</span>
+  </a>
+  <a class="item" data-page="anken" onclick="go('anken')">
+    <svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+    <span class="label">案件Canly</span>
+  </a>
+  <hr>
+
+  <div class="sec">AI会社</div>
+  <a class="item" data-page="mugen" onclick="go('mugen')">
+    <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+    <span class="label">無限会社中村</span>
+  </a>
+  <hr>
+
+  <div class="sec">書類</div>
+  <a class="item" data-page="mitsumori" onclick="go('mitsumori')">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+    <span class="label">見積もり書</span>
+  </a>
+
+  <div class="support"><span class="q">?</span><span>サポート</span></div>
+</nav>
+
+<!-- ===== メイン ===== -->
+<div id="main">
+  <div id="top">
+    <span class="toggle" onclick="toggleSide()">«</span>
+    <div class="right">
+      <span class="hide-sm">📢 新機能のお知らせ</span>
+      <span class="hide-sm">ⓘ サポートサイト</span>
+      <span class="hide-sm">▦ 中村ツール群 ▾</span>
+      <span>🏢 GMO TECH株式会社 ▾</span>
+      <span>👤 中村 ▾</span>
+    </div>
+  </div>
+  <div id="head">
+    <h1 id="ptitle"></h1>
+    <span class="guide"><b>?</b>ガイド</span>
+  </div>
+  <div id="content"><div id="listview"></div></div>
+</div>
+
+<script>
+// ===== ページ定義（各ページの中身はこれから決める。今は既存ツールの頭出しのみ） =====
+const ICON = {
+  home:'<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
+  task:'<svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>',
+  anken:'<svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>',
+  mugen:'<svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zm8 12h-8V9h8v10z"/></svg>',
+  mitsumori:'<svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>'
+};
+
+// 既存ツールとの突合候補（status: ok=既存あり / todo=未定）
+const PAGES = {
+  task:{ title:'タスクCanly', cats:['全て','タスク','見積','WF','ゴミ箱'], items:[
+    {c:'タスク', t:'タスクカンバン', d:'4列カンバンでタスクを管理（taiki-dashboard から移植予定）', s:'ok'},
+    {c:'見積',  t:'見積タスク', d:'プラン選択で定価を自動入力（PLAN_PRICES）', s:'ok'},
+    {c:'WF',    t:'ワークフロー申請タスク', d:'WF提出状況の管理', s:'ok'},
+    {c:'ゴミ箱', t:'ゴミ箱', d:'削除済みタスクの確認・復元', s:'ok'},
+  ]},
+  anken:{ title:'案件Canly', cats:['全て','ヨミ一覧','サマリー','失注'], items:[
+    {c:'ヨミ一覧', t:'ヨミ一覧カンバン', d:'25% → 50% → 70% → 受注 の4列（金額降順）', s:'ok'},
+    {c:'サマリー', t:'サマリー・達成率', d:'目標に対する達成率／回収済み自動合計', s:'ok'},
+    {c:'失注',    t:'失注BOX', d:'失注案件の折りたたみ一覧', s:'ok'},
+  ]},
+  mugen:{ title:'無限会社中村', cats:['全て','コックピット','承認','エージェント'], items:[
+    {c:'コックピット', t:'コックピットUI', d:'AI社員の稼働状況を一覧（Phase 2 予定）', s:'todo'},
+    {c:'承認',       t:'承認キュー', d:'AI社員からの承認依頼を確認・承認する', s:'ok'},
+    {c:'エージェント', t:'秘書エージェント', d:'議事録・タスク登録などの秘書業務', s:'ok'},
+  ]},
+  mitsumori:{ title:'見積もり書', cats:['全て','新規作成','テンプレート','作成履歴'], items:[
+    {c:'新規作成',    t:'見積もり書作成', d:'プラン・店舗数・初期費用から見積もり書を作成', s:'todo'},
+    {c:'テンプレート', t:'料金テーブル', d:'ローカル集客コンサル／MEO Dashboard の月額テーブル', s:'todo'},
+    {c:'作成履歴',    t:'作成履歴', d:'過去に作成した見積もり書の一覧', s:'todo'},
+  ]},
+};
+// 既存ツールの埋め込み先（A案：既存画面をそのままiframe表示）
+PAGES.task.frame  = '../index.html?page=task&embed=1';
+PAGES.anken.frame = '../index.html?page=anken&embed=1';
+// コックピットは公開しない方針のため、このPCで起動中のローカルサーバーを表示するだけ
+PAGES.mugen.frame = 'http://localhost:8787/';
+PAGES.mugen.note  = 'コックピットはこのPCで起動しているときだけ表示されます（localhost:8787）。表示されない場合は「コックピット起動.bat」を実行してから <a onclick="reloadFrame(\'mugen\')">再読み込み</a>';
+const ORDER = ['task','anken','mugen','mitsumori'];
+let state = {page:'home', cat:'全て', q:''};
+
+function go(p){ state = {page:p, cat:'全て', q:''}; location.hash = p; render(); }
+
+function render(){
+  const p = state.page;
+  document.querySelectorAll('#side .item').forEach(el=>el.classList.toggle('active', el.dataset.page===p));
+  const title = p==='home' ? 'ホーム' : PAGES[p].title;
+  document.getElementById('ptitle').innerHTML = ICON[p] + title;
+  const lv = document.getElementById('listview');
+  const frame = p!=='home' && PAGES[p].frame;
+  document.querySelectorAll('.tool').forEach(el=>el.classList.toggle('show', el.id==='tool-'+p));
+  lv.style.display = frame ? 'none' : '';
+  if(frame){ showFrame(p); return; }
+  lv.innerHTML = p==='home' ? homeView() : pageView(p);
+  const s = document.getElementById('q');
+  if(s){ s.value = state.q; s.oninput = e=>{ state.q = e.target.value; renderList(); }; }
+}
+
+// ホーム：キャプチャの「申請する」画面と同じ構成（左=分類、右=一覧）
+function homeView(){
+  const cats = ['全て'].concat(ORDER.map(k=>PAGES[k].title));
+  return `<div class="split">
+    <div class="cat-col"><div class="col-title">メニュー分類</div>
+      <div class="cat-list">${cats.map(c=>`<div class="${c===state.cat?'sel':''}" onclick="pickCat('${c}')">${c}</div>`).join('')}</div>
+    </div>
+    <div class="list-col"><div class="col-title">機能検索</div>
+      <input id="q" class="search">
+      <div class="cards" id="list"></div>
+    </div></div>`;
+}
+function pageView(p){
+  const d = PAGES[p];
+  return `<div class="split">
+    <div class="cat-col"><div class="col-title">分類</div>
+      <div class="cat-list">${d.cats.map(c=>`<div class="${c===state.cat?'sel':''}" onclick="pickCat('${c}')">${c}</div>`).join('')}</div>
+    </div>
+    <div class="list-col"><div class="col-title">機能検索</div>
+      <input id="q" class="search">
+      <div class="cards" id="list"></div>
+      <div class="placeholder"><b>${d.title}</b> は既存ツールがまだないため、画面内容はこれから決定します。</div>
+    </div></div>`;
+}
+function pickCat(c){ state.cat = c; render(); }
+
+// iframeは一度作ったら使い回す（メニュー切替のたびに再読み込みしない）
+function showFrame(p){
+  let el = document.getElementById('tool-'+p);
+  if(!el){
+    el = document.createElement('div');
+    el.className = 'tool show'; el.id = 'tool-'+p;
+    el.innerHTML = (PAGES[p].note ? `<div class="note">${PAGES[p].note}</div>` : '')
+      + `<iframe src="${PAGES[p].frame}" title="${PAGES[p].title}"></iframe>`;
+    document.getElementById('content').appendChild(el);
+  }
+}
+function reloadFrame(p){
+  const f = document.querySelector('#tool-'+p+' iframe');
+  if(f) f.src = PAGES[p].frame;
+}
+
+function rows(){
+  const p = state.page;
+  let list = p==='home'
+    ? ORDER.flatMap(k=>PAGES[k].items.map(i=>({...i, c:PAGES[k].title, page:k})))
+    : PAGES[p].items.map(i=>({...i, page:p}));
+  if(state.cat!=='全て') list = list.filter(i=>i.c===state.cat);
+  if(state.q) list = list.filter(i=>(i.t+i.d).includes(state.q));
+  return list;
+}
+function renderList(){
+  const el = document.getElementById('list'); if(!el) return;
+  const list = rows();
+  el.innerHTML = list.length ? list.map(i=>`<div class="card">
+      <div><div class="ttl">${i.t}<span class="tag ${i.s}">${i.s==='ok'?'既存ツールあり':'未定'}</span></div><div class="desc">${i.d}</div></div>
+      <button class="btn" onclick="go('${i.page}')">開く</button></div>`).join('')
+    : '<div class="empty">該当する機能がありません</div>';
+}
+const _render = render; render = function(){ _render(); renderList(); };
+
+function toggleSide(){
+  document.body.classList.remove('mob-auto');
+  document.body.classList.toggle('collapsed');
+  document.querySelector('#top .toggle').textContent = document.body.classList.contains('collapsed') ? '»' : '«';
+}
+
+const h = location.hash.slice(1);
+state.page = PAGES[h] ? h : 'home';
+render();
+</script>
+</body>
+</html>
