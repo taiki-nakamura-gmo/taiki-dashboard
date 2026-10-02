@@ -132,7 +132,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .check.on{background:var(--green);border-color:var(--green)}
 .ck{width:9px;height:9px;stroke:#fff;stroke-width:2.5;fill:none;display:none}
 .check.on .ck{display:block}
-.card-name{font-size:13px;font-weight:700;color:var(--text);flex:1;line-height:1.3;letter-spacing:-.01em}
+.card-name{font-size:13px;font-weight:700;color:var(--text);flex:1;line-height:1.3;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .card-cats{display:flex;flex-wrap:wrap;gap:4px;margin:7px 0 0;padding-left:26px}
 .card-details{margin:8px 0 0;padding:7px 10px 7px 12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.7;font-family:'游ゴシック','Yu Gothic',sans-serif}
 .card-detail-row{padding:0}
@@ -1208,7 +1208,7 @@ function cardHTML(t,i){
         <div class="check" id="ck${t.id}" onclick="event.stopPropagation();complete(${t.id})">
           <svg class="ck" viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg>
         </div>
-        <div class="card-name">${esc(t.name)}</div>
+        <div class="card-name" title="${esc(t.name)}">${esc(t.name)}</div>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
           ${isNew?`<span class="new-badge">NEW</span>`:""}
           ${daysBadge}
@@ -2506,5 +2506,20 @@ function deleteAnken(id){
 
 </script>
 
+<script>
+// タスクカードの社名を1行に収める: 13pxから最小10pxまで縮小し、それでも溢れる分は省略(…)
+(function(){
+  function fitNames(){
+    document.querySelectorAll('.card-name').forEach(function(el){
+      if(!el.clientWidth)return;
+      var fs=13; el.style.fontSize=fs+'px';
+      while(el.scrollWidth>el.clientWidth&&fs>10){fs-=0.5;el.style.fontSize=fs+'px';}
+    });
+  }
+  var raf=0; function schedule(){cancelAnimationFrame(raf);raf=requestAnimationFrame(fitNames);}
+  new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});
+  window.addEventListener('resize',schedule);
+})();
+</script>
 </body>
 </html>
