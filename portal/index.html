@@ -167,6 +167,16 @@ PAGES.anken.frame = '../index.html?page=anken&embed=1';
 // コックピットは公開しない方針のため、このPCで起動中のローカルサーバーを表示するだけ
 PAGES.mugen.frame = 'http://localhost:8787/?embed=1';
 PAGES.mugen.note  = 'コックピットはこのPCで起動しているときだけ表示されます（localhost:8787）。表示されない場合は「コックピット起動.bat」を実行してから <a onclick="reloadFrame(\'mugen\')">再読み込み</a>';
+// 無限会社中村は中村専用（②案）。タスクCanlyのログイン情報(taiki_sess)で判定する
+function sessKey(){ try{ return (JSON.parse(localStorage.getItem('taiki_sess')||'null')||{}).key||null; }catch(e){ return null; } }
+function isOwner(){ return sessKey()==='nakamura'; }
+function ownerOnlyView(){
+  const k = sessKey();
+  return `<div class="placeholder"><b>無限会社中村</b> は中村さんのPC専用のページです。<br>`
+    + (k ? 'ほかのメンバーのアカウントでは表示されません。'
+         : 'まだログインしていません。中村さんの場合は、先に <a style="color:var(--accent);text-decoration:underline;cursor:pointer" onclick="go(\'task\')">タスクCanly</a> でログインしてから開いてください。')
+    + '</div>';
+}
 const ORDER = ['task','anken','mugen','mitsumori'];
 let state = {page:'home', cat:'全て', q:''};
 
@@ -181,10 +191,12 @@ function render(){
   const title = p==='home' ? 'ホーム' : PAGES[p].title;
   document.getElementById('ptitle').innerHTML = ICON[p] + title;
   const lv = document.getElementById('listview');
-  const frame = p!=='home' && PAGES[p].frame;
-  document.querySelectorAll('.tool').forEach(el=>el.classList.toggle('show', el.id==='tool-'+p));
+  const locked = p==='mugen' && !isOwner();
+  const frame = p!=='home' && !locked && PAGES[p].frame;
+  document.querySelectorAll('.tool').forEach(el=>el.classList.toggle('show', !locked && el.id==='tool-'+p));
   lv.style.display = frame ? 'none' : '';
   if(frame){ showFrame(p); return; }
+  if(locked){ lv.innerHTML = ownerOnlyView(); return; }
   lv.innerHTML = p==='home' ? homeView() : pageView(p);
   const s = document.getElementById('q');
   if(s){ s.value = state.q; s.oninput = e=>{ state.q = e.target.value; renderList(); }; }
