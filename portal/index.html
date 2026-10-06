@@ -266,7 +266,7 @@ function showFrame(p){
     el = document.createElement('div');
     el.className = 'tool show'; el.id = 'tool-'+p;
     el.innerHTML = (PAGES[p].note ? `<div class="note">${PAGES[p].note}</div>` : '')
-      + `<iframe src="${bust(PAGES[p].frame + (p==='dealbox' ? '&status=' + encodeURIComponent(dealSub) : ''))}" title="${PAGES[p].title}"></iframe>`;
+      + `<iframe src="${bust(PAGES[p].frame + (p==='dealbox' ? '&status=' + encodeURIComponent(dealSub) : ''))}" title="${PAGES[p].title}" allow="clipboard-write"></iframe>`;
     document.getElementById('content').appendChild(el);
   }
 }

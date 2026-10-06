@@ -61,6 +61,10 @@ onAuthStateChanged(getAuth(app), user => window.onAuth && window.onAuth(user));
   #main2{display:flex;height:calc(100% - 55px)}
   #list{width:320px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
   .l-head{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text3)}
+  .sortdir{height:28px;border:1px solid var(--border);border-radius:var(--r8);background:var(--surface);color:var(--text2);font-size:12px;padding:0 9px;cursor:pointer;white-space:nowrap}
+  .sortdir:hover{background:var(--surface2)}
+  .copy{border:1px solid var(--border);background:var(--surface);color:var(--text2);border-radius:6px;font-size:11px;padding:2px 9px;cursor:pointer;white-space:nowrap}
+  .copy:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
   .l-head select{margin-left:auto;height:28px;border:1px solid var(--border);border-radius:var(--r8);padding:0 6px;background:var(--surface);font-size:12px;color:var(--text2)}
   #board{flex:1;overflow-y:auto}
   .li{display:block;padding:10px 14px 10px 12px;border-bottom:1px solid var(--border);border-left:3px solid transparent;cursor:pointer}
@@ -175,12 +179,14 @@ onAuthStateChanged(getAuth(app), user => window.onAuth && window.onAuth(user));
 <div id="main2">
   <div id="list">
     <div class="l-head"><span id="lcount"></span>
-      <select id="sort" onchange="renderBoard()">
-        <option value="updated">更新が新しい順</option>
-        <option value="next">次回商談が近い順</option>
-        <option value="monthly">月額が大きい順</option>
-        <option value="name">会社名順</option>
-      </select></div>
+      <select id="sort" onchange="renderBoard()" title="並び替えの項目">
+        <option value="lastMeet">最終商談日</option>
+        <option value="stores">店舗数</option>
+        <option value="monthly">金額（月額）</option>
+        <option value="name">会社名</option>
+        <option value="updated">更新日</option>
+      </select>
+      <button class="sortdir" id="sortdir" onclick="toggleDir()" title="昇順／降順を切り替え">↑ 昇順</button></div>
     <div id="board"></div>
   </div>
 
@@ -260,18 +266,28 @@ function openActions(d){ return arr(d.nextActions).filter(a => a && a.status!=='
 const isMobile = () => window.matchMedia('(max-width:760px)').matches;
 // 次回商談の日付（並べ替え用）
 const nextDate = d => { const t = nextMeetText(d.nextMeeting); const m = t.match(/\d{4}-\d{2}-\d{2}/); return m ? m[0] : ''; };
+// 最終商談日 = 商談履歴の中で一番新しい日付
+const lastMeet = d => arr(d.meetings).map(m=>m && m.date || '').filter(Boolean).sort().pop() || '';
+let sortAsc = true;   // 既定は昇順
+function toggleDir(){ sortAsc = !sortAsc; $('sortdir').textContent = sortAsc ? '↑ 昇順' : '↓ 降順'; renderBoard(); }
 function visibleItems(){
   const q = $('q').value.trim();
   const items = Object.entries(deals).map(([id,d])=>({id,...d}))
     .filter(d => (d.status||'商談中')===curStatus && matches(d,q));
-  const by = $('sort').value;
-  const cmp = {
-    updated: (a,b)=> String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')),
-    next:    (a,b)=> (nextDate(a)||'9999').localeCompare(nextDate(b)||'9999'),
-    monthly: (a,b)=> (Number(b.monthly)||0) - (Number(a.monthly)||0),
-    name:    (a,b)=> String(a.client||'').localeCompare(String(b.client||''),'ja')
-  }[by];
-  return items.sort(cmp);
+  const key = {
+    lastMeet: d => lastMeet(d) || null,
+    stores:   d => (d.stores===null||d.stores===undefined||d.stores==='') ? null : Number(d.stores),
+    monthly:  d => (d.monthly===null||d.monthly===undefined||d.monthly==='') ? null : Number(d.monthly),
+    name:     d => String(d.client||''),
+    updated:  d => d.updatedAt || null
+  }[$('sort').value];
+  // 値が無い案件は昇順・降順どちらでも最後に回す
+  return items.sort((a,b)=>{
+    const x = key(a), y = key(b);
+    if(x===null && y===null) return 0; if(x===null) return 1; if(y===null) return -1;
+    const c = typeof x==='number' ? x - y : String(x).localeCompare(String(y),'ja');
+    return sortAsc ? c : -c;
+  });
 }
 function renderBoard(){
   const q = $('q').value.trim();
@@ -290,12 +306,9 @@ function renderBoard(){
   }
 }
 function cardHtml(d){
-  const na = openActions(d).sort((a,b)=>String(a.due||'9').localeCompare(String(b.due||'9')))[0];
-  const overdue = na && na.due && na.due < today();
-  const nd = nextDate(d);
   return `<div class="li${d.id===selId?' sel':''}" id="li-${d.id}" onclick="openPanel('${d.id}')" title="${esc(d.client)}">
     <div class="nm">${esc(d.client)}</div>
-    <div class="mt">${d.monthly?`<span class="money">${yen(d.monthly)}</span>`:''}${d.stores?`<span>${esc(d.stores)}店舗</span>`:''}${nd?`<span>次回 ${esc(nd.slice(5).replace('-','/'))}</span>`:''}${overdue?'<span class="due">⚠ 期限切れ</span>':''}</div>
+    <div class="mt">${d.monthly?`<span class="money">${yen(d.monthly)}</span>`:''}${d.stores?`<span>${esc(d.stores)}店舗</span>`:''}${lastMeet(d)?`<span>最終商談 ${esc(lastMeet(d).slice(5).replace('-','/'))}</span>`:''}</div>
   </div>`;
 }
 $('q').addEventListener('input', renderBoard);
@@ -362,7 +375,7 @@ function viewHtml(d){
     <div class="sec"><h3>メモ</h3><div class="txt">${esc(d.memo)||'－'}</div></div>
     <div class="sec"><h3>商談履歴・議事録（${meets.length}件）</h3>
       ${meets.length ? meets.map(m=>`<div class="meet">
-        <div class="meet-h" onclick="toggleMeet(${m._i})"><span class="d">${esc(m.date||'日付なし')}</span><span class="ty">${esc(m.type||'')}</span><span class="arr">${openMeet[m._i]?'▲ 閉じる':'▼ 議事録'}</span></div>
+        <div class="meet-h" onclick="toggleMeet(${m._i})"><span class="d">${esc(m.date||'日付なし')}</span><span class="ty">${esc(m.type||'')}</span>${minuteKeyOf(m)?`<button class="copy" onclick="event.stopPropagation();copyMinutes('${esc(minuteKeyOf(m))}')">コピー</button>`:''}<span class="arr">${openMeet[m._i]?'▲ 閉じる':'▼ 議事録'}</span></div>
         ${m.summary?`<div class="meet-s">${esc(m.summary)}</div>`:''}
         ${openMeet[m._i]?`<div class="minutes" id="min-${m._i}">${minutesHtml(m)}</div>`:''}
       </div>`).join('') : '<div class="txt" style="color:var(--muted)">なし</div>'}
@@ -377,9 +390,18 @@ function otherMinutesHtml(meets){
   const others = Object.entries(all).filter(([k])=>!linked.has(k)).sort((a,b)=>String(b[1].date||'').localeCompare(String(a[1].date||'')));
   if(!others.length) return '';
   return `<h3 style="margin-top:12px">その他の議事録（${others.length}件）</h3>` + others.map(([k,m])=>`<div class="meet">
-    <div class="meet-h" onclick="toggleMeet('o:${esc(k)}')"><span class="d">${esc(m.date||'日付なし')}</span><span class="ty">${esc(m.file||'')}</span><span class="arr">${openMeet['o:'+k]?'▲ 閉じる':'▼ 議事録'}</span></div>
+    <div class="meet-h" onclick="toggleMeet('o:${esc(k)}')"><span class="d">${esc(m.date||'日付なし')}</span><span class="ty">${esc(m.file||'')}</span><button class="copy" onclick="event.stopPropagation();copyMinutes('${esc(k)}')">コピー</button><span class="arr">${openMeet['o:'+k]?'▲ 閉じる':'▼ 議事録'}</span></div>
     ${openMeet['o:'+k]?`<div class="minutes">${esc(m.text)}</div>`:''}
   </div>`).join('');
+}
+// 議事録の本文をクリップボードにコピー（未読込なら読み込んでから）
+async function copyMinutes(key){
+  if(!minutesCache[selId]) await loadMinutes();
+  const m = (minutesCache[selId]||{})[key];
+  if(!m || !m.text){ toast('この議事録は保存されていません'); return; }
+  try{ await navigator.clipboard.writeText(m.text); }
+  catch(e){ const t = document.createElement('textarea'); t.value = m.text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  toast('議事録をコピーしました');
 }
 async function loadMinutes(){
   const id = selId, {db, ref, get} = window._fb;
