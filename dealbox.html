@@ -74,7 +74,7 @@ onAuthStateChanged(getAuth(app), user => window.onAuth && window.onAuth(user));
   .li .mt{font-size:11.5px;color:var(--text2);margin-top:3px;display:flex;gap:8px;white-space:nowrap;overflow:hidden}
   .li .mt .money{color:var(--text);font-weight:600}
   .li .mt .due{color:var(--red);font-weight:600}
-  /* Salesforce: 最終メール送信日と赤ランプ（商談中・追客中で14日以上未送信） */
+  /* メール（Gmail連携）: 最終メール送信日と赤ランプ（商談中・追客中で14日以上未送信） */
   .mail{white-space:nowrap}
   .mail.old{color:var(--red);font-weight:700}
   .mail.none{color:var(--text3)}
@@ -250,15 +250,16 @@ function nextMeetText(nm){
 }
 
 // ===== 認証・データ購読 =====
-let me = '', queue = {}, mineSeen = {}, sfData = {}, sfStatus = {};
-// ===== Salesforce: 最終メール送信日 =====
+let me = '', queue = {}, mineSeen = {}, mailData = {}, mailStatus = {}, memberOf = {};
+const MEMBER_NAME = {nakamura:'中村', naka:'中', sakurai:'櫻井', aoki:'青木'};
+// ===== メール（Gmail連携）: 最終メール送信日 =====
 const LAMP_DAYS = 14;
 const ACTIVE = s => s==='商談中' || s==='追客中';
 function mailInfo(d){
-  const x = sfData[d.id] || {};
-  if(!x.accountId) return {linked:false};
+  const x = mailData[d.id] || {};
+  if(!x.checkedAt) return {linked:false};
   if(!x.lastSentAt) return {linked:true, none:true};
-  const date = String(x.lastSentAt).slice(0,10);
+  const date = new Date(x.lastSentAt).toLocaleDateString('sv-SE');   // YYYY-MM-DD（日本時間）
   const days = Math.floor((new Date(today()) - new Date(date)) / 86400000);
   return {linked:true, date, days, old: ACTIVE(d.status) && days >= LAMP_DAYS};
 }
@@ -268,10 +269,10 @@ function mailHtml(d){
   if(m.none) return ACTIVE(d.status) ? '<span class="mail none">✉ 送信履歴なし</span>' : '';
   return `<span class="mail${m.old?' old':''}">${m.old?'<span class="lamp"></span>':''}✉ ${esc(m.date.slice(5).replace('-','/'))}</span>`;
 }
-async function requestSfSync(){
+async function requestMailSync(){
   const {db, ref, update} = window._fb;
-  await update(ref(db,'dealbox/sfStatus'), {requestedAt: nowIso(), requestedBy: me});
-  toast('同期を依頼しました（中村さんのPCで5分以内に実行されます）');
+  await update(ref(db,'dealbox/mailStatus'), {requestedAt: nowIso(), requestedBy: me});
+  toast('同期を依頼しました（10分以内に反映されます）');
 }
 window.onAuth = user => {
   if(user) me = user.email || '';
@@ -285,9 +286,10 @@ window.onAuth = user => {
   }, err => { $('msg').style.display='flex'; $('msg').textContent='案件BOXを読み込めませんでした（アクセス権限がありません）'; });
   // 秘書（記憶待ち）の状況
   onValue(ref(db,'dealbox/queue'), snap => { queue = snap.val() || {}; renderQueue(); });
-  // Salesforce 同期結果（中村PCの見張り役が1時間おきに更新）
-  onValue(ref(db,'dealbox/sf'), snap => { sfData = snap.val() || {}; renderBoard(); if(selId && !editing) renderPanel(); });
-  onValue(ref(db,'dealbox/sfStatus'), snap => { sfStatus = snap.val() || {}; if(selId && !editing) renderPanel(); });
+  // メール送信日（中村さんのGmailで動く Apps Script が1時間おきに更新）
+  onValue(ref(db,'dealbox/mail'), snap => { mailData = snap.val() || {}; renderBoard(); if(selId && !editing) renderPanel(); });
+  onValue(ref(db,'dealbox/mailStatus'), snap => { mailStatus = snap.val() || {}; if(selId && !editing) renderPanel(); });
+  onValue(ref(db,'members'), snap => { memberOf = {}; Object.entries(snap.val()||{}).forEach(([k,v])=>memberOf[k.split(',').join('.')] = v); });
 };
 
 // ===== カンバン =====
@@ -314,7 +316,7 @@ function visibleItems(){
     monthly:  d => (d.monthly===null||d.monthly===undefined||d.monthly==='') ? null : Number(d.monthly),
     name:     d => String(d.client||''),
     updated:  d => d.updatedAt || null,
-    mail:     d => (sfData[d.id] && sfData[d.id].lastSentAt) || null
+    mail:     d => (mailData[d.id] && mailData[d.id].lastSentAt) || null
   }[$('sort').value];
   // 値が無い案件は昇順・降順どちらでも最後に回す
   return items.sort((a,b)=>{
@@ -380,16 +382,19 @@ function renderPanel(){
     </div>
     <div class="p-body">${editing ? editHtml(d) : viewHtml(d)}</div>`;
 }
-function sfSectionHtml(d){
-  const x = sfData[selId] || {}, m = mailInfo({...d, id:selId});
-  const link = x.accountId && sfStatus.instanceUrl ? `${sfStatus.instanceUrl}/lightning/r/Account/${encodeURIComponent(x.accountId)}/view` : '';
-  const mailTxt = !m.linked ? '－' : m.none ? '送信履歴なし'
-    : `<span class="mail${m.old?' old':''}">${m.old?'<span class="lamp"></span>':''}${esc(m.date)}（${m.days}日前）</span>${m.old?' <span style="color:var(--red);font-size:12px">${LAMP_DAYS}日以上メールを送っていません</span>':''}`;
-  return `<div class="sec"><h3>Salesforce<span class="add" onclick="requestSfSync()">今すぐ同期</span></h3><dl class="grid">
-      <dt>取引先</dt><dd>${x.accountId ? (link?`<a href="${link}" target="_blank" rel="noopener">${esc(x.accountName||x.accountId)}</a>`:esc(x.accountName||x.accountId)) + (x.matchedBy==='manual'?'':' <span style="color:var(--text3);font-size:11px">（会社名で自動紐づけ）</span>') : '<span style="color:var(--text3)">未紐づけ（「編集する」から取引先IDを入れると紐づきます）</span>'}</dd>
-      <dt>最終メール送信</dt><dd>${mailTxt}</dd>
+function mailSectionHtml(d){
+  const x = mailData[selId] || {}, m = mailInfo({...d, id:selId});
+  const who = x.from ? (MEMBER_NAME[memberOf[x.from]] || x.from) : '';
+  const mailTxt = !m.linked ? '－' : m.none ? '見つかりませんでした'
+    : `<span class="mail${m.old?' old':''}">${m.old?'<span class="lamp"></span>':''}${esc(m.date)}（${m.days}日前）</span>${m.old?' <span style="color:var(--red);font-size:12px">'+LAMP_DAYS+'日以上メールを送っていません</span>':''}`;
+  return `<div class="sec"><h3>メール<span class="add" onclick="requestMailSync()">今すぐ同期</span></h3><dl class="grid">
+      <dt>最終送信日</dt><dd>${mailTxt}</dd>
+      ${x.lastSentAt ? `<dt>送信者</dt><dd>${esc(who)}</dd>
+      <dt>件名</dt><dd>${esc(x.subject||'')}</dd>
+      <dt>宛先ドメイン</dt><dd>${esc(x.toDomains||'')}</dd>` : ''}
+      <dt>検索キーワード</dt><dd>${esc(x.keyword||'')}${d.mailKeyword?'':' <span style="color:var(--text3);font-size:11px">（会社名から自動。違うメールを拾うときは「編集する」で変更）</span>'}</dd>
     </dl>
-    <div class="sf-note">${sfStatus.lastSyncAt ? '最終同期 '+esc(new Date(sfStatus.lastSyncAt).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})) : 'Salesforceとの同期はまだ行われていません'}${sfStatus.error ? '　<span style="color:var(--red)">同期エラー：'+esc(sfStatus.error)+'</span>' : ''}</div>
+    <div class="sf-note">チーム4人が送ったメール（中村さんのGmailにあるもの）から探しています。${mailStatus.lastSyncAt ? '最終同期 '+esc(new Date(mailStatus.lastSyncAt).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})) : 'まだ同期されていません'}${mailStatus.error ? '　<span style="color:var(--red)">同期エラー：'+esc(mailStatus.error)+'</span>' : ''}</div>
   </div>`;
 }
 function viewHtml(d){
@@ -406,7 +411,7 @@ function viewHtml(d){
       <dt>次回商談</dt><dd>${esc(nextMeetText(d.nextMeeting))||'－'}</dd>
       <dt>最終更新</dt><dd>${esc((d.updatedAt||'').slice(0,10))||'－'}</dd>
     </dl></div>
-    ${sfSectionHtml(d)}
+    ${mailSectionHtml(d)}
     <div class="sec"><h3>先方担当者</h3><dl class="grid">
       <dt>氏名</dt><dd>${esc(c.name)||'－'}</dd>
       <dt>役職・部署</dt><dd>${esc([c.title,c.role].filter(Boolean).join(' / '))||'－'}</dd>
@@ -501,7 +506,7 @@ function editHtml(d){
       <label>ブランド数</label><input id="e-brands" type="number" value="${val(d.brands)}">
       <label>月額（円）</label><input id="e-monthly" type="number" value="${val(d.monthly)}">
       <label>初期費用（円）</label><input id="e-initialFee" type="number" value="${val(d.initialFee)}">
-      <label>Salesforce取引先ID</label><input id="e-sfid" value="${val(d.sfAccountId)}" placeholder="自動で紐づかない・違うときだけ入力（例：001xxxxxxxxxxxx）">
+      <label>メール検索キーワード</label><input id="e-mailkw" value="${val(d.mailKeyword)}" placeholder="違うメールを拾うときだけ入力（例：先方のドメイン arcs.co.jp や正式な社名）">
       <label>次回商談</label><input id="e-next" value="${val(nextMeetText(d.nextMeeting))}" placeholder="例：2026-10-20 14:00 2回目">
     </div></div>
     <div class="sec"><h3>先方担当者</h3><div class="f">
@@ -540,7 +545,7 @@ async function saveEdit(){
     stores: num('e-stores'), brands: num('e-brands'), monthly: num('e-monthly'), initialFee: num('e-initialFee'),
     // 文字列のまま保存（元データの日時形式を崩さないよう、変更されたときだけ上書き）
     nextMeeting: nextTxt === nextMeetText(d.nextMeeting) ? (d.nextMeeting||null) : (nextTxt || null),
-    sfAccountId: $('e-sfid').value.trim() || null,
+    mailKeyword: $('e-mailkw').value.trim() || null,
     contact: {...(d.contact||{}), name:$('e-cname').value.trim(), title:$('e-ctitle').value.trim(), email:$('e-cemail').value.trim(), phone:$('e-cphone').value.trim()},
     nextActions: readNAs(), issues: $('e-issues').value, memo: $('e-memo').value
   };
