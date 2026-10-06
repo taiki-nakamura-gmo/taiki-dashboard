@@ -77,6 +77,13 @@
   .placeholder{border:1px dashed #c8c8c8;border-radius:4px;background:var(--panel);padding:18px;margin-top:16px;color:var(--muted);font-size:12px;line-height:1.8}
   .placeholder b{color:var(--text)}
 
+  /* ログインゲート（未ログイン時は全面を覆う） */
+  #gate{position:fixed;inset:0;z-index:100;background:#f0efe9;display:flex;flex-direction:column}
+  #gate .g-head{height:52px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 16px}
+  #gate .g-head .t1{font-size:9px;color:#555;line-height:1;letter-spacing:.5px}
+  #gate .g-head .t2{font-size:18px;font-weight:700;color:var(--brand-dark);line-height:1.2;letter-spacing:1px}
+  #gate .g-msg{text-align:center;font-size:12px;color:var(--muted);padding:14px 0 0}
+  #gate iframe{flex:1;border:0;width:100%}
   @media (max-width:700px){
     body.mob-auto #side{width:48px}
     body.mob-auto #side .t1,body.mob-auto #side .t2,body.mob-auto #side .sec,body.mob-auto #side .label,body.mob-auto #side .ext,body.mob-auto #side .support span:last-child{display:none}
@@ -168,7 +175,11 @@ PAGES.anken.frame = '../index.html?page=anken&embed=1';
 PAGES.mugen.frame = 'http://localhost:8787/?embed=1';
 PAGES.mugen.note  = 'コックピットはこのPCで起動しているときだけ表示されます（localhost:8787）。表示されない場合は「コックピット起動.bat」を実行してから <a onclick="reloadFrame(\'mugen\')">再読み込み</a>';
 // 無限会社中村は中村専用（②案）。タスクCanlyのログイン情報(taiki_sess)で判定する
-function sessKey(){ try{ return (JSON.parse(localStorage.getItem('taiki_sess')||'null')||{}).key||null; }catch(e){ return null; } }
+// タスクCanlyと同じ基準: 最終利用から1日以内のセッションのみ有効
+function sessKey(){
+  try{ const s = JSON.parse(localStorage.getItem('taiki_sess')||'null');
+       return (s && s.key && Date.now()-s.ts < 24*60*60*1000) ? s.key : null; }catch(e){ return null; }
+}
 function isOwner(){ return sessKey()==='nakamura'; }
 function ownerOnlyView(){
   const k = sessKey();
@@ -272,8 +283,31 @@ function fromHash(){
   if(p!==state.page){ state = {page:p, cat:'全て', q:''}; }
   render();
 }
-window.addEventListener('hashchange', fromHash);
-state.page = null; fromHash();
+window.addEventListener('hashchange', ()=>{ if(started) fromHash(); });
+// ===== ログイン必須 =====
+// ログインはタスクCanlyと共通（同じブラウザ保存のセッションを使う）。未ログイン時はガチ楽全体を隠してログイン画面を出す
+function showGate(){
+  if(document.getElementById('gate')) return;
+  const g = document.createElement('div'); g.id = 'gate';
+  g.innerHTML = '<div class="g-head">' + document.querySelector('#side .logo').innerHTML + '</div>'
+    + '<div class="g-msg">ガチ楽を使うにはログインしてください（タスクCanly／案件Canlyと共通のアカウントです）</div>'
+    + '<iframe src="' + bust('../index.html?embed=1') + '" title="ログイン"></iframe>';
+  document.body.appendChild(g);
+}
+let started = false;
+function checkLogin(){
+  if(sessKey()){
+    const g = document.getElementById('gate'); if(g) g.remove();
+    if(!started){ started = true; state.page = null; fromHash(); }
+  }else if(started){
+    location.reload();   // ログアウトされたら埋め込み画面ごとリセットしてログイン画面へ
+  }else{
+    showGate();
+  }
+}
+window.addEventListener('storage', e=>{ if(e.key==='taiki_sess' || e.key===null) checkLogin(); });
+setInterval(checkLogin, 1500);   // ゲート内iframeでのログインはstorageイベントが届かない場合があるため補助
+checkLogin();
 </script>
 </body>
 </html>
