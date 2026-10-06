@@ -14,6 +14,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js";
 import { getDatabase, ref, set, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const cfg = {
   apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
   authDomain: "taiki-tasks-933cc.firebaseapp.com",
@@ -30,7 +31,9 @@ initializeAppCheck(app, {
   isTokenAutoRefreshEnabled: true
 });
 const db = getDatabase(app);
+const auth = getAuth(app);
 window._fb = { db, ref, set, remove, onValue, get };
+window._fbAuth = { auth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut };
 window._fbReady = true;
 window.dispatchEvent(new Event("fb-ready"));
 </script>
@@ -440,55 +443,14 @@ document.documentElement.dataset.page='task';
     </div>
     <div class="auth-tagline">チームタスク管理</div>
 
-    <!-- Phase 1: ユーザー選択 -->
+    <!-- Googleアカウント（許可された4名のみ）でログイン -->
     <div id="auth-select">
-      <div class="auth-sub">ログインするユーザーを選択してください</div>
-      <div class="user-cards">
-        <div class="user-card" onclick="authSelectUser('nakamura')">
-          <div class="uav" style="background:var(--cn)">中</div>
-          <div class="un">中村</div>
-        </div>
-        <div class="user-card" onclick="authSelectUser('naka')">
-          <div class="uav" style="background:var(--cm)">中</div>
-          <div class="un">中</div>
-        </div>
-        <div class="user-card" onclick="authSelectUser('sakurai')">
-          <div class="uav" style="background:var(--cs)">櫻</div>
-          <div class="un">櫻井</div>
-        </div>
-        <div class="user-card" onclick="authSelectUser('aoki')">
-          <div class="uav" style="background:var(--ca)">青</div>
-          <div class="un">青木</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Phase 2: パスワードフォーム -->
-    <div id="auth-form" style="display:none">
-      <button class="auth-back" onclick="authBack()">&#8592; 別のユーザー</button>
-      <div class="auth-user-row">
-        <div class="uav" id="auth-av" style="background:var(--cn)">中</div>
-        <div>
-          <div class="aname" id="auth-uname">中村さん</div>
-          <div class="asub" id="auth-usub">パスワードを入力してください</div>
-        </div>
-      </div>
-      <div class="auth-title" id="auth-title">ログイン</div>
-      <input type="hidden" id="auth-mode">
-      <div class="auth-row">
-        <label class="auth-lbl">ログインID</label>
-        <input type="text" class="auth-inp" id="auth-login-id" placeholder="ログインIDを入力" autocomplete="username">
-      </div>
-      <div class="auth-row">
-        <label class="auth-lbl">パスワード</label>
-        <input type="password" class="auth-inp" id="auth-password" placeholder="パスワードを入力" autocomplete="current-password">
-      </div>
-      <div class="auth-row" id="auth-confirm-row" style="display:none">
-        <label class="auth-lbl">パスワード（確認）</label>
-        <input type="password" class="auth-inp" id="auth-confirm" placeholder="もう一度入力" autocomplete="new-password">
-      </div>
-      <div class="auth-err" id="auth-err"></div>
-      <button class="auth-btn" id="auth-btn" onclick="authSubmit()">ログイン</button>
+      <div class="auth-sub">会社のGoogleアカウントでログインしてください</div>
+      <button class="auth-btn" id="auth-btn" onclick="googleLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        Googleでログイン
+      </button>
+      <div class="auth-err" id="auth-err" style="margin-top:12px"></div>
     </div>
   </div>
 </div>
@@ -823,26 +785,17 @@ const AUTH_USERS = [
   {key:'aoki',     name:'青木', color:'#1A7A50', initial:'青'}
 ];
 const SESS_KEY      = 'taiki_sess';
-const SESS_FRESH    = 1  * 24 * 60 * 60 * 1000; // 1日以内: 自動ログイン
-const SESS_REMEMBER = 30 * 24 * 60 * 60 * 1000; // 30日以内: ユーザー記憶で短縮ログイン
-const MAX_FAIL      = 5;                          // 最大失敗回数
-const LOCK_MS       = 30 * 60 * 1000;            // ロック時間: 30分
 
 let currentUser = null;
-let authSelectedUser = null;
 
-async function sha256(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
-}
-function genSalt() {
-  return [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2,'0')).join('');
-}
+// ===== ログイン（Googleアカウント・許可メールのみ） =====
+// メール→メンバーの対応表はDBの members/ に置く（公開リポジトリにメールアドレスを載せないため）。
+// キーはメールの "." を "," に置換したもの。DBルールで許可メールのみ読めるので、許可外の人は読めず弾かれる。
+// メンバー追加時は members/ と Firebase のルール（許可メール）の両方を更新すること
+function emailKey(email){ return (email||'').toLowerCase().split('.').join(','); }
+// ガチ楽(portal/)はこのセッション情報でログイン状態を判定する
 function saveSess(key, loginId) {
   localStorage.setItem(SESS_KEY, JSON.stringify({key, loginId, ts: Date.now()}));
-}
-function loadSess() {
-  try { return JSON.parse(localStorage.getItem(SESS_KEY) || 'null'); } catch { return null; }
 }
 // アクセスログをFirebaseに記録
 function writeAccessLog(userKey, userName, action) {
@@ -856,188 +809,61 @@ function writeAccessLog(userKey, userName, action) {
     });
   } catch(e){}
 }
-// ログイン失敗カウント確認（ロック中ならエラー文字列を返す）
-async function checkFailLock(userKey) {
-  try {
-    const snap=await window._fb.get(window._fb.ref(window._fb.db,`auth_fails/${userKey}`));
-    const d=snap.val();
-    if(!d)return null;
-    if(d.lockedUntil&&Date.now()<d.lockedUntil){
-      const rem=Math.ceil((d.lockedUntil-Date.now())/60000);
-      return `ログインがロックされています。あと約${rem}分お待ちください。`;
-    }
-  } catch(e){}
-  return null;
+function showAuthScreen(msg) {
+  document.getElementById('loading').style.display     = 'none';
+  document.getElementById('app').style.display         = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('auth-err').textContent      = msg || '';
+  const btn = document.getElementById('auth-btn');
+  btn.disabled = false;
 }
-// ログイン失敗を記録
-async function recordFail(userKey) {
-  try {
-    const ref=window._fb.ref,db=window._fb.db,set=window._fb.set,get=window._fb.get;
-    const snap=await get(ref(db,`auth_fails/${userKey}`));
-    const d=snap.val()||{count:0};
-    if(d.lockedUntil&&Date.now()<d.lockedUntil)return;
-    const count=(d.count||0)+1;
-    const lockedUntil=count>=MAX_FAIL?Date.now()+LOCK_MS:null;
-    await set(ref(db,`auth_fails/${userKey}`),{count,lastFail:Date.now(),...(lockedUntil?{lockedUntil}:{})});
-  } catch(e){}
-}
-// ログイン成功時は失敗カウントをリセット
-async function clearFail(userKey) {
-  try { await window._fb.set(window._fb.ref(window._fb.db,`auth_fails/${userKey}`),null); } catch(e){}
-}
-
-async function checkAuth() {
-  const sess = loadSess();
-  if (sess && sess.key && sess.loginId) {
-    const age = Date.now() - (sess.ts || 0);
-    if (age < SESS_FRESH) {
-      // 有効なセッション: Firebaseを待たず即時ログイン（アクセスのたびにセッション更新）
-      currentUser = AUTH_USERS.find(u => u.key === sess.key);
-      if (currentUser) {
-        saveSess(sess.key, sess.loginId); // セッション更新
-        enterApp();
-        return;
-      }
-    } else if (age < SESS_REMEMBER) {
-      // 期限切れ: ユーザーを記憶して短縮ログイン
-      authSelectedUser = AUTH_USERS.find(u => u.key === sess.key);
-      if (authSelectedUser) {
-        showAuthForm(sess.loginId, false);
-        document.getElementById('loading').style.display = 'none';
-        return;
-      }
-    }
-    localStorage.removeItem(SESS_KEY);
-  }
-  document.getElementById('loading').style.display = 'none';
-}
-
-async function authSelectUser(key) {
-  authSelectedUser = AUTH_USERS.find(u => u.key === key);
-  try {
-    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000));
-    const snap = await Promise.race([
-      window._fb.get(window._fb.ref(window._fb.db, 'auth/' + key)),
-      timeout
-    ]);
-    const d = snap.val();
-    showAuthForm(d ? d.loginId : null, !d);
-  } catch {
-    // Firebase遅延・失敗時でもログインフォームを表示
-    showAuthForm(null, false);
-  }
-}
-
-function showAuthForm(prefillLoginId, isFirstTime) {
-  document.getElementById('auth-select').style.display = 'none';
-  document.getElementById('auth-form').style.display   = 'block';
-  const u = authSelectedUser;
-
-  document.getElementById('auth-av').style.background = u.color;
-  document.getElementById('auth-av').textContent      = u.initial;
-  document.getElementById('auth-uname').textContent   = u.name + 'さん';
-
-  const loginIdEl  = document.getElementById('auth-login-id');
-  const confirmRow = document.getElementById('auth-confirm-row');
-  const btn        = document.getElementById('auth-btn');
+async function googleLogin() {
+  const A = window._fbAuth;
+  const provider = new A.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account', hd: 'gmotech.jp' });
   document.getElementById('auth-err').textContent = '';
-  document.getElementById('auth-password').value  = '';
-  document.getElementById('auth-confirm').value   = '';
-
-  if (isFirstTime) {
-    document.getElementById('auth-title').textContent = '初回パスワード設定';
-    document.getElementById('auth-usub').textContent  = 'ログインIDとパスワードを設定してください';
-    document.getElementById('auth-mode').value = 'setup';
-    loginIdEl.value = '';
-    loginIdEl.removeAttribute('readonly');
-    confirmRow.style.display = '';
-    btn.textContent = '設定して始める';
-    setTimeout(() => loginIdEl.focus(), 100);
-  } else {
-    document.getElementById('auth-title').textContent = 'ログイン';
-    document.getElementById('auth-usub').textContent  = 'パスワードを入力してください';
-    document.getElementById('auth-mode').value = 'login';
-    loginIdEl.value = prefillLoginId || '';
-    if (prefillLoginId) {
-      loginIdEl.setAttribute('readonly', '');
-    } else {
-      loginIdEl.removeAttribute('readonly');
-    }
-    confirmRow.style.display = 'none';
-    btn.textContent = 'ログイン';
-    setTimeout(() => document.getElementById('auth-password').focus(), 100);
-  }
-}
-
-function authBack() {
-  document.getElementById('auth-form').style.display   = 'none';
-  document.getElementById('auth-select').style.display = 'block';
-  authSelectedUser = null;
-}
-
-async function authSubmit() {
-  const mode     = document.getElementById('auth-mode').value;
-  const loginId  = document.getElementById('auth-login-id').value.trim();
-  const password = document.getElementById('auth-password').value;
-  const confirm  = document.getElementById('auth-confirm').value;
-  const errEl    = document.getElementById('auth-err');
-  const btn      = document.getElementById('auth-btn');
-  errEl.textContent = '';
-
-  // バリデーション（非同期処理前）
-  if (!loginId)  { errEl.textContent = 'ログインIDを入力してください'; return; }
-  if (!password) { errEl.textContent = 'パスワードを入力してください'; return; }
-  if (mode === 'setup') {
-    if (password.length < 8) { errEl.textContent = 'パスワードは8文字以上で設定してください'; return; }
-    if (password !== confirm) { errEl.textContent = 'パスワードが一致しません'; return; }
-  }
-
-  btn.disabled = true;
-  btn.textContent = '確認中...';
-
+  document.getElementById('auth-btn').disabled = true;
   try {
-    if (mode === 'setup') {
-      const snap = await window._fb.get(window._fb.ref(window._fb.db, 'auth'));
-      const all = snap.val() || {};
-      for (const [k, v] of Object.entries(all)) {
-        if (k !== authSelectedUser.key && v.loginId === loginId) {
-          errEl.textContent = 'そのログインIDは既に使用されています'; return;
-        }
-      }
-      const salt = genSalt();
-      const hash = await sha256(password + salt);
-      await window._fb.set(window._fb.ref(window._fb.db, 'auth/' + authSelectedUser.key), {loginId, hash, salt});
-    } else {
-      // ロックアウト確認
-      const lockMsg = await checkFailLock(authSelectedUser.key);
-      if (lockMsg) { errEl.textContent = lockMsg; return; }
-
-      const snap = await window._fb.get(window._fb.ref(window._fb.db, 'auth/' + authSelectedUser.key));
-      const d = snap.val();
-      if (!d) { errEl.textContent = 'エラーが発生しました'; return; }
-      if (d.loginId !== loginId) {
-        await recordFail(authSelectedUser.key);
-        writeAccessLog(authSelectedUser.key, authSelectedUser.name, 'login_failed');
-        errEl.textContent = 'ログインIDまたはパスワードが違います'; return;
-      }
-      const hash = await sha256(password + d.salt);
-      if (hash !== d.hash) {
-        await recordFail(authSelectedUser.key);
-        writeAccessLog(authSelectedUser.key, authSelectedUser.name, 'login_failed');
-        errEl.textContent = 'ログインIDまたはパスワードが違います'; return;
-      }
-      await clearFail(authSelectedUser.key);
+    await A.signInWithPopup(A.auth, provider);
+  } catch (e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
+      return A.signInWithRedirect(A.auth, provider);
     }
-    currentUser = authSelectedUser;
-    saveSess(currentUser.key, loginId);
-    writeAccessLog(currentUser.key, currentUser.name, 'login_success');
-    enterApp();
-  } catch(e) {
-    errEl.textContent = '通信エラーが発生しました。再度お試しください。';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = mode === 'setup' ? '設定して始める' : 'ログイン';
+    const msg = e.code === 'auth/unauthorized-domain' ? 'このURLはログインが許可されていません（Firebaseの承認済みドメイン設定が必要です）'
+              : (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') ? ''
+              : 'ログインに失敗しました（' + e.code + '）';
+    showAuthScreen(msg);
   }
+}
+let appEntered = false;
+function checkAuth() {
+  const A = window._fbAuth;
+  A.getRedirectResult(A.auth).catch(()=>{});
+  A.onAuthStateChanged(A.auth, async user => {
+    if (!user) {
+      localStorage.removeItem(SESS_KEY);
+      if (appEntered) { location.reload(); return; }   // 別画面でログアウトされた
+      showAuthScreen();
+      return;
+    }
+    let key = null;
+    if (user.emailVerified) {
+      try { key = (await window._fb.get(window._fb.ref(window._fb.db, 'members/' + emailKey(user.email)))).val(); }
+      catch (e) { key = null; }   // ルールで読めない＝許可外
+    }
+    if (!key || !AUTH_USERS.find(u => u.key === key)) {
+      A.signOut(A.auth);
+      showAuthScreen((user.email || 'このアカウント') + ' はタスクCanlyの利用を許可されていません');
+      return;
+    }
+    currentUser = AUTH_USERS.find(u => u.key === key);
+    saveSess(key, user.email);
+    if (!appEntered) {
+      appEntered = true;
+      writeAccessLog(key, currentUser.name, 'login');
+      enterApp();
+    }
+  });
 }
 
 function enterApp() {
@@ -1062,19 +888,14 @@ function enterApp() {
 function doLogout() {
   if (!confirm('ログアウトしますか？')) return;
   if (currentUser) writeAccessLog(currentUser.key, currentUser.name, 'logout');
-  // セッションを完全削除
+  // セッションを完全削除（Googleログインも解除。ガチ楽の他の画面にも反映される）
   localStorage.removeItem(SESS_KEY);
-  currentUser = null;
-  document.getElementById('app').style.display         = 'none';
-  document.getElementById('auth-screen').style.display = 'flex';
-  document.getElementById('auth-form').style.display   = 'none';
-  document.getElementById('auth-select').style.display = 'block';
+  window._fbAuth.signOut(window._fbAuth.auth);
 }
 
 // Enterキー対応
 document.addEventListener('keydown', e => {
   if (document.getElementById('auth-screen').style.display !== 'none') {
-    if (e.key === 'Enter' && document.getElementById('auth-form').style.display !== 'none') authSubmit();
     return;
   }
   const inInput = ["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName);
