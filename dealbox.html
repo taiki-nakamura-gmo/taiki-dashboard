@@ -123,6 +123,19 @@ onAuthStateChanged(getAuth(app), user => window.onAuth && window.onAuth(user));
   .note{font-size:12px;color:#A05C00;background:#FEF4E3;border-radius:var(--r8);padding:8px 12px;margin-bottom:14px;line-height:1.6}
 
   #msg{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:14px;background:var(--bg);z-index:40}
+  /* 秘書（記憶待ち）表示 */
+  .qpill{display:none;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--accent-bg);color:var(--accent);white-space:nowrap}
+  .qpill.show{display:inline-flex}
+  .qpill.err{background:var(--red-bg);color:var(--red)}
+  .qpill .spin{width:10px;height:10px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .tabs{display:flex;gap:6px;margin-bottom:14px}
+  .tabs button{flex:1;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r8);cursor:pointer;color:var(--text2);font-weight:500}
+  .tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .qrow{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px}
+  .qrow .st{flex-shrink:0;width:64px;font-weight:700}
+  .qrow .bd{flex:1;min-width:0;line-height:1.6}
+  .qrow .bd .er{color:var(--red)}
   #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--text);color:#fff;font-size:13px;padding:9px 18px;border-radius:var(--r8);opacity:0;transition:opacity .2s;z-index:50;pointer-events:none}
   #toast.show{opacity:1}
 
@@ -140,6 +153,7 @@ onAuthStateChanged(getAuth(app), user => window.onAuth && window.onAuth(user));
 <div id="bar">
   <div class="ttl" id="ttl"></div>
   <span class="sum" id="sum"></span>
+  <span class="qpill" id="qpill" onclick="openQueue()"></span>
   <input id="q" placeholder="会社名・担当者・メモで検索">
   <button class="btn primary" onclick="openNew()">＋ 案件を登録</button>
 </div>
@@ -148,9 +162,9 @@ onAuthStateChanged(getAuth(app), user => window.onAuth && window.onAuth(user));
 <aside id="panel"></aside>
 
 <div id="modal"><div class="m-box">
-  <div class="m-head">案件を登録<button class="x" onclick="closeNew()">×</button></div>
+  <div class="m-head"><span id="m-title">案件を登録</span><button class="x" onclick="closeNew()">×</button></div>
   <div class="m-body" id="m-body"></div>
-  <div class="m-foot"><button class="btn" onclick="closeNew()">キャンセル</button><button class="btn primary" onclick="saveNew()">登録する</button></div>
+  <div class="m-foot" id="m-foot"><button class="btn" onclick="closeNew()">キャンセル</button><button class="btn primary" id="m-save" onclick="saveNew()">登録する</button></div>
 </div></div>
 <div id="toast"></div>
 
@@ -181,7 +195,9 @@ function nextMeetText(nm){
 }
 
 // ===== 認証・データ購読 =====
+let me = '', queue = {}, mineSeen = {};
 window.onAuth = user => {
+  if(user) me = user.email || '';
   if(!user){ $('msg').style.display='flex'; $('msg').textContent='ガチ楽（またはタスクCanly）でログインしてから開いてください'; return; }
   const {db, ref, onValue} = window._fb;
   onValue(ref(db,'dealbox/deals'), snap => {
@@ -190,6 +206,8 @@ window.onAuth = user => {
     renderBoard();
     if(selId && !editing) renderPanel();
   }, err => { $('msg').style.display='flex'; $('msg').textContent='案件BOXを読み込めませんでした（アクセス権限がありません）'; });
+  // 秘書（記憶待ち）の状況
+  onValue(ref(db,'dealbox/queue'), snap => { queue = snap.val() || {}; renderQueue(); });
 };
 
 // ===== カンバン =====
@@ -243,7 +261,8 @@ function renderPanel(){
         ? `<button class="btn primary" onclick="saveEdit()">保存する</button><button class="btn" onclick="cancelEdit()">キャンセル</button>`
         : `<span style="font-size:11px;color:var(--muted)">ステータス</span>
            <select onchange="quickStatus(this.value)">${STATUSES.map(s=>`<option ${s.k===d.status?'selected':''}>${s.k}</option>`).join('')}</select>
-           <button class="btn" onclick="startEdit()" style="margin-left:auto">編集する</button>`}
+           <button class="btn" onclick="openNew(selId)" style="margin-left:auto">＋ 議事録を追加</button>
+           <button class="btn" onclick="startEdit()">編集する</button>`}
     </div>
     <div class="p-body">${editing ? editHtml(d) : viewHtml(d)}</div>`;
 }
@@ -391,13 +410,38 @@ async function saveEdit(){
   editing = false; renderPanel(); toast('保存しました');
 }
 
-// ===== 新規登録（手入力） =====
-function openNew(){
-  $('m-body').innerHTML = `
-    <div class="note">議事録を貼り付けてAIが自動で整理する機能（記憶）は、APIキーの設定後に追加します。今は手入力で登録できます。</div>
+// ===== 新規登録 =====
+// 「議事録から」: dealbox/queue に積むと、中村PCの秘書(見張り役)が Claude で記憶する
+// 「手入力」: その場で dealbox/deals に保存
+let newMode = 'minutes', newDealId = null;
+function openNew(dealId){
+  newDealId = typeof dealId === 'string' ? dealId : null;
+  newMode = 'minutes';
+  $('modal').dataset.view = ''; $('m-foot').style.display = '';
+  renderNew();
+  $('modal').classList.add('open');
+}
+function renderNew(){
+  const fixed = newDealId && deals[newDealId];
+  $('m-title').textContent = fixed ? '議事録を追加：' + fixed.client : '案件を登録';
+  $('m-save').textContent = newMode==='minutes' ? '秘書に記憶させる' : '登録する';
+  const opts = Object.entries(deals).sort((x,y)=>String(x[1].client).localeCompare(String(y[1].client),'ja'))
+    .map(([id,d])=>`<option value="${id}" ${id===newDealId?'selected':''}>${esc(d.client)}（${esc(d.status)}）</option>`).join('');
+  $('m-body').innerHTML = (fixed ? '' : `<div class="tabs">
+      <button class="${newMode==='minutes'?'on':''}" onclick="newMode='minutes';renderNew()">議事録から登録（秘書が記憶）</button>
+      <button class="${newMode==='manual'?'on':''}" onclick="newMode='manual';renderNew()">手入力で登録</button>
+    </div>`) + (newMode==='minutes' ? `
+    <div class="note">議事録を貼り付けて送ると、秘書が会社名・ステータス・金額・課題・ネクストアクションなどを整理して記憶します。<br>
+      記憶は中村さんのPCで行うため、PCが起動していないときは次に起動したときに処理されます（通常は1分ほどで反映）。</div>
+    <div class="f">
+      <label>記憶する案件</label>
+      <select id="n-deal" ${fixed?'disabled':''}><option value="">自動で判定（既存の会社なら追記・なければ新規）</option>${opts}</select>
+      <label>議事録 *</label>
+      <textarea id="n-text" style="min-height:260px" placeholder="議事録の本文をここに貼り付けてください"></textarea>
+    </div>` : `
     <div class="f">
       <label>会社名 *</label><input id="n-client">
-      <label>ステータス</label><select id="n-status">${STATUSES.map(s=>`<option>${s.k}</option>`).join('')}</select>
+      <label>ステータス</label><select id="n-status">${STATUSES.map(s=>`<option ${s.k===curStatus?'selected':''}>${s.k}</option>`).join('')}</select>
       <label>プラン</label><input id="n-plan">
       <label>店舗数</label><input id="n-stores" type="number">
       <label>月額（円）</label><input id="n-monthly" type="number">
@@ -410,13 +454,27 @@ function openNew(){
       <label>メモ</label><textarea id="n-memo"></textarea>
       <label>商談日</label><input id="n-mdate" type="date" value="${today()}">
       <label>商談の種類</label><input id="n-mtype" placeholder="例：初回、2回目">
-      <label>議事録</label><textarea id="n-minutes" style="min-height:120px" placeholder="議事録の本文を貼り付け（任意）"></textarea>
-    </div>`;
-  $('modal').classList.add('open');
-  setTimeout(()=>$('n-client').focus(), 50);
+      <label>議事録</label><textarea id="n-minutes" style="min-height:120px" placeholder="議事録の本文を貼り付け（任意。手入力では秘書による整理は行いません）"></textarea>
+    </div>`);
+  setTimeout(()=>{ const el = $('n-text') || $('n-client'); if(el) el.focus(); }, 50);
 }
-function closeNew(){ $('modal').classList.remove('open'); }
 async function saveNew(){
+  if(newMode==='minutes') return submitMinutes();
+  return saveManual();
+}
+async function submitMinutes(){
+  const text = $('n-text').value.trim();
+  if(text.length < 20){ toast('議事録の本文を貼り付けてください'); return; }
+  const qid = 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const {db, ref, set} = window._fb;
+  await set(ref(db,'dealbox/queue/'+qid), {
+    text, dealId: newDealId || $('n-deal').value || null, submittedBy: me, submittedAt: nowIso(), status: 'pending'
+  });
+  mineSeen[qid] = 'pending';
+  closeNew(); toast('秘書に送りました。記憶が終わると反映されます');
+}
+function closeNew(){ $('modal').classList.remove('open'); $('modal').dataset.view=''; $('m-foot').style.display=''; }
+async function saveManual(){
   const client = $('n-client').value.trim();
   if(!client){ toast('会社名を入力してください'); return; }
   const id = 'd' + Date.now().toString(36);
@@ -434,6 +492,45 @@ async function saveNew(){
   await set(ref(db,'dealbox/deals/'+id), deal);
   if(mkey) await set(ref(db,`dealbox/minutes/${id}/${mkey}`), {file: mkey+'.md', date: mdate, text: minutes});
   closeNew(); toast('登録しました'); openPanel(id);
+}
+
+// ===== 秘書（記憶待ち）の状況表示 =====
+const Q_LABEL = {pending:'記憶待ち', processing:'記憶中', done:'完了', error:'エラー'};
+function renderQueue(){
+  const items = Object.entries(queue);
+  const waiting = items.filter(([,v])=>v.status==='pending'||v.status==='processing').length;
+  const errors = items.filter(([,v])=>v.status==='error').length;
+  const el = $('qpill');
+  el.className = 'qpill' + (waiting||errors ? ' show' : '') + (errors && !waiting ? ' err' : '');
+  el.innerHTML = waiting ? `<span class="spin"></span>秘書が記憶中 ${waiting}件` : errors ? `記憶エラー ${errors}件` : '';
+  // 自分が送った議事録の記憶が終わったら知らせる
+  for(const [qid,v] of items){
+    if(mineSeen[qid] && mineSeen[qid]!==v.status){
+      if(v.status==='done') toast('記憶が完了しました：' + ((deals[v.resultDealId]||{}).client || ''));
+      if(v.status==='error') toast('記憶でエラーが発生しました');
+      mineSeen[qid] = v.status;
+    }
+  }
+  if($('modal').dataset.view==='queue') openQueue();
+}
+function openQueue(){
+  const items = Object.entries(queue).sort((a,b)=>String(b[1].submittedAt).localeCompare(String(a[1].submittedAt))).slice(0,30);
+  $('m-title').textContent = '秘書の記憶状況';
+  $('m-foot').style.display = 'none';
+  $('modal').dataset.view = 'queue';
+  $('m-body').innerHTML = items.length ? items.map(([qid,v])=>`<div class="qrow">
+      <span class="st" style="color:${v.status==='error'?'var(--red)':v.status==='done'?'var(--s3)':'var(--accent)'}">${Q_LABEL[v.status]||v.status}</span>
+      <div class="bd">${esc((v.submittedAt||'').replace('T',' ').slice(0,16))}　${esc(v.submittedBy||'')}<br>
+        ${v.resultDealId && deals[v.resultDealId] ? `→ <a href="#" onclick="closeNew();openPanel('${v.resultDealId}');return false">${esc(deals[v.resultDealId].client)}</a>` : ''}
+        ${v.note ? '<br>'+esc(v.note) : ''}${v.error ? '<br><span class="er">'+esc(v.error)+'</span>' : ''}
+        ${v.status==='error' ? `<br><a href="#" onclick="retryQueue('${qid}');return false">もう一度記憶させる</a>` : ''}</div>
+    </div>`).join('') : '<div class="empty">まだ記憶の履歴はありません</div>';
+  $('modal').classList.add('open');
+}
+async function retryQueue(qid){
+  const {db, ref, update} = window._fb;
+  await update(ref(db,'dealbox/queue/'+qid), {status:'pending', error:null});
+  toast('もう一度秘書に送りました');
 }
 </script>
 </body>
