@@ -29,11 +29,21 @@
   #side .item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
   #side .item svg{width:15px;height:15px;flex-shrink:0;fill:currentColor}
   #side .item .ext{margin-left:auto;width:12px;height:12px;opacity:.8}
+  #side .item .caret{margin-left:auto;font-size:9px;opacity:.8;transition:transform .15s}
+  #side .item.expanded .caret{transform:rotate(180deg)}
+  #side .subs{display:none}
+  #side .subs.open{display:block}
+  #side .sub{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px 0 33px;font-size:11.5px;cursor:pointer;white-space:nowrap;position:relative;color:#d8d8d8}
+  #side .sub:hover{background:var(--side-hover);color:#fff}
+  #side .sub.active{background:#fff;color:var(--text);font-weight:700}
+  #side .sub.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
+  #side .sub .sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  body.collapsed #side .sub{padding-left:20px}
   #side hr{border:0;border-top:1px solid var(--side-line);margin:4px 0}
   #side .support{position:absolute;left:8px;bottom:14px;background:var(--brand);color:#fff;border-radius:20px;height:32px;padding:0 22px 0 10px;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;white-space:nowrap}
   #side .support .q{width:18px;height:18px;border:1.5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px}
   body.collapsed #side{width:48px}
-  body.collapsed #side .t1,body.collapsed #side .t2,body.collapsed #side .sec,body.collapsed #side .label,body.collapsed #side .ext,body.collapsed #side .support span:last-child{display:none}
+  body.collapsed #side .t1,body.collapsed #side .t2,body.collapsed #side .sec,body.collapsed #side .label,body.collapsed #side .ext,body.collapsed #side .caret,body.collapsed #side .support span:last-child{display:none}
   body.collapsed #side .support{padding:0 7px}
 
   /* ===== メイン ===== */
@@ -86,7 +96,7 @@
   #gate iframe{flex:1;border:0;width:100%}
   @media (max-width:700px){
     body.mob-auto #side{width:48px}
-    body.mob-auto #side .t1,body.mob-auto #side .t2,body.mob-auto #side .sec,body.mob-auto #side .label,body.mob-auto #side .ext,body.mob-auto #side .support span:last-child{display:none}
+    body.mob-auto #side .t1,body.mob-auto #side .t2,body.mob-auto #side .sec,body.mob-auto #side .label,body.mob-auto #side .ext,body.mob-auto #side .caret,body.mob-auto #side .support span:last-child{display:none}
     .split{flex-direction:column}
     .cat-col{width:100%}
   }
@@ -110,10 +120,16 @@
     <svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
     <span class="label">案件Canly</span>
   </a>
-  <a class="item" data-page="dealbox" onclick="go('dealbox')">
+  <a class="item" data-page="dealbox" id="dealbox-item" onclick="toggleDealbox()">
     <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-.9-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>
-    <span class="label">案件BOX</span>
+    <span class="label">案件BOX</span><span class="caret">▼</span>
   </a>
+  <div class="subs" id="dealbox-subs">
+    <a class="sub" data-sub="商談中" onclick="goSub('商談中')"><span class="sdot" style="background:#3A5EE5"></span><span class="label">商談中</span></a>
+    <a class="sub" data-sub="追客中" onclick="goSub('追客中')"><span class="sdot" style="background:#D97706"></span><span class="label">追客中</span></a>
+    <a class="sub" data-sub="受注" onclick="goSub('受注')"><span class="sdot" style="background:#1A7A50"></span><span class="label">受注</span></a>
+    <a class="sub" data-sub="失注" onclick="goSub('失注')"><span class="sdot" style="background:#9B99A4"></span><span class="label">失注</span></a>
+  </div>
   <hr>
 
   <div class="sec">書類</div>
@@ -175,22 +191,41 @@ function sessKey(){
 }
 const ORDER = ['task','anken','dealbox','mitsumori'];
 let state = {page:'home', cat:'全て', q:''};
+let dealSub = '商談中';   // 案件BOXで表示中のステータス（URLは #dealbox/商談中）
 
 function go(p){
   state = {page:p, cat:'全て', q:''};
-  if(location.hash.slice(1)!==p) location.hash = p; else render();
+  const h = p==='dealbox' ? 'dealbox/' + encodeURIComponent(dealSub) : p;
+  if(location.hash.slice(1)!==h) location.hash = h; else render();
 }
+// 案件BOX: 押すとステータスのプルダウンが開く（開いていれば閉じる）
+function toggleDealbox(){
+  const subs = document.getElementById('dealbox-subs');
+  if(subs.classList.contains('open') && state.page==='dealbox'){ setSubsOpen(false); return; }
+  setSubsOpen(true); goSub(dealSub);
+}
+function setSubsOpen(open){
+  document.getElementById('dealbox-subs').classList.toggle('open', open);
+  document.getElementById('dealbox-item').classList.toggle('expanded', open);
+}
+function goSub(sub){ dealSub = sub; go('dealbox'); }
 
 function render(){
   const p = state.page;
-  document.querySelectorAll('#side .item').forEach(el=>el.classList.toggle('active', el.dataset.page===p));
-  const title = p==='home' ? 'ホーム' : PAGES[p].title;
+  const subOpen = p==='dealbox' && document.getElementById('dealbox-subs').classList.contains('open');
+  document.querySelectorAll('#side .item').forEach(el=>el.classList.toggle('active', el.dataset.page===p && !subOpen));
+  document.querySelectorAll('#side .sub').forEach(el=>el.classList.toggle('active', p==='dealbox' && el.dataset.sub===dealSub));
+  const title = p==='home' ? 'ホーム' : p==='dealbox' ? PAGES[p].title + '<span style="color:#999;font-weight:400;margin:0 6px">／</span>' + dealSub : PAGES[p].title;
   document.getElementById('ptitle').innerHTML = ICON[p] + title;
   const lv = document.getElementById('listview');
   const frame = p!=='home' && PAGES[p].frame;
   document.querySelectorAll('.tool').forEach(el=>el.classList.toggle('show', el.id==='tool-'+p));
   lv.style.display = frame ? 'none' : '';
-  if(frame){ showFrame(p); return; }
+  if(frame){
+    showFrame(p);
+    if(p==='dealbox'){ try{ document.querySelector('#tool-dealbox iframe').contentWindow.setStatus(dealSub); }catch(e){} }
+    return;
+  }
   lv.innerHTML = p==='home' ? homeView() : pageView(p);
   const s = document.getElementById('q');
   if(s){ s.value = state.q; s.oninput = e=>{ state.q = e.target.value; renderList(); }; }
@@ -225,7 +260,7 @@ function showFrame(p){
     el = document.createElement('div');
     el.className = 'tool show'; el.id = 'tool-'+p;
     el.innerHTML = (PAGES[p].note ? `<div class="note">${PAGES[p].note}</div>` : '')
-      + `<iframe src="${bust(PAGES[p].frame)}" title="${PAGES[p].title}"></iframe>`;
+      + `<iframe src="${bust(PAGES[p].frame + (p==='dealbox' ? '&status=' + encodeURIComponent(dealSub) : ''))}" title="${PAGES[p].title}"></iframe>`;
     document.getElementById('content').appendChild(el);
   }
 }
@@ -262,7 +297,8 @@ function toggleSide(){
 }
 
 function fromHash(){
-  const h = location.hash.slice(1), p = PAGES[h] ? h : 'home';
+  const parts = location.hash.slice(1).split('/'), h = parts[0], p = PAGES[h] ? h : 'home';
+  if(p==='dealbox'){ if(parts[1]) dealSub = decodeURIComponent(parts[1]); setSubsOpen(true); }
   if(p!==state.page){ state = {page:p, cat:'全て', q:''}; }
   render();
 }
