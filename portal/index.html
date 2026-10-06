@@ -110,6 +110,10 @@
     <svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
     <span class="label">案件Canly</span>
   </a>
+  <a class="item" data-page="dealbox" onclick="go('dealbox')">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-.9-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>
+    <span class="label">案件BOX</span>
+  </a>
   <hr>
 
   <div class="sec">書類</div>
@@ -136,6 +140,7 @@ const ICON = {
   home:'<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
   task:'<svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>',
   anken:'<svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>',
+  dealbox:'<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-.9-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>',
   mitsumori:'<svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>'
 };
 
@@ -152,18 +157,23 @@ const PAGES = {
     {c:'サマリー', t:'サマリー・達成率', d:'目標に対する達成率／回収済み自動合計', s:'ok'},
     {c:'失注',    t:'失注BOX', d:'失注案件の折りたたみ一覧', s:'ok'},
   ]},
+  dealbox:{ title:'案件BOX', cats:['全て','一覧','登録'], items:[
+    {c:'一覧', t:'案件カンバン', d:'商談中／追客中／受注／失注のカンバン。カードを押すと右に詳細', s:'ok'},
+    {c:'登録', t:'案件登録・記憶', d:'案件の登録と議事録の保存（AIでの自動整理は準備中）', s:'ok'},
+  ]},
   mitsumori:{ title:'見積もり書', cats:['全て','新規作成','テンプレート','作成履歴'], items:[  // 中身はユーザーと一緒に作る（右側は空）
   ]},
 };
 // 既存ツールの埋め込み先（A案：既存画面をそのままiframe表示）
 PAGES.task.frame  = '../index.html?page=task&embed=1';
 PAGES.anken.frame = '../index.html?page=anken&embed=1';
+PAGES.dealbox.frame = '../dealbox.html?embed=1';
 // ログイン判定（タスクCanlyと同じ基準: 最終利用から1日以内のセッションのみ有効）
 function sessKey(){
   try{ const s = JSON.parse(localStorage.getItem('taiki_sess')||'null');
        return (s && s.key && Date.now()-s.ts < 24*60*60*1000) ? s.key : null; }catch(e){ return null; }
 }
-const ORDER = ['task','anken','mitsumori'];
+const ORDER = ['task','anken','dealbox','mitsumori'];
 let state = {page:'home', cat:'全て', q:''};
 
 function go(p){

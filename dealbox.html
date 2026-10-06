@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>案件BOX</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js";
+import { getDatabase, ref, set, update, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+const app = initializeApp({
+  apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
+  authDomain: "taiki-tasks-933cc.firebaseapp.com",
+  databaseURL: "https://taiki-tasks-933cc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "taiki-tasks-933cc",
+  storageBucket: "taiki-tasks-933cc.firebasestorage.app",
+  messagingSenderId: "679381676234",
+  appId: "1:679381676234:web:20b54086cd302494c0c433"
+});
+initializeAppCheck(app, { provider: new ReCaptchaV3Provider("6LeBcpctAAAAAFUv0nKLpia0xLoFo2JNH6d86tWt"), isTokenAutoRefreshEnabled: true });
+const db = getDatabase(app);
+window._fb = { db, ref, set, update, onValue, get };
+// ログインはタスクCanly／ガチ楽と共通（同じブラウザならFirebaseのログイン状態を共有）
+onAuthStateChanged(getAuth(app), user => window.onAuth && window.onAuth(user));
+</script>
+<style>
+  :root{
+    --brand:#0b3d91; --brand-dark:#0a2e6e; --accent:#1a7fe0;
+    --text:#333; --muted:#777; --line:#dcdcdc; --bg:#f4f5f7; --panel:#fff;
+    --s1:#1a7fe0; --s2:#d97706; --s3:#1a7a50; --s4:#8a8f98;
+    --font:"Hiragino Kaku Gothic ProN","Hiragino Sans","Meiryo","Yu Gothic UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:var(--font);font-size:13px;color:var(--text);background:var(--bg);overflow:hidden}
+  button,input,select,textarea{font-family:var(--font);font-size:12px}
+
+  /* ===== ツールバー ===== */
+  #bar{height:46px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 14px}
+  #q{width:220px;height:30px;border:1px solid var(--line);border-radius:3px;padding:0 9px}
+  #q:focus{outline:none;border-color:var(--accent)}
+  #bar .sum{font-size:11px;color:var(--muted)}
+  .btn{height:30px;border:1px solid #bbb;background:#fff;border-radius:3px;padding:0 12px;cursor:pointer;white-space:nowrap}
+  .btn:hover{background:#f2f2f2}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+  .btn.primary:hover{background:var(--brand-dark)}
+  .btn.danger{color:#c0253a;border-color:#e3b3ba}
+  #bar .right{margin-left:auto;display:flex;gap:8px}
+
+  /* ===== カンバン ===== */
+  #board{height:calc(100% - 46px);display:grid;grid-template-columns:repeat(4,minmax(240px,1fr));gap:12px;padding:12px 14px;overflow:auto}
+  .col{background:#eceef1;border-radius:6px;display:flex;flex-direction:column;min-height:0}
+  .col-h{padding:9px 10px;border-top:3px solid var(--c);border-radius:6px 6px 0 0;background:#fff;display:flex;align-items:center;gap:6px}
+  .col-h b{font-size:13px}
+  .col-h .n{font-size:11px;background:#f0f0f0;border-radius:10px;padding:0 7px}
+  .col-h .amt{margin-left:auto;font-size:11px;color:var(--muted)}
+  .cards{padding:8px;display:flex;flex-direction:column;gap:7px;overflow-y:auto}
+  .card{background:#fff;border:1px solid #e1e3e6;border-left:3px solid var(--c);border-radius:4px;padding:8px 10px;cursor:pointer;transition:box-shadow .12s}
+  .card:hover{box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  .card.sel{outline:2px solid var(--accent)}
+  .card .nm{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .mt{font-size:11px;color:var(--muted);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+  .card .mt .money{color:var(--text);font-weight:700}
+  .card .na{font-size:11px;margin-top:5px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .na.due{color:#c0253a}
+  .empty{color:var(--muted);font-size:11px;text-align:center;padding:16px 0}
+
+  /* ===== 詳細パネル（右から大きく出る） ===== */
+  #panel{position:fixed;top:0;right:0;bottom:0;width:min(760px,62vw);background:var(--panel);box-shadow:-6px 0 24px rgba(0,0,0,.18);transform:translateX(105%);transition:transform .22s ease;display:flex;flex-direction:column;z-index:20}
+  #panel.open{transform:none}
+  .p-head{padding:14px 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:10px}
+  .p-head h2{font-size:18px;line-height:1.35;flex:1;min-width:0}
+  .p-head .x{border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:#666;padding:0 4px}
+  .badge{display:inline-block;font-size:11px;color:#fff;background:var(--c);border-radius:3px;padding:2px 7px;font-weight:700;vertical-align:3px;margin-left:6px}
+  .p-tools{display:flex;gap:8px;padding:8px 18px;border-bottom:1px solid var(--line);background:#fafafa;align-items:center}
+  .p-tools select{height:28px;border:1px solid #bbb;border-radius:3px;padding:0 6px}
+  .p-body{flex:1;overflow-y:auto;padding:4px 18px 30px}
+  .sec{padding:14px 0;border-bottom:1px solid #eee}
+  .sec h3{font-size:12px;color:var(--brand);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .sec h3 .add{margin-left:auto;font-size:11px;color:var(--accent);cursor:pointer;font-weight:400}
+  .grid{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:12px}
+  .grid dt{color:var(--muted)}
+  .grid dd{word-break:break-all}
+  .txt{font-size:12px;line-height:1.8;white-space:pre-wrap}
+  .na-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px dashed #eee}
+  .na-row:last-child{border-bottom:0}
+  .na-row.done .t{text-decoration:line-through;color:var(--muted)}
+  .na-row .t{flex:1}
+  .na-row .m{font-size:11px;color:var(--muted);white-space:nowrap}
+  .meet{border:1px solid #e6e6e6;border-radius:4px;margin-bottom:8px}
+  .meet-h{display:flex;gap:10px;align-items:center;padding:8px 10px;cursor:pointer;background:#fafbfc}
+  .meet-h .d{font-weight:700;font-size:12px;white-space:nowrap}
+  .meet-h .ty{font-size:11px;color:var(--muted);flex:1}
+  .meet-h .arr{color:var(--muted);font-size:11px}
+  .meet-s{padding:8px 10px;font-size:12px;line-height:1.7;white-space:pre-wrap;border-top:1px solid #eee}
+  .minutes{padding:10px;font-size:11.5px;line-height:1.7;white-space:pre-wrap;background:#fcfcfc;border-top:1px solid #eee;max-height:420px;overflow-y:auto}
+  /* 編集フォーム */
+  .f{display:grid;grid-template-columns:110px 1fr;gap:8px 12px;align-items:center}
+  .f label{font-size:11px;color:var(--muted)}
+  .f input,.f select,.f textarea{width:100%;border:1px solid #ccc;border-radius:3px;padding:6px 8px}
+  .f textarea{min-height:70px;resize:vertical;line-height:1.6}
+  .f input:focus,.f textarea:focus,.f select:focus{outline:none;border-color:var(--accent)}
+  .f .full{grid-column:1/-1}
+  .na-edit{display:grid;grid-template-columns:1fr 120px 90px 28px;gap:6px;margin-bottom:6px}
+  .na-edit input{border:1px solid #ccc;border-radius:3px;padding:5px 7px}
+  .na-edit button{border:0;background:none;color:#c0253a;cursor:pointer;font-size:16px}
+
+  /* モーダル（新規登録） */
+  #modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:30}
+  #modal.open{display:flex}
+  .m-box{background:#fff;border-radius:6px;width:min(720px,94vw);max-height:92vh;display:flex;flex-direction:column}
+  .m-head{padding:14px 18px;border-bottom:1px solid var(--line);font-weight:700;font-size:15px;display:flex}
+  .m-head .x{margin-left:auto;border:0;background:none;font-size:20px;cursor:pointer;color:#666}
+  .m-body{padding:14px 18px;overflow-y:auto}
+  .m-foot{padding:10px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+  .note{font-size:11px;color:#6b5a00;background:#fff8e1;border:1px solid #f0e2a8;border-radius:3px;padding:7px 10px;margin-bottom:12px;line-height:1.6}
+
+  #msg{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;background:var(--bg);z-index:40}
+  #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#333;color:#fff;font-size:12px;padding:8px 16px;border-radius:4px;opacity:0;transition:opacity .2s;z-index:50;pointer-events:none}
+  #toast.show{opacity:1}
+
+  @media (max-width:760px){
+    #panel{width:100vw}
+    #board{grid-template-columns:repeat(4,250px)}
+    #q{width:130px}
+    #bar .sum{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="msg">読み込み中...</div>
+
+<div id="bar">
+  <input id="q" placeholder="会社名・担当者・メモで検索">
+  <span class="sum" id="sum"></span>
+  <div class="right"><button class="btn primary" onclick="openNew()">＋ 案件を登録</button></div>
+</div>
+<div id="board"></div>
+
+<aside id="panel"></aside>
+
+<div id="modal"><div class="m-box">
+  <div class="m-head">案件を登録<button class="x" onclick="closeNew()">×</button></div>
+  <div class="m-body" id="m-body"></div>
+  <div class="m-foot"><button class="btn" onclick="closeNew()">キャンセル</button><button class="btn primary" onclick="saveNew()">登録する</button></div>
+</div></div>
+<div id="toast"></div>
+
+<script>
+// ===== 案件BOX（無限会社中村の「案件登録・秘書の記憶」を引き継いだもの） =====
+// データ: dealbox/deals/{id}（案件情報）, dealbox/minutes/{id}/{key}（議事録本文。開いたときだけ読む）
+const STATUSES = [
+  {k:'商談中', c:'var(--s1)'}, {k:'追客中', c:'var(--s2)'}, {k:'受注', c:'var(--s3)'}, {k:'失注', c:'var(--s4)'}
+];
+const colorOf = s => (STATUSES.find(x=>x.k===s)||STATUSES[0]).c;
+let deals = {}, selId = null, editing = false, minutesCache = {}, openMeet = {};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const yen = v => (v===null||v===undefined||v==='') ? '' : (isNaN(Number(v)) ? String(v) : Number(v).toLocaleString('ja-JP')+'円');
+const today = () => new Date().toISOString().slice(0,10);
+const nowIso = () => new Date().toISOString();
+function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),1800); }
+const arr = v => Array.isArray(v) ? v : (v && typeof v==='object' ? Object.values(v) : []);
+// 次回商談は文字列 or {date,time,...} の両方がある
+function nextMeetText(nm){
+  if(!nm) return '';
+  if(typeof nm==='string') return nm;
+  return [nm.date, nm.time, nm.type||nm.note||nm.memo].filter(Boolean).join(' ');
+}
+
+// ===== 認証・データ購読 =====
+window.onAuth = user => {
+  if(!user){ $('msg').style.display='flex'; $('msg').textContent='ガチ楽（またはタスクCanly）でログインしてから開いてください'; return; }
+  const {db, ref, onValue} = window._fb;
+  onValue(ref(db,'dealbox/deals'), snap => {
+    deals = snap.val() || {};
+    $('msg').style.display='none';
+    renderBoard();
+    if(selId && !editing) renderPanel();
+  }, err => { $('msg').style.display='flex'; $('msg').textContent='案件BOXを読み込めませんでした（アクセス権限がありません）'; });
+};
+
+// ===== カンバン =====
+function matches(d, q){
+  if(!q) return true;
+  const c = d.contact || {};
+  return [d.client, c.name, c.company, d.memo, d.issues, d.plan].join(' ').toLowerCase().includes(q.toLowerCase());
+}
+function openActions(d){ return arr(d.nextActions).filter(a => a && a.status!=='done'); }
+function renderBoard(){
+  const q = $('q').value.trim();
+  const list = Object.entries(deals).map(([id,d])=>({id,...d})).filter(d=>matches(d,q))
+    .sort((a,b)=> String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+  $('sum').textContent = `全${Object.keys(deals).length}件` + (q ? `（表示 ${list.length}件）` : '');
+  $('board').innerHTML = STATUSES.map(s=>{
+    const items = list.filter(d => (d.status||'商談中')===s.k);
+    const total = items.reduce((t,d)=> t + (Number(d.monthly)||0), 0);
+    return `<section class="col" style="--c:${s.c}">
+      <div class="col-h"><b>${s.k}</b><span class="n">${items.length}</span><span class="amt">${total?'月額計 '+yen(total):''}</span></div>
+      <div class="cards">${items.length ? items.map(cardHtml).join('') : '<div class="empty">案件はありません</div>'}</div>
+    </section>`;
+  }).join('');
+}
+function cardHtml(d){
+  const na = openActions(d).sort((a,b)=>String(a.due||'9').localeCompare(String(b.due||'9')))[0];
+  const overdue = na && na.due && na.due < today();
+  const nm = nextMeetText(d.nextMeeting);
+  return `<div class="card${d.id===selId?' sel':''}" style="--c:${colorOf(d.status)}" onclick="openPanel('${d.id}')" title="${esc(d.client)}">
+    <div class="nm">${esc(d.client)}</div>
+    <div class="mt">${d.monthly?`<span class="money">${yen(d.monthly)}</span>`:''}${d.plan?`<span>${esc(d.plan)}</span>`:''}${d.stores?`<span>${esc(d.stores)}店舗</span>`:''}</div>
+    ${nm?`<div class="mt"><span>次回 ${esc(nm)}</span></div>`:''}
+    ${na?`<div class="na${overdue?' due':''}">▶ ${esc(na.action)}${na.due?`（${esc(na.due)}）`:''}</div>`:''}
+  </div>`;
+}
+$('q').addEventListener('input', renderBoard);
+
+// ===== 詳細パネル =====
+function openPanel(id){ selId = id; editing = false; openMeet = {}; renderBoard(); renderPanel(); $('panel').classList.add('open'); }
+function closePanel(){ $('panel').classList.remove('open'); selId = null; editing = false; renderBoard(); }
+document.addEventListener('keydown', e => { if(e.key==='Escape'){ if($('modal').classList.contains('open')) closeNew(); else if(!editing) closePanel(); } });
+
+function renderPanel(){
+  const d = deals[selId]; if(!d){ closePanel(); return; }
+  $('panel').innerHTML = `
+    <div class="p-head" style="--c:${colorOf(d.status)}">
+      <h2>${esc(d.client)}<span class="badge">${esc(d.status||'商談中')}</span></h2>
+      <button class="x" onclick="closePanel()" title="閉じる（Esc）">×</button>
+    </div>
+    <div class="p-tools">
+      ${editing
+        ? `<button class="btn primary" onclick="saveEdit()">保存する</button><button class="btn" onclick="cancelEdit()">キャンセル</button>`
+        : `<span style="font-size:11px;color:var(--muted)">ステータス</span>
+           <select onchange="quickStatus(this.value)">${STATUSES.map(s=>`<option ${s.k===d.status?'selected':''}>${s.k}</option>`).join('')}</select>
+           <button class="btn" onclick="startEdit()" style="margin-left:auto">編集する</button>`}
+    </div>
+    <div class="p-body">${editing ? editHtml(d) : viewHtml(d)}</div>`;
+}
+function viewHtml(d){
+  const c = d.contact || {};
+  const nas = arr(d.nextActions);
+  const meets = arr(d.meetings).map((m,i)=>({...m,_i:i})).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  return `
+    <div class="sec"><h3>基本情報</h3><dl class="grid">
+      <dt>プラン</dt><dd>${esc(d.plan)||'－'}</dd>
+      <dt>店舗数</dt><dd>${d.stores?esc(d.stores)+'店舗':'－'}</dd>
+      <dt>ブランド数</dt><dd>${d.brands?esc(d.brands):'－'}</dd>
+      <dt>月額</dt><dd>${yen(d.monthly)||'－'}</dd>
+      <dt>初期費用</dt><dd>${yen(d.initialFee)||'－'}</dd>
+      <dt>次回商談</dt><dd>${esc(nextMeetText(d.nextMeeting))||'－'}</dd>
+      <dt>最終更新</dt><dd>${esc((d.updatedAt||'').slice(0,10))||'－'}</dd>
+    </dl></div>
+    <div class="sec"><h3>先方担当者</h3><dl class="grid">
+      <dt>氏名</dt><dd>${esc(c.name)||'－'}</dd>
+      <dt>役職・部署</dt><dd>${esc([c.title,c.role].filter(Boolean).join(' / '))||'－'}</dd>
+      <dt>メール</dt><dd>${c.email?`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`:'－'}</dd>
+      <dt>電話</dt><dd>${esc(c.phone)||'－'}</dd>
+    </dl></div>
+    <div class="sec"><h3>ネクストアクション</h3>
+      ${nas.length ? nas.map((a,i)=>`<div class="na-row${a.status==='done'?' done':''}">
+        <input type="checkbox" ${a.status==='done'?'checked':''} onchange="toggleNA(${i},this.checked)">
+        <span class="t">${esc(a.action)}</span><span class="m">${esc(a.due||'')}${a.owner?'・'+esc(a.owner):''}</span></div>`).join('')
+      : '<div class="txt" style="color:var(--muted)">なし</div>'}
+    </div>
+    <div class="sec"><h3>課題</h3><div class="txt">${esc(d.issues)||'－'}</div></div>
+    <div class="sec"><h3>メモ</h3><div class="txt">${esc(d.memo)||'－'}</div></div>
+    <div class="sec"><h3>商談履歴・議事録（${meets.length}件）</h3>
+      ${meets.length ? meets.map(m=>`<div class="meet">
+        <div class="meet-h" onclick="toggleMeet(${m._i})"><span class="d">${esc(m.date||'日付なし')}</span><span class="ty">${esc(m.type||'')}</span><span class="arr">${openMeet[m._i]?'▲ 閉じる':'▼ 議事録'}</span></div>
+        ${m.summary?`<div class="meet-s">${esc(m.summary)}</div>`:''}
+        ${openMeet[m._i]?`<div class="minutes" id="min-${m._i}">${minutesHtml(m)}</div>`:''}
+      </div>`).join('') : '<div class="txt" style="color:var(--muted)">なし</div>'}
+      ${otherMinutesHtml(meets)}
+    </div>`;
+}
+// 商談履歴に紐づいていない議事録（移行元で meetings に minutesFile が無かったもの等）
+function otherMinutesHtml(meets){
+  const all = minutesCache[selId];
+  if(!all) return `<div style="margin-top:6px"><span class="add" style="font-size:11px;color:var(--accent);cursor:pointer" onclick="loadMinutes()">保存されている議事録をすべて確認する</span></div>`;
+  const linked = new Set(meets.map(minuteKeyOf).filter(Boolean));
+  const others = Object.entries(all).filter(([k])=>!linked.has(k)).sort((a,b)=>String(b[1].date||'').localeCompare(String(a[1].date||'')));
+  if(!others.length) return '';
+  return `<h3 style="margin-top:12px">その他の議事録（${others.length}件）</h3>` + others.map(([k,m])=>`<div class="meet">
+    <div class="meet-h" onclick="toggleMeet('o:${esc(k)}')"><span class="d">${esc(m.date||'日付なし')}</span><span class="ty">${esc(m.file||'')}</span><span class="arr">${openMeet['o:'+k]?'▲ 閉じる':'▼ 議事録'}</span></div>
+    ${openMeet['o:'+k]?`<div class="minutes">${esc(m.text)}</div>`:''}
+  </div>`).join('');
+}
+async function loadMinutes(){
+  const id = selId, {db, ref, get} = window._fb;
+  try{ minutesCache[id] = (await get(ref(db,'dealbox/minutes/'+id))).val() || {}; }
+  catch(e){ minutesCache[id] = {}; toast('議事録を読み込めませんでした'); }
+  if(selId===id) renderPanel();
+}
+
+// 議事録: meetings[].minutesFile のファイル名で dealbox/minutes/{id} から引く
+function minuteKeyOf(m){
+  const f = m.minutesFile || m.transcript_file; if(!f) return null;
+  return f.split(/[\\/]/).pop().replace(/\.md$/,'').replace(/[.$#\[\]\/]/g,'_');
+}
+function minutesHtml(m){
+  const all = minutesCache[selId];
+  if(!all) return '読み込み中...';
+  const key = minuteKeyOf(m);
+  const hit = key && all[key];
+  return hit ? esc(hit.text) : 'この商談の議事録は保存されていません';
+}
+async function toggleMeet(i){
+  openMeet[i] = !openMeet[i];
+  renderPanel();
+  if(openMeet[i] && !minutesCache[selId]) await loadMinutes();
+}
+
+// ===== 書き込み =====
+async function patchDeal(id, patch){
+  const {db, ref, update} = window._fb;
+  await update(ref(db,'dealbox/deals/'+id), {...patch, updatedAt: nowIso()});
+}
+async function quickStatus(s){ await patchDeal(selId,{status:s}); toast('ステータスを「'+s+'」に変更しました'); }
+async function toggleNA(i, done){
+  const nas = arr(deals[selId].nextActions).map((a,j)=> j===i ? {...a, status: done?'done':'open'} : a);
+  await patchDeal(selId,{nextActions:nas});
+}
+
+// ===== 編集 =====
+function startEdit(){ editing = true; renderPanel(); }
+function cancelEdit(){ editing = false; renderPanel(); }
+const val = v => v==null ? '' : esc(v);
+function editHtml(d){
+  const c = d.contact || {};
+  return `
+    <div class="sec"><h3>基本情報</h3><div class="f">
+      <label>会社名</label><input id="e-client" value="${val(d.client)}">
+      <label>プラン</label><input id="e-plan" value="${val(d.plan)}">
+      <label>店舗数</label><input id="e-stores" type="number" value="${val(d.stores)}">
+      <label>ブランド数</label><input id="e-brands" type="number" value="${val(d.brands)}">
+      <label>月額（円）</label><input id="e-monthly" type="number" value="${val(d.monthly)}">
+      <label>初期費用（円）</label><input id="e-initialFee" type="number" value="${val(d.initialFee)}">
+      <label>次回商談</label><input id="e-next" value="${val(nextMeetText(d.nextMeeting))}" placeholder="例：2026-10-20 14:00 2回目">
+    </div></div>
+    <div class="sec"><h3>先方担当者</h3><div class="f">
+      <label>氏名</label><input id="e-cname" value="${val(c.name)}">
+      <label>役職・部署</label><input id="e-ctitle" value="${val(c.title)}">
+      <label>メール</label><input id="e-cemail" value="${val(c.email)}">
+      <label>電話</label><input id="e-cphone" value="${val(c.phone)}">
+    </div></div>
+    <div class="sec"><h3>ネクストアクション<span class="add" onclick="addNARow()">＋ 追加</span></h3>
+      <div id="e-nas">${arr(d.nextActions).map(naEditRow).join('')}</div>
+    </div>
+    <div class="sec"><h3>課題</h3><div class="f"><textarea class="full" id="e-issues">${val(d.issues)}</textarea></div></div>
+    <div class="sec"><h3>メモ</h3><div class="f"><textarea class="full" id="e-memo" style="min-height:110px">${val(d.memo)}</textarea></div></div>`;
+}
+function naEditRow(a){
+  a = a || {};
+  return `<div class="na-edit" data-status="${esc(a.status||'open')}">
+    <input placeholder="やること" value="${val(a.action)}"><input type="date" value="${val(a.due)}"><input placeholder="担当" value="${val(a.owner)}">
+    <button onclick="this.parentNode.remove()" title="削除">×</button></div>`;
+}
+function addNARow(){ $('e-nas').insertAdjacentHTML('beforeend', naEditRow()); }
+const num = id => { const v = $(id).value.trim(); return v==='' ? null : Number(v); };
+function readNAs(){
+  return [...document.querySelectorAll('#e-nas .na-edit')].map(r=>{
+    const [a,due,owner] = r.querySelectorAll('input');
+    return {action:a.value.trim(), due:due.value, owner:owner.value.trim(), status:r.dataset.status||'open'};
+  }).filter(a=>a.action);
+}
+async function saveEdit(){
+  const d = deals[selId];
+  const client = $('e-client').value.trim();
+  if(!client){ toast('会社名を入力してください'); return; }
+  const nextTxt = $('e-next').value.trim();
+  const patch = {
+    client, plan: $('e-plan').value.trim() || null,
+    stores: num('e-stores'), brands: num('e-brands'), monthly: num('e-monthly'), initialFee: num('e-initialFee'),
+    // 文字列のまま保存（元データの日時形式を崩さないよう、変更されたときだけ上書き）
+    nextMeeting: nextTxt === nextMeetText(d.nextMeeting) ? (d.nextMeeting||null) : (nextTxt || null),
+    contact: {...(d.contact||{}), name:$('e-cname').value.trim(), title:$('e-ctitle').value.trim(), email:$('e-cemail').value.trim(), phone:$('e-cphone').value.trim()},
+    nextActions: readNAs(), issues: $('e-issues').value, memo: $('e-memo').value
+  };
+  await patchDeal(selId, patch);
+  editing = false; renderPanel(); toast('保存しました');
+}
+
+// ===== 新規登録（手入力） =====
+function openNew(){
+  $('m-body').innerHTML = `
+    <div class="note">議事録を貼り付けてAIが自動で整理する機能（記憶）は、APIキーの設定後に追加します。今は手入力で登録できます。</div>
+    <div class="f">
+      <label>会社名 *</label><input id="n-client">
+      <label>ステータス</label><select id="n-status">${STATUSES.map(s=>`<option>${s.k}</option>`).join('')}</select>
+      <label>プラン</label><input id="n-plan">
+      <label>店舗数</label><input id="n-stores" type="number">
+      <label>月額（円）</label><input id="n-monthly" type="number">
+      <label>初期費用（円）</label><input id="n-initialFee" type="number">
+      <label>担当者 氏名</label><input id="n-cname">
+      <label>役職・部署</label><input id="n-ctitle">
+      <label>メール</label><input id="n-cemail">
+      <label>電話</label><input id="n-cphone">
+      <label>課題</label><textarea id="n-issues"></textarea>
+      <label>メモ</label><textarea id="n-memo"></textarea>
+      <label>商談日</label><input id="n-mdate" type="date" value="${today()}">
+      <label>商談の種類</label><input id="n-mtype" placeholder="例：初回、2回目">
+      <label>議事録</label><textarea id="n-minutes" style="min-height:120px" placeholder="議事録の本文を貼り付け（任意）"></textarea>
+    </div>`;
+  $('modal').classList.add('open');
+  setTimeout(()=>$('n-client').focus(), 50);
+}
+function closeNew(){ $('modal').classList.remove('open'); }
+async function saveNew(){
+  const client = $('n-client').value.trim();
+  if(!client){ toast('会社名を入力してください'); return; }
+  const id = 'd' + Date.now().toString(36);
+  const now = nowIso(), mdate = $('n-mdate').value, minutes = $('n-minutes').value.trim();
+  const mkey = minutes ? (mdate||today()) + '-minutes' : null;
+  const deal = {
+    id, client, status: $('n-status').value, plan: $('n-plan').value.trim() || null,
+    stores: num('n-stores'), monthly: num('n-monthly'), initialFee: num('n-initialFee'),
+    contact: {name:$('n-cname').value.trim(), title:$('n-ctitle').value.trim(), email:$('n-cemail').value.trim(), phone:$('n-cphone').value.trim()},
+    issues: $('n-issues').value, memo: $('n-memo').value,
+    meetings: (minutes || $('n-mtype').value.trim()) ? [{date: mdate, type: $('n-mtype').value.trim(), summary: '', ...(mkey?{minutesFile: mkey+'.md'}:{})}] : [],
+    nextActions: [], nextMeeting: null, createdAt: now, updatedAt: now
+  };
+  const {db, ref, set} = window._fb;
+  await set(ref(db,'dealbox/deals/'+id), deal);
+  if(mkey) await set(ref(db,`dealbox/minutes/${id}/${mkey}`), {file: mkey+'.md', date: mdate, text: minutes});
+  closeNew(); toast('登録しました'); openPanel(id);
+}
+</script>
+</body>
+</html>
