@@ -112,13 +112,6 @@
   </a>
   <hr>
 
-  <div class="sec">AI会社</div>
-  <a class="item" data-page="mugen" onclick="go('mugen')">
-    <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
-    <span class="label">無限会社中村</span>
-  </a>
-  <hr>
-
   <div class="sec">書類</div>
   <a class="item" data-page="mitsumori" onclick="go('mitsumori')">
     <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
@@ -143,7 +136,6 @@ const ICON = {
   home:'<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
   task:'<svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>',
   anken:'<svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>',
-  mugen:'<svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zm8 12h-8V9h8v10z"/></svg>',
   mitsumori:'<svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>'
 };
 
@@ -160,35 +152,18 @@ const PAGES = {
     {c:'サマリー', t:'サマリー・達成率', d:'目標に対する達成率／回収済み自動合計', s:'ok'},
     {c:'失注',    t:'失注BOX', d:'失注案件の折りたたみ一覧', s:'ok'},
   ]},
-  mugen:{ title:'無限会社中村', cats:['全て','コックピット','承認','エージェント'], items:[
-    {c:'コックピット', t:'コックピットUI', d:'AI社員の稼働状況を一覧（Phase 2 予定）', s:'todo'},
-    {c:'承認',       t:'承認キュー', d:'AI社員からの承認依頼を確認・承認する', s:'ok'},
-    {c:'エージェント', t:'秘書エージェント', d:'議事録・タスク登録などの秘書業務', s:'ok'},
-  ]},
   mitsumori:{ title:'見積もり書', cats:['全て','新規作成','テンプレート','作成履歴'], items:[  // 中身はユーザーと一緒に作る（右側は空）
   ]},
 };
 // 既存ツールの埋め込み先（A案：既存画面をそのままiframe表示）
 PAGES.task.frame  = '../index.html?page=task&embed=1';
 PAGES.anken.frame = '../index.html?page=anken&embed=1';
-// コックピットは公開しない方針のため、このPCで起動中のローカルサーバーを表示するだけ
-PAGES.mugen.frame = 'http://localhost:8787/?embed=1';
-PAGES.mugen.note  = 'コックピットはこのPCで起動しているときだけ表示されます（localhost:8787）。表示されない場合は「コックピット起動.bat」を実行してから <a onclick="reloadFrame(\'mugen\')">再読み込み</a>';
-// 無限会社中村は中村専用（②案）。タスクCanlyのログイン情報(taiki_sess)で判定する
-// タスクCanlyと同じ基準: 最終利用から1日以内のセッションのみ有効
+// ログイン判定（タスクCanlyと同じ基準: 最終利用から1日以内のセッションのみ有効）
 function sessKey(){
   try{ const s = JSON.parse(localStorage.getItem('taiki_sess')||'null');
        return (s && s.key && Date.now()-s.ts < 24*60*60*1000) ? s.key : null; }catch(e){ return null; }
 }
-function isOwner(){ return sessKey()==='nakamura'; }
-function ownerOnlyView(){
-  const k = sessKey();
-  return `<div class="placeholder"><b>無限会社中村</b> は中村さんのPC専用のページです。<br>`
-    + (k ? 'ほかのメンバーのアカウントでは表示されません。'
-         : 'まだログインしていません。中村さんの場合は、先に <a style="color:var(--accent);text-decoration:underline;cursor:pointer" onclick="go(\'task\')">タスクCanly</a> でログインしてから開いてください。')
-    + '</div>';
-}
-const ORDER = ['task','anken','mugen','mitsumori'];
+const ORDER = ['task','anken','mitsumori'];
 let state = {page:'home', cat:'全て', q:''};
 
 function go(p){
@@ -202,12 +177,10 @@ function render(){
   const title = p==='home' ? 'ホーム' : PAGES[p].title;
   document.getElementById('ptitle').innerHTML = ICON[p] + title;
   const lv = document.getElementById('listview');
-  const locked = p==='mugen' && !isOwner();
-  const frame = p!=='home' && !locked && PAGES[p].frame;
-  document.querySelectorAll('.tool').forEach(el=>el.classList.toggle('show', !locked && el.id==='tool-'+p));
+  const frame = p!=='home' && PAGES[p].frame;
+  document.querySelectorAll('.tool').forEach(el=>el.classList.toggle('show', el.id==='tool-'+p));
   lv.style.display = frame ? 'none' : '';
   if(frame){ showFrame(p); return; }
-  if(locked){ lv.innerHTML = ownerOnlyView(); return; }
   lv.innerHTML = p==='home' ? homeView() : pageView(p);
   const s = document.getElementById('q');
   if(s){ s.value = state.q; s.oninput = e=>{ state.q = e.target.value; renderList(); }; }
