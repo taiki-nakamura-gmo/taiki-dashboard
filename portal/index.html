@@ -209,6 +209,12 @@ function setSubsOpen(open){
   document.getElementById('dealbox-item').classList.toggle('expanded', open);
 }
 function goSub(sub){ dealSub = sub; go('dealbox'); }
+// 案件BOX側でステータスが変わった案件を追いかけるときに呼ばれる（URLと左メニューだけ合わせる）
+window.syncDealSub = sub => {
+  dealSub = sub;
+  history.replaceState(null, '', '#dealbox/' + encodeURIComponent(sub));
+  setSubsOpen(true); render();
+};
 
 function render(){
   const p = state.page;
