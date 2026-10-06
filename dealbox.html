@@ -486,7 +486,15 @@ async function patchDeal(id, patch){
   const {db, ref, update} = window._fb;
   await update(ref(db,'dealbox/deals/'+id), {...patch, updatedAt: nowIso()});
 }
-async function quickStatus(s){ const id = selId; await patchDeal(id,{status:s}); followDeal(id); toast('ステータスを「'+s+'」に変更しました'); }
+// ステータス変更: 画面は今の箱のまま。案件だけ新しい箱へ移し、一覧ですぐ下にあった案件を表示する
+async function quickStatus(s){
+  const id = selId, list = visibleItems().map(d=>d.id), i = list.indexOf(id);
+  const next = list[i+1] || list[i-1] || null;
+  selId = next;   // 先に選択を移しておく（保存直後の再描画で先頭に飛ばないように）
+  await patchDeal(id,{status:s});
+  if(next){ renderBoard(); openPanel(next); } else { renderBoard(); closePanel(); }
+  toast('「' + (deals[id]?.client || '') + '」を「' + s + '」に移しました');
+}
 async function toggleNA(i, done){
   const nas = arr(deals[selId].nextActions).map((a,j)=> j===i ? {...a, status: done?'done':'open'} : a);
   await patchDeal(selId,{nextActions:nas});
