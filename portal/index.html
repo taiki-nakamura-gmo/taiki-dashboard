@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ガチ楽</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -73,26 +74,27 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
   #bell svg{width:22px;height:22px;fill:currentColor}
   #bell .cnt{position:absolute;top:2px;right:0;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#d93025;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
   #bell .cnt:empty{display:none}
-  #notif{position:fixed;top:56px;right:12px;width:min(440px,calc(100vw - 24px));max-height:72vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:60;display:none;flex-direction:column}
+  /* お知らせパネル: フォントはタスクCanly・案件BOXと統一 */
+  #notif{position:fixed;top:58px;right:14px;width:min(600px,calc(100vw - 28px));max-height:82vh;background:#fff;border:1px solid #E2DFD6;border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.18);z-index:60;display:none;flex-direction:column;font-family:"Instrument Sans",sans-serif;color:#18171A}
   #notif.open{display:flex}
-  #notif .n-head{padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px}
-  #notif .n-head small{font-weight:400;color:var(--muted);font-size:11px}
+  #notif .n-head{padding:16px 20px;border-bottom:1px solid #E2DFD6;font-weight:700;font-size:17px;display:flex;align-items:center;gap:10px}
+  #notif .n-head small{font-weight:400;color:#5C5A62;font-size:12.5px}
   #notif .n-body{overflow-y:auto}
-  #notif .n-sec{padding:8px 14px 4px;font-size:11px;font-weight:700;color:var(--muted);background:#fafafa;border-bottom:1px solid #eee}
-  #notif .n-item{padding:10px 14px;border-bottom:1px solid #eee;font-size:12px}
-  #notif .n-item .top{display:flex;align-items:center;gap:6px;margin-bottom:3px}
-  #notif .n-item .kind{font-size:10.5px;font-weight:700;color:#fff;border-radius:3px;padding:1px 6px;white-space:nowrap}
-  #notif .n-item .co{font-weight:700;cursor:pointer;color:var(--brand-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #notif .n-item .co:hover{text-decoration:underline}
-  #notif .n-item .due{margin-left:auto;white-space:nowrap;color:var(--muted);font-size:11px}
-  #notif .n-item.over .due{color:#d93025;font-weight:700}
-  #notif .n-item .dt{color:#444;line-height:1.5}
-  #notif .n-item .acts{margin-top:6px;display:flex;gap:6px}
-  #notif .n-item .acts button{border:1px solid #ccc;background:#fff;border-radius:4px;font-size:11px;padding:2px 10px;cursor:pointer;font-family:var(--font)}
-  #notif .n-item .acts button.ok{border-color:var(--brand);color:var(--brand);font-weight:700}
-  #notif .n-item .acts button:hover{background:#f2f4f8}
-  #notif .n-item.auto{color:var(--muted)}
-  #notif .n-empty{padding:28px 14px;text-align:center;color:var(--muted);font-size:12px}
+  #notif .n-sec{padding:10px 20px 8px;font-size:13px;font-weight:700;color:#5C5A62;background:#F0EFE9;border-bottom:1px solid #E2DFD6}
+  #notif .n-item{padding:14px 20px;border-bottom:1px solid #E2DFD6;font-size:14px}
+  #notif .n-item .top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  #notif .n-item .kind{font-size:12px;font-weight:700;color:#fff;border-radius:20px;padding:2px 10px;white-space:nowrap}
+  #notif .n-item .co{font-size:15px;font-weight:700;cursor:pointer;color:#18171A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #notif .n-item .co:hover{color:#3A5EE5;text-decoration:underline}
+  #notif .n-item .due{margin-left:auto;white-space:nowrap;color:#5C5A62;font-size:13px}
+  #notif .n-item.over .due{color:#C0253A;font-weight:700}
+  #notif .n-item .dt{color:#333;line-height:1.65}
+  #notif .n-item .acts{margin-top:10px;display:flex;gap:8px}
+  #notif .n-item .acts button{border:1px solid #E2DFD6;background:#fff;border-radius:8px;font-size:13px;padding:6px 16px;cursor:pointer;font-family:inherit;color:#5C5A62}
+  #notif .n-item .acts button.ok{background:#3A5EE5;border-color:#3A5EE5;color:#fff;font-weight:600}
+  #notif .n-item .acts button:hover{filter:brightness(.97)}
+  #notif .n-item .acts button.ok:hover{filter:brightness(1.1)}
+  #notif .n-empty{padding:40px 20px;text-align:center;color:#9B99A4;font-size:14px}
   #head{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 14px}
   #head h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
   #head h1 svg{width:17px;height:17px;fill:var(--brand-dark)}
@@ -220,8 +222,8 @@ const PAGES = {
     {c:'失注',    t:'失注BOX', d:'失注案件の折りたたみ一覧', s:'ok'},
   ]},
   dealbox:{ title:'案件BOX', cats:['全て','一覧','登録'], items:[
-    {c:'一覧', t:'案件カンバン', d:'商談中／追客中／受注／失注のカンバン。カードを押すと右に詳細', s:'ok'},
-    {c:'登録', t:'案件登録・記憶', d:'案件の登録と議事録の保存（AIでの自動整理は準備中）', s:'ok'},
+    {c:'一覧', t:'案件一覧', d:'商談中／追客中／受注／失注ごとに、左に会社名リスト・右に詳細', s:'ok'},
+    {c:'登録', t:'案件登録・記憶', d:'議事録を貼り付けると秘書が整理して記憶。約束した対応はベルでお知らせ', s:'ok'},
   ]},
   mitsumori:{ title:'見積もり書', cats:['全て','新規作成','テンプレート','作成履歴'], items:[  // 中身はユーザーと一緒に作る（右側は空）
   ]},
@@ -283,7 +285,7 @@ function myItems(){
   for(const [id, items] of Object.entries(fuData)){
     const d = fuDeals[id]; if(!d) continue;
     if((d.createdBy || OWNER_DEFAULT).toLowerCase() !== me) continue;
-    if(d.status !== '商談中' && d.status !== '追客中') continue;
+    if(d.status !== '商談中') continue;   // お知らせは商談中フェーズの案件だけ
     for(const [key, f] of Object.entries(items || {})){
       if(!f || f.status !== 'open' || !FU_KIND[f.type]) continue;
       const left = f.due ? daysUntil(f.due) : 0;
@@ -303,12 +305,12 @@ function renderNotif(){
       <div class="top"><span class="kind" style="background:${FU_KIND[f.type].c}">${FU_KIND[f.type].label}</span>
         <span class="co" onclick="openDealFromBell('${f.id}')">${escH(f.client)}</span>
         <span class="due">${when(f)}</span></div>
-      <div class="dt">${f.left<0 ? '<b style="color:#d93025">'+ask(f)+'</b> ' : ''}${escH(f.detail)}${f.meetingDate ? ' <span style="color:#999">（'+md(f.meetingDate)+'の商談で約束）</span>' : ''}</div>
+      <div class="dt">${f.left<0 ? '<b style="color:#C0253A">'+ask(f)+'</b> ' : ''}${escH(f.detail)}${f.meetingDate ? ' <span style="color:#999">（'+md(f.meetingDate)+'の商談で約束）</span>' : ''}</div>
       <div class="acts"><button class="ok" onclick="markFu('${f.id}','${f.key}','done')">対応済み</button><button onclick="markFu('${f.id}','${f.key}','dismissed')">不要</button></div>
     </div>`;
   document.getElementById('n-body').innerHTML =
     (!list.length ? '<div class="n-empty">期限が近い約束はありません</div>' : '')
-    + (over.length ? `<div class="n-sec" style="color:#d93025">期限を過ぎています（${over.length}件）</div>` + over.map(item).join('') : '')
+    + (over.length ? `<div class="n-sec" style="color:#C0253A">期限を過ぎています（${over.length}件）</div>` + over.map(item).join('') : '')
     + (soon.length ? `<div class="n-sec">もうすぐ期限（${NOTIFY_DAYS_BEFORE}日以内・${soon.length}件）</div>` + soon.map(item).join('') : '');
 }
 function escH(v){ return String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
