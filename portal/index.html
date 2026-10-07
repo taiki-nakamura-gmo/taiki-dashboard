@@ -187,7 +187,7 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
 
 <!-- ===== メイン ===== -->
 <div id="main">
-  <div id="notif"><div class="n-head">お知らせ<small>ネクストアクションの漏れチェック</small></div><div class="n-body" id="n-body"></div></div>
+  <div id="notif"><div class="n-head">お知らせ<small>商談で約束したことのリマインド</small></div><div class="n-body" id="n-body"></div></div>
   <div id="head">
     <span class="toggle" onclick="toggleSide()" title="メニューを折りたたむ">«</span>
     <h1 id="ptitle"></h1>
@@ -256,10 +256,11 @@ function setSubsOpen(open){
 }
 function goSub(sub){ dealSub = sub; go('dealbox'); }
 // 案件BOX側でステータスが変わった案件を追いかけるときに呼ばれる（URLと左メニューだけ合わせる）
-// ===== お知らせ（ネクストアクションの漏れチェック） =====
-// 秘書が議事録から読み取った「見積送付／追加資料送付／上長共有後の確認電話」(dealbox/followups) のうち、
-// 自分の案件（商談中・追客中）で未対応のものを表示する。見積・資料はGmailで送信が確認できると自動で消える
-const FU_KIND = { quote:{label:'見積送付', c:'#1a7fe0'}, docs:{label:'追加資料送付', c:'#7b4fd0'}, call:{label:'確認の電話', c:'#d97706'} };
+// ===== お知らせ（商談で約束したことのリマインド） =====
+// 秘書が議事録から読み取った「見積送付／資料送付／連絡予定」(dealbox/followups) を、期限の2日前からベルで知らせる。
+// 期限を過ぎて「対応済み」になっていなければ「対応できていますか？」と赤字で出し続ける。完了は本人がボタンで付ける
+const FU_KIND = { quote:{label:'見積送付', c:'#1a7fe0'}, docs:{label:'資料送付', c:'#7b4fd0'}, contact:{label:'連絡予定', c:'#d97706'}, call:{label:'連絡予定', c:'#d97706'} };
+const NOTIFY_DAYS_BEFORE = 2;
 const OWNER_DEFAULT = 'taiki-nakamura@gmotech.jp';   // 移行した案件は中村さんの案件として扱う
 let bellUser = null, fuData = {}, fuDeals = {};
 window.onBellAuth = user => {
@@ -271,41 +272,44 @@ window.onBellAuth = user => {
   onValue(ref(db,'dealbox/followups'), snap => { fuData = snap.val() || {}; renderNotif(); });
   onValue(ref(db,'dealbox/deals'), snap => { fuDeals = snap.val() || {}; renderNotif(); });
 };
+// 日付が変わったら表示を更新（期限の2日前になったものを出すため）
+setInterval(() => { if(bellUser) renderNotif(); }, 30 * 60e3);
 const todayStr = () => new Date().toLocaleDateString('sv-SE');
-const md = d => d ? String(d).slice(5).replace('-','/') : '';
+const md = d => d ? String(d).slice(5).replace('-','/').replace(/^0/,'') : '';
+const daysUntil = d => Math.round((new Date(d) - new Date(todayStr())) / 864e5);
 function myItems(){
   const me = (bellUser && bellUser.email || '').toLowerCase();
-  const open = [], auto = [];
+  const list = [];
   for(const [id, items] of Object.entries(fuData)){
     const d = fuDeals[id]; if(!d) continue;
     if((d.createdBy || OWNER_DEFAULT).toLowerCase() !== me) continue;
+    if(d.status !== '商談中' && d.status !== '追客中') continue;
     for(const [key, f] of Object.entries(items || {})){
-      if(!f || !FU_KIND[f.type]) continue;
-      const it = {id, key, client:d.client, ...f};
-      if(f.status === 'open' && (d.status === '商談中' || d.status === '追客中')) open.push(it);
-      else if(f.status === 'done' && f.doneBy === 'auto-mail' && Date.now() - Date.parse(f.doneAt || 0) < 7*864e5) auto.push(it);
+      if(!f || f.status !== 'open' || !FU_KIND[f.type]) continue;
+      const left = f.due ? daysUntil(f.due) : 0;
+      if(left > NOTIFY_DAYS_BEFORE) continue;   // まだ先のものは出さない
+      list.push({id, key, client:d.client, left, ...f});
     }
   }
-  open.sort((a,b)=> String(a.due||'9').localeCompare(String(b.due||'9')));
-  auto.sort((a,b)=> String(b.doneAt).localeCompare(String(a.doneAt)));
-  return {open, auto};
+  return list.sort((x,y)=> x.left - y.left);
 }
 function renderNotif(){
-  const {open, auto} = myItems(), t = todayStr();
-  const over = open.filter(f => f.due && f.due <= t), later = open.filter(f => !(f.due && f.due <= t));
-  document.getElementById('bell-cnt').textContent = open.length ? (open.length > 99 ? '99+' : open.length) : '';
-  const item = (f, cls) => `<div class="n-item ${cls||''}">
+  const list = myItems();
+  const over = list.filter(f => f.left < 0), soon = list.filter(f => f.left >= 0);
+  document.getElementById('bell-cnt').textContent = list.length ? (list.length > 99 ? '99+' : list.length) : '';
+  const when = f => f.left < 0 ? `期限 ${md(f.due)}（${-f.left}日経過）` : f.left === 0 ? '今日が期限' : f.left === 1 ? `明日 ${md(f.due)}` : `${md(f.due)}（あと${f.left}日）`;
+  const ask = f => f.type==='quote' ? '見積は送れていますか？' : f.type==='docs' ? '資料は送れていますか？' : '連絡できていますか？';
+  const item = f => `<div class="n-item ${f.left<0?'over':''}">
       <div class="top"><span class="kind" style="background:${FU_KIND[f.type].c}">${FU_KIND[f.type].label}</span>
         <span class="co" onclick="openDealFromBell('${f.id}')">${escH(f.client)}</span>
-        <span class="due">${cls==='auto' ? 'メール送信を確認 '+md((f.doneAt||'').slice(0,10)) : f.due ? '期限 '+md(f.due) : ''}</span></div>
-      <div class="dt">${escH(f.detail)}${f.meetingDate ? ' <span style="color:#999">（'+md(f.meetingDate)+'の商談）</span>' : ''}${cls==='auto' && f.evidence ? '<br><span style="color:#999">件名：'+escH(f.evidence)+'</span>' : ''}</div>
-      ${cls==='auto' ? '' : `<div class="acts"><button class="ok" onclick="markFu('${f.id}','${f.key}','done')">対応済み</button><button onclick="markFu('${f.id}','${f.key}','dismissed')">不要</button></div>`}
+        <span class="due">${when(f)}</span></div>
+      <div class="dt">${f.left<0 ? '<b style="color:#d93025">'+ask(f)+'</b> ' : ''}${escH(f.detail)}${f.meetingDate ? ' <span style="color:#999">（'+md(f.meetingDate)+'の商談で約束）</span>' : ''}</div>
+      <div class="acts"><button class="ok" onclick="markFu('${f.id}','${f.key}','done')">対応済み</button><button onclick="markFu('${f.id}','${f.key}','dismissed')">不要</button></div>
     </div>`;
   document.getElementById('n-body').innerHTML =
-    (!open.length ? '<div class="n-empty">漏れていそうなネクストアクションはありません</div>' : '')
-    + (over.length ? `<div class="n-sec" style="color:#d93025">期限切れ・今日まで（${over.length}件）</div>` + over.map(f=>item(f,'over')).join('') : '')
-    + (later.length ? `<div class="n-sec">これから（${later.length}件）</div>` + later.map(f=>item(f,'')).join('') : '')
-    + (auto.length ? `<div class="n-sec">メール送信を確認して自動で完了（直近7日）</div>` + auto.map(f=>item(f,'auto')).join('') : '');
+    (!list.length ? '<div class="n-empty">期限が近い約束はありません</div>' : '')
+    + (over.length ? `<div class="n-sec" style="color:#d93025">期限を過ぎています（${over.length}件）</div>` + over.map(item).join('') : '')
+    + (soon.length ? `<div class="n-sec">もうすぐ期限（${NOTIFY_DAYS_BEFORE}日以内・${soon.length}件）</div>` + soon.map(item).join('') : '');
 }
 function escH(v){ return String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function toggleNotif(e){ e.stopPropagation(); document.getElementById('notif').classList.toggle('open'); }
