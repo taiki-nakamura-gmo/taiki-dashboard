@@ -279,6 +279,11 @@ window.onBellAuth = user => {
 };
 // 日付が変わったら表示を更新（期限の2日前になったものを出すため）
 setInterval(() => { if(bellUser) renderNotif(); }, 30 * 60e3);
+// 0時ちょうどにも描き直す（「今日対応したもの」を日付が変わった瞬間に消す）
+(function atMidnight(){
+  const n = new Date(), next = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 5);
+  setTimeout(() => { if(bellUser) renderNotif(); atMidnight(); }, next - n);
+})();
 const todayStr = () => new Date().toLocaleDateString('sv-SE');
 const md = d => d ? String(d).slice(5).replace('-','/').replace(/^0/,'') : '';
 const daysUntil = d => Math.round((new Date(d) - new Date(todayStr())) / 864e5);
