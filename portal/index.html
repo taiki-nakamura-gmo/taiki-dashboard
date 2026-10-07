@@ -94,6 +94,9 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
   #notif .n-item .acts button.ok{background:#3A5EE5;border-color:#3A5EE5;color:#fff;font-weight:600}
   #notif .n-item .acts button:hover{filter:brightness(.97)}
   #notif .n-item .acts button.ok:hover{filter:brightness(1.1)}
+  #notif .n-item.done{background:#FAFAF7;color:#9B99A4}
+  #notif .n-item.done .co,#notif .n-item.done .dt{color:#9B99A4}
+  #notif .n-item.done .kind{opacity:.5}
   #notif .n-empty{padding:40px 20px;text-align:center;color:#9B99A4;font-size:14px}
   #head{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 14px}
   #head h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
@@ -189,7 +192,7 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
 
 <!-- ===== メイン ===== -->
 <div id="main">
-  <div id="notif"><div class="n-head">お知らせ<small>商談で約束したことのリマインド</small></div><div class="n-body" id="n-body"></div></div>
+  <div id="notif" onclick="event.stopPropagation()"><div class="n-head">お知らせ<small>商談で約束したことのリマインド</small></div><div class="n-body" id="n-body"></div></div>
   <div id="head">
     <span class="toggle" onclick="toggleSide()" title="メニューを折りたたむ">«</span>
     <h1 id="ptitle"></h1>
@@ -281,18 +284,24 @@ const md = d => d ? String(d).slice(5).replace('-','/').replace(/^0/,'') : '';
 const daysUntil = d => Math.round((new Date(d) - new Date(todayStr())) / 864e5);
 function myItems(){
   const me = (bellUser && bellUser.email || '').toLowerCase();
-  const list = [];
+  const list = [], recent = [];
   for(const [id, items] of Object.entries(fuData)){
     const d = fuDeals[id]; if(!d) continue;
     if((d.createdBy || OWNER_DEFAULT).toLowerCase() !== me) continue;
     if(d.status !== '商談中') continue;   // お知らせは商談中フェーズの案件だけ
     for(const [key, f] of Object.entries(items || {})){
-      if(!f || f.status !== 'open' || !FU_KIND[f.type]) continue;
+      if(!f || !FU_KIND[f.type]) continue;
+      // 今日「対応済み／不要」にしたものは、元に戻せるよう下に残す
+      if(f.status !== 'open'){
+        if(f.doneAt && new Date(f.doneAt).toLocaleDateString('sv-SE') === todayStr()) recent.push({id, key, client:d.client, ...f});
+        continue;
+      }
       const left = f.due ? daysUntil(f.due) : 0;
       if(left > NOTIFY_DAYS_BEFORE) continue;   // まだ先のものは出さない
       list.push({id, key, client:d.client, left, ...f});
     }
   }
+  list.recent = recent.sort((x,y)=> String(y.doneAt).localeCompare(String(x.doneAt)));
   return list.sort((x,y)=> x.left - y.left);
 }
 function renderNotif(){
@@ -311,14 +320,22 @@ function renderNotif(){
   document.getElementById('n-body').innerHTML =
     (!list.length ? '<div class="n-empty">期限が近い約束はありません</div>' : '')
     + (over.length ? `<div class="n-sec" style="color:#C0253A">期限を過ぎています（${over.length}件）</div>` + over.map(item).join('') : '')
-    + (soon.length ? `<div class="n-sec">もうすぐ期限（${NOTIFY_DAYS_BEFORE}日以内・${soon.length}件）</div>` + soon.map(item).join('') : '');
+    + (soon.length ? `<div class="n-sec">もうすぐ期限（${NOTIFY_DAYS_BEFORE}日以内・${soon.length}件）</div>` + soon.map(item).join('') : '')
+    + (list.recent.length ? `<div class="n-sec">今日対応したもの（${list.recent.length}件）</div>` + list.recent.map(f => `<div class="n-item done">
+        <div class="top"><span class="kind" style="background:${FU_KIND[f.type].c}">${FU_KIND[f.type].label}</span>
+          <span class="co" onclick="openDealFromBell('${f.id}')">${escH(f.client)}</span>
+          <span class="due">${f.status==='done' ? '✓ 対応済み' : '不要にしました'}</span></div>
+        <div class="dt">${escH(f.detail)}</div>
+        <div class="acts"><button onclick="markFu('${f.id}','${f.key}','open')">元に戻す</button></div>
+      </div>`).join('') : '');
 }
 function escH(v){ return String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function toggleNotif(e){ e.stopPropagation(); document.getElementById('notif').classList.toggle('open'); }
 document.addEventListener('click', e => { const n = document.getElementById('notif'); if(n.classList.contains('open') && !n.contains(e.target)) n.classList.remove('open'); });
 async function markFu(id, key, status){
   const {db, ref, update} = window._pfb;
-  await update(ref(db, `dealbox/followups/${id}/${key}`), {status, doneBy: (bellUser && bellUser.email) || '', doneAt: new Date().toISOString()});
+  const done = status !== 'open';
+  await update(ref(db, `dealbox/followups/${id}/${key}`), {status, doneBy: done ? ((bellUser && bellUser.email) || '') : null, doneAt: done ? new Date().toISOString() : null});
 }
 // お知らせから案件BOXのその案件を開く
 function openDealFromBell(id){
