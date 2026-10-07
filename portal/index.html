@@ -4,6 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ガチ楽</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+const app = initializeApp({
+  apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
+  authDomain: "taiki-tasks-933cc.firebaseapp.com",
+  databaseURL: "https://taiki-tasks-933cc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "taiki-tasks-933cc",
+  storageBucket: "taiki-tasks-933cc.firebasestorage.app",
+  messagingSenderId: "679381676234",
+  appId: "1:679381676234:web:20b54086cd302494c0c433"
+});
+const db = getDatabase(app);
+window._pfb = { db, ref, update, onValue };
+onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(user));
+</script>
 <style>
   :root{
     --side-bg:#4d4d4d; --side-text:#e9e9e9; --side-label:#bdbdbd; --side-hover:#5c5c5c; --side-line:#666;
@@ -49,6 +66,33 @@
   /* ===== メイン ===== */
   #main{flex:1;display:flex;flex-direction:column;min-width:0}
   #head .toggle{cursor:pointer;font-size:14px;color:#333;user-select:none;margin-right:4px}
+  /* ===== お知らせ（ベル） ===== */
+  #bell{margin-left:auto;position:relative;width:36px;height:36px;border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;color:#555}
+  #bell.show{display:flex}
+  #bell:hover{background:#f0f2f5}
+  #bell svg{width:22px;height:22px;fill:currentColor}
+  #bell .cnt{position:absolute;top:2px;right:0;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#d93025;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+  #bell .cnt:empty{display:none}
+  #notif{position:fixed;top:56px;right:12px;width:min(440px,calc(100vw - 24px));max-height:72vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:60;display:none;flex-direction:column}
+  #notif.open{display:flex}
+  #notif .n-head{padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px}
+  #notif .n-head small{font-weight:400;color:var(--muted);font-size:11px}
+  #notif .n-body{overflow-y:auto}
+  #notif .n-sec{padding:8px 14px 4px;font-size:11px;font-weight:700;color:var(--muted);background:#fafafa;border-bottom:1px solid #eee}
+  #notif .n-item{padding:10px 14px;border-bottom:1px solid #eee;font-size:12px}
+  #notif .n-item .top{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+  #notif .n-item .kind{font-size:10.5px;font-weight:700;color:#fff;border-radius:3px;padding:1px 6px;white-space:nowrap}
+  #notif .n-item .co{font-weight:700;cursor:pointer;color:var(--brand-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #notif .n-item .co:hover{text-decoration:underline}
+  #notif .n-item .due{margin-left:auto;white-space:nowrap;color:var(--muted);font-size:11px}
+  #notif .n-item.over .due{color:#d93025;font-weight:700}
+  #notif .n-item .dt{color:#444;line-height:1.5}
+  #notif .n-item .acts{margin-top:6px;display:flex;gap:6px}
+  #notif .n-item .acts button{border:1px solid #ccc;background:#fff;border-radius:4px;font-size:11px;padding:2px 10px;cursor:pointer;font-family:var(--font)}
+  #notif .n-item .acts button.ok{border-color:var(--brand);color:var(--brand);font-weight:700}
+  #notif .n-item .acts button:hover{background:#f2f4f8}
+  #notif .n-item.auto{color:var(--muted)}
+  #notif .n-empty{padding:28px 14px;text-align:center;color:var(--muted);font-size:12px}
   #head{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 14px}
   #head h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
   #head h1 svg{width:17px;height:17px;fill:var(--brand-dark)}
@@ -143,9 +187,11 @@
 
 <!-- ===== メイン ===== -->
 <div id="main">
+  <div id="notif"><div class="n-head">お知らせ<small>ネクストアクションの漏れチェック</small></div><div class="n-body" id="n-body"></div></div>
   <div id="head">
     <span class="toggle" onclick="toggleSide()" title="メニューを折りたたむ">«</span>
     <h1 id="ptitle"></h1>
+      <div id="bell" title="お知らせ" onclick="toggleNotif(event)"><svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg><span class="cnt" id="bell-cnt"></span></div>
   </div>
   <div id="content"><div id="listview"></div></div>
 </div>
@@ -210,6 +256,77 @@ function setSubsOpen(open){
 }
 function goSub(sub){ dealSub = sub; go('dealbox'); }
 // 案件BOX側でステータスが変わった案件を追いかけるときに呼ばれる（URLと左メニューだけ合わせる）
+// ===== お知らせ（ネクストアクションの漏れチェック） =====
+// 秘書が議事録から読み取った「見積送付／追加資料送付／上長共有後の確認電話」(dealbox/followups) のうち、
+// 自分の案件（商談中・追客中）で未対応のものを表示する。見積・資料はGmailで送信が確認できると自動で消える
+const FU_KIND = { quote:{label:'見積送付', c:'#1a7fe0'}, docs:{label:'追加資料送付', c:'#7b4fd0'}, call:{label:'確認の電話', c:'#d97706'} };
+const OWNER_DEFAULT = 'taiki-nakamura@gmotech.jp';   // 移行した案件は中村さんの案件として扱う
+let bellUser = null, fuData = {}, fuDeals = {};
+window.onBellAuth = user => {
+  bellUser = user;
+  document.getElementById('bell').classList.toggle('show', !!user);
+  if(!user || window._bellSub) return;
+  window._bellSub = true;
+  const {db, ref, onValue} = window._pfb;
+  onValue(ref(db,'dealbox/followups'), snap => { fuData = snap.val() || {}; renderNotif(); });
+  onValue(ref(db,'dealbox/deals'), snap => { fuDeals = snap.val() || {}; renderNotif(); });
+};
+const todayStr = () => new Date().toLocaleDateString('sv-SE');
+const md = d => d ? String(d).slice(5).replace('-','/') : '';
+function myItems(){
+  const me = (bellUser && bellUser.email || '').toLowerCase();
+  const open = [], auto = [];
+  for(const [id, items] of Object.entries(fuData)){
+    const d = fuDeals[id]; if(!d) continue;
+    if((d.createdBy || OWNER_DEFAULT).toLowerCase() !== me) continue;
+    for(const [key, f] of Object.entries(items || {})){
+      if(!f || !FU_KIND[f.type]) continue;
+      const it = {id, key, client:d.client, ...f};
+      if(f.status === 'open' && (d.status === '商談中' || d.status === '追客中')) open.push(it);
+      else if(f.status === 'done' && f.doneBy === 'auto-mail' && Date.now() - Date.parse(f.doneAt || 0) < 7*864e5) auto.push(it);
+    }
+  }
+  open.sort((a,b)=> String(a.due||'9').localeCompare(String(b.due||'9')));
+  auto.sort((a,b)=> String(b.doneAt).localeCompare(String(a.doneAt)));
+  return {open, auto};
+}
+function renderNotif(){
+  const {open, auto} = myItems(), t = todayStr();
+  const over = open.filter(f => f.due && f.due <= t), later = open.filter(f => !(f.due && f.due <= t));
+  document.getElementById('bell-cnt').textContent = open.length ? (open.length > 99 ? '99+' : open.length) : '';
+  const item = (f, cls) => `<div class="n-item ${cls||''}">
+      <div class="top"><span class="kind" style="background:${FU_KIND[f.type].c}">${FU_KIND[f.type].label}</span>
+        <span class="co" onclick="openDealFromBell('${f.id}')">${escH(f.client)}</span>
+        <span class="due">${cls==='auto' ? 'メール送信を確認 '+md((f.doneAt||'').slice(0,10)) : f.due ? '期限 '+md(f.due) : ''}</span></div>
+      <div class="dt">${escH(f.detail)}${f.meetingDate ? ' <span style="color:#999">（'+md(f.meetingDate)+'の商談）</span>' : ''}${cls==='auto' && f.evidence ? '<br><span style="color:#999">件名：'+escH(f.evidence)+'</span>' : ''}</div>
+      ${cls==='auto' ? '' : `<div class="acts"><button class="ok" onclick="markFu('${f.id}','${f.key}','done')">対応済み</button><button onclick="markFu('${f.id}','${f.key}','dismissed')">不要</button></div>`}
+    </div>`;
+  document.getElementById('n-body').innerHTML =
+    (!open.length ? '<div class="n-empty">漏れていそうなネクストアクションはありません</div>' : '')
+    + (over.length ? `<div class="n-sec" style="color:#d93025">期限切れ・今日まで（${over.length}件）</div>` + over.map(f=>item(f,'over')).join('') : '')
+    + (later.length ? `<div class="n-sec">これから（${later.length}件）</div>` + later.map(f=>item(f,'')).join('') : '')
+    + (auto.length ? `<div class="n-sec">メール送信を確認して自動で完了（直近7日）</div>` + auto.map(f=>item(f,'auto')).join('') : '');
+}
+function escH(v){ return String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toggleNotif(e){ e.stopPropagation(); document.getElementById('notif').classList.toggle('open'); }
+document.addEventListener('click', e => { const n = document.getElementById('notif'); if(n.classList.contains('open') && !n.contains(e.target)) n.classList.remove('open'); });
+async function markFu(id, key, status){
+  const {db, ref, update} = window._pfb;
+  await update(ref(db, `dealbox/followups/${id}/${key}`), {status, doneBy: (bellUser && bellUser.email) || '', doneAt: new Date().toISOString()});
+}
+// お知らせから案件BOXのその案件を開く
+function openDealFromBell(id){
+  document.getElementById('notif').classList.remove('open');
+  const d = fuDeals[id]; if(!d) return;
+  setSubsOpen(true); goSub(d.status || '商談中');
+  let tries = 0;
+  const t = setInterval(() => {
+    try{ const w = document.querySelector('#tool-dealbox iframe').contentWindow;
+         if(w.followDeal && w.deals && w.deals[id]){ w.followDeal(id); clearInterval(t); } }catch(e){}
+    if(++tries > 40) clearInterval(t);
+  }, 250);
+}
+
 window.syncDealSub = sub => {
   dealSub = sub;
   history.replaceState(null, '', '#dealbox/' + encodeURIComponent(sub));
