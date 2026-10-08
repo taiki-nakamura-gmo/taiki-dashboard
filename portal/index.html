@@ -322,7 +322,8 @@ function myItems(){
 }
 function renderNotif(){
   const list = myItems();
-  const over = list.filter(f => f.left < 0), soon = list.filter(f => f.left >= 0);
+  // 期限が今日に近いものを上に: もうすぐ期限（今日→明日→あと2日）→ 期限切れ（1日経過→古いもの）
+  const soon = list.filter(f => f.left >= 0).sort((x,y)=> x.left - y.left), over = list.filter(f => f.left < 0).sort((x,y)=> y.left - x.left);
   document.getElementById('bell-cnt').textContent = list.length ? (list.length > 99 ? '99+' : list.length) : '';
   const when = f => f.left < 0 ? `期限 ${md(f.due)}（${-f.left}日経過）` : f.left === 0 ? '今日が期限' : f.left === 1 ? `明日 ${md(f.due)}` : `${md(f.due)}（あと${f.left}日）`;
   const ask = f => f.type==='quote' ? '見積は送れていますか？' : f.type==='docs' ? '資料は送れていますか？' : '連絡できていますか？';
@@ -336,8 +337,8 @@ function renderNotif(){
     </div>`;
   document.getElementById('n-body').innerHTML =
     (!list.length ? '<div class="n-empty">期限が近い約束はありません</div>' : '')
-    + (over.length ? `<div class="n-sec" style="color:#C0253A">期限を過ぎています（${over.length}件）</div>` + over.map(item).join('') : '')
     + (soon.length ? `<div class="n-sec">もうすぐ期限（${NOTIFY_DAYS_BEFORE}日以内・${soon.length}件）</div>` + soon.map(item).join('') : '')
+    + (over.length ? `<div class="n-sec" style="color:#C0253A">期限を過ぎています（${over.length}件）</div>` + over.map(item).join('') : '')
     + (list.recent.length ? `<div class="n-sec">今日対応したもの（${list.recent.length}件）</div>` + list.recent.map(f => `<div class="n-item done">
         <div class="top"><span class="kind" style="background:${FU_KIND[f.type].c}">${FU_KIND[f.type].label}</span>
           <span class="co" onclick="openDealFromBell('${f.id}')">${escH(f.client)}</span>
