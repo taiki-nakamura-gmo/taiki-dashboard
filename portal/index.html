@@ -26,7 +26,7 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
 </script>
 <style>
   :root{
-    --side-bg:#4d4d4d; --side-text:#e9e9e9; --side-label:#bdbdbd; --side-hover:#5c5c5c; --side-line:#666;
+    --side-bg:linear-gradient(90deg,#005BAC 0%,#1371B1 25%,#2585B7 50%,#2A90BC 75%,#1A9ACC 100%); --side-text:#fff; --side-label:rgba(255,255,255,.72); --side-hover:rgba(255,255,255,.14); --side-line:rgba(255,255,255,.28);
     --brand:#0b3d91; --brand-dark:#0a2e6e; --brand-light:#6f93d3;
     --accent:#1a7fe0; --text:#333; --muted:#777; --line:#dcdcdc; --bg:#fff; --panel:#fafafa;
     --font:"Hiragino Kaku Gothic ProN","Hiragino Sans","Meiryo","Yu Gothic UI",sans-serif;
@@ -40,6 +40,7 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
   #side{width:206px;flex-shrink:0;background:var(--side-bg);color:var(--side-text);display:flex;flex-direction:column;transition:width .2s;position:relative}
   #side .logo{height:52px;background:#fff;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);cursor:pointer}
   #side .logo svg{flex-shrink:0}
+  #side .logo img{width:30px;height:30px;flex-shrink:0;border-radius:6px;object-fit:contain}
   #side .logo .t1{font-size:9px;color:#555;line-height:1;letter-spacing:.5px}
   #side .logo .t2{font-size:18px;letter-spacing:1px;font-weight:700;color:var(--brand-dark);line-height:1.2;white-space:nowrap}
   #side .sec{font-size:10px;color:var(--side-label);padding:12px 8px 4px;white-space:nowrap}
@@ -53,14 +54,14 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
   #side .item.expanded .caret{transform:rotate(180deg)}
   #side .subs{display:none}
   #side .subs.open{display:block}
-  #side .sub{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px 0 33px;font-size:11.5px;cursor:pointer;white-space:nowrap;position:relative;color:#d8d8d8}
+  #side .sub{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px 0 33px;font-size:11.5px;cursor:pointer;white-space:nowrap;position:relative;color:rgba(255,255,255,.88)}
   #side .sub:hover{background:var(--side-hover);color:#fff}
   #side .sub.active{background:#fff;color:var(--text);font-weight:700}
   #side .sub.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
   #side .sub .sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
   body.collapsed #side .sub{padding-left:20px}
   #side hr{border:0;border-top:1px solid var(--side-line);margin:4px 0}
-  #side .support{position:absolute;left:8px;bottom:14px;background:var(--brand);color:#fff;border-radius:20px;height:32px;padding:0 22px 0 10px;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;white-space:nowrap}
+  #side .support{position:absolute;left:8px;bottom:14px;background:#fff;color:#005BAC;border-radius:20px;height:32px;padding:0 22px 0 10px;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;white-space:nowrap}
   #side .support .q{width:18px;height:18px;border:1.5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px}
   body.collapsed #side{width:48px}
   body.collapsed #side .t1,body.collapsed #side .t2,body.collapsed #side .sec,body.collapsed #side .label,body.collapsed #side .ext,body.collapsed #side .caret,body.collapsed #side .support span:last-child{display:none}
@@ -146,6 +147,7 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
   /* ログインゲート（未ログイン時は全面を覆う） */
   #gate{position:fixed;inset:0;z-index:100;background:#f0efe9;display:flex;flex-direction:column}
   #gate .g-head{height:52px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 16px}
+  #gate .g-head img{width:30px;height:30px;border-radius:6px;object-fit:contain}
   #gate .g-head .t1{font-size:9px;color:#555;line-height:1;letter-spacing:.5px}
   #gate .g-head .t2{font-size:18px;font-weight:700;color:var(--brand-dark);line-height:1.2;letter-spacing:1px}
   #gate .g-msg{text-align:center;font-size:12px;color:var(--muted);padding:14px 0 0}
@@ -163,7 +165,7 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
 <!-- ===== サイドバー ===== -->
 <nav id="side">
   <div class="logo" onclick="go('home')">
-    <svg width="34" height="22" viewBox="0 0 34 22"><path d="M0 22 L34 0 L34 22Z" fill="#0b3d91"/><path d="M6 22 L34 4 L34 9 L14 22Z" fill="#6f93d3"/></svg>
+    <img src="favicon.png" alt="">
     <div><div class="t1">GACHIRAKU</div><div class="t2">ガチ楽</div></div>
   </div>
 
