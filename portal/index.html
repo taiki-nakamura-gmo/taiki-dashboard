@@ -104,6 +104,14 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
   #notif .n-item .acts button.ok{background:#3A5EE5;border-color:#3A5EE5;color:#fff;font-weight:600}
   #notif .n-item .acts button:hover{filter:brightness(.97)}
   #notif .n-item .acts button.ok:hover{filter:brightness(1.1)}
+  #notif .n-task{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-top:1px dashed #E2DFD6}
+  #notif .n-task:first-of-type{border-top:0}
+  #notif .n-task .kind{margin-top:2px}
+  #notif .n-task .dt{flex:1;min-width:0}
+  #notif .n-task .mini{display:flex;gap:4px;flex-shrink:0}
+  #notif .n-task .mini button{border:1px solid #E2DFD6;background:#fff;border-radius:6px;font-size:11.5px;padding:3px 9px;cursor:pointer;font-family:inherit;color:#5C5A62;white-space:nowrap}
+  #notif .n-task .mini button.ok{border-color:#3A5EE5;color:#3A5EE5;font-weight:600}
+  #notif .n-item .ask{color:#C0253A;font-weight:700;font-size:13px;margin-bottom:4px}
   #notif .n-item.done{background:#FAFAF7;color:#9B99A4}
   #notif .n-item.done .co,#notif .n-item.done .dt{color:#9B99A4}
   #notif .n-item.done .kind{opacity:.5}
@@ -324,32 +332,55 @@ function renderNotif(){
   const list = myItems();
   // 期限が今日に近いものを上に: もうすぐ期限（今日→明日→あと2日）→ 期限切れ（1日経過→古いもの）
   const soon = list.filter(f => f.left >= 0).sort((x,y)=> x.left - y.left), over = list.filter(f => f.left < 0).sort((x,y)=> y.left - x.left);
-  document.getElementById('bell-cnt').textContent = list.length ? (list.length > 99 ? '99+' : list.length) : '';
+  // 同じ会社で期限も同じ約束は1枚のカードにまとめる（期限が違えば別カード）
+  const group = arr => { const m = new Map(); arr.forEach(f => { const k = f.id + '|' + (f.due || ''); if(!m.has(k)) m.set(k, []); m.get(k).push(f); }); return [...m.values()]; };
+  const soonG = group(soon), overG = group(over), cards = soonG.length + overG.length;
+  document.getElementById('bell-cnt').textContent = cards ? (cards > 99 ? '99+' : cards) : '';
   const when = f => f.left < 0 ? `期限 ${md(f.due)}（${-f.left}日経過）` : f.left === 0 ? '今日が期限' : f.left === 1 ? `明日 ${md(f.due)}` : `${md(f.due)}（あと${f.left}日）`;
   const ask = f => f.type==='quote' ? '見積は送れていますか？' : f.type==='docs' ? '資料は送れていますか？' : '連絡できていますか？';
   const CAL = '<svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg>';
-  const item = f => `<div class="n-item ${f.left<0?'over':f.left===0?'today':''}">
-      <div class="top"><span class="kind" style="background:${FU_KIND[f.type].c}">${FU_KIND[f.type].label}</span>
+  const note = f => f.meetingDate ? ' <span style="color:#5C5A62">（'+md(f.meetingDate)+'の商談で約束）</span>' : '';
+  const card = g => {
+    const f = g[0], multi = g.length > 1;
+    const askTxt = f.left < 0 ? (multi && new Set(g.map(x=>x.type)).size > 1 ? '対応できていますか？' : ask(f)) : '';
+    return `<div class="n-item ${f.left<0?'over':f.left===0?'today':''}">
+      <div class="top">${multi ? '' : `<span class="kind" style="background:${FU_KIND[f.type].c}">${FU_KIND[f.type].label}</span>`}
         <span class="co" onclick="openDealFromBell('${f.id}')">${escH(f.client)}</span>
         <span class="due">${CAL}${when(f)}</span></div>
-      <div class="dt">${f.left<0 ? '<b style="color:#C0253A">'+ask(f)+'</b> ' : ''}${escH(f.detail)}${f.meetingDate ? ' <span style="color:#5C5A62">（'+md(f.meetingDate)+'の商談で約束）</span>' : ''}</div>
-      <div class="acts"><button class="ok" onclick="markFu('${f.id}','${f.key}','done')">対応済み</button><button onclick="markFu('${f.id}','${f.key}','dismissed')">不要</button></div>
+      ${multi
+        ? (askTxt ? `<div class="ask">${askTxt}</div>` : '') + g.map(x => `<div class="n-task">
+            <span class="kind" style="background:${FU_KIND[x.type].c}">${FU_KIND[x.type].label}</span>
+            <div class="dt">${escH(x.detail)}${note(x)}</div>
+            <div class="mini"><button class="ok" onclick="markFu('${x.id}','${x.key}','done')">対応済み</button><button onclick="markFu('${x.id}','${x.key}','dismissed')">不要</button></div>
+          </div>`).join('')
+          + `<div class="acts"><button class="ok" onclick="markFuMany('${f.id}','${g.map(x=>x.key).join(',')}','done')">まとめて対応済み</button></div>`
+        : `<div class="dt">${askTxt ? '<b style="color:#C0253A">'+askTxt+'</b> ' : ''}${escH(f.detail)}${note(f)}</div>
+           <div class="acts"><button class="ok" onclick="markFu('${f.id}','${f.key}','done')">対応済み</button><button onclick="markFu('${f.id}','${f.key}','dismissed')">不要</button></div>`}
     </div>`;
+  };
   document.getElementById('n-body').innerHTML =
     (!list.length ? '<div class="n-empty">期限が近い約束はありません</div>' : '')
-    + (soon.length ? `<div class="n-sec">もうすぐ期限（${NOTIFY_DAYS_BEFORE}日以内・${soon.length}件）</div>` + soon.map(item).join('') : '')
-    + (over.length ? `<div class="n-sec" style="color:#C0253A">期限を過ぎています（${over.length}件）</div>` + over.map(item).join('') : '')
-    + (list.recent.length ? `<div class="n-sec">今日対応したもの（${list.recent.length}件）</div>` + list.recent.map(f => `<div class="n-item done">
-        <div class="top"><span class="kind" style="background:${FU_KIND[f.type].c}">${FU_KIND[f.type].label}</span>
-          <span class="co" onclick="openDealFromBell('${f.id}')">${escH(f.client)}</span>
-          <span class="due">${f.status==='done' ? '✓ 対応済み' : '不要にしました'}</span></div>
-        <div class="dt">${escH(f.detail)}</div>
-        <div class="acts"><button onclick="markFu('${f.id}','${f.key}','open')">元に戻す</button></div>
-      </div>`).join('') : '');
+    + (soonG.length ? `<div class="n-sec">もうすぐ期限（${NOTIFY_DAYS_BEFORE}日以内・${soonG.length}件）</div>` + soonG.map(card).join('') : '')
+    + (overG.length ? `<div class="n-sec" style="color:#C0253A">期限を過ぎています（${overG.length}件）</div>` + overG.map(card).join('') : '')
+    + (list.recent.length ? `<div class="n-sec">今日対応したもの（${list.recent.length}件）</div>` + (() => {
+        // 今日対応したものも会社ごとに1枚にまとめる
+        const m = new Map(); list.recent.forEach(f => { if(!m.has(f.id)) m.set(f.id, []); m.get(f.id).push(f); });
+        return [...m.values()].map(g => `<div class="n-item done">
+          <div class="top"><span class="co" onclick="openDealFromBell('${g[0].id}')">${escH(g[0].client)}</span></div>
+          ${g.map(f => `<div class="n-task">
+            <span class="kind" style="background:${FU_KIND[f.type].c}">${FU_KIND[f.type].label}</span>
+            <div class="dt">${escH(f.detail)} <span style="color:#9B99A4">（${f.status==='done' ? '✓ 対応済み' : '不要にしました'}）</span></div>
+            <div class="mini"><button onclick="markFu('${f.id}','${f.key}','open')">元に戻す</button></div>
+          </div>`).join('')}
+        </div>`).join('');
+      })() : '');
 }
 function escH(v){ return String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function toggleNotif(e){ e.stopPropagation(); document.getElementById('notif').classList.toggle('open'); }
 document.addEventListener('click', e => { const n = document.getElementById('notif'); if(n.classList.contains('open') && !n.contains(e.target)) n.classList.remove('open'); });
+async function markFuMany(id, keys, status){
+  for(const k of String(keys).split(',')) await markFu(id, k, status);
+}
 async function markFu(id, key, status){
   const {db, ref, update} = window._pfb;
   const done = status !== 'open';
