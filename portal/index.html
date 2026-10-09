@@ -43,10 +43,10 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
   #side .logo img{width:30px;height:30px;flex-shrink:0;border-radius:6px;object-fit:contain}
   #side .logo .t1{font-size:9px;color:#555;line-height:1;letter-spacing:.5px}
   #side .logo .t2{font-size:18px;letter-spacing:1px;font-weight:700;color:var(--brand-dark);line-height:1.2;white-space:nowrap}
-  /* 左メニューの文字は少し太め（Yu Gothic UI の Semibold） */
+  /* 左メニューの文字は太字 */
   #side .sec,#side .item,#side .sub{font-family:"Yu Gothic UI","Hiragino Sans","Meiryo",sans-serif}
-  #side .sec{font-weight:600;font-size:10px;color:var(--side-label);padding:12px 8px 4px;white-space:nowrap}
-  #side .item{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;position:relative}
+  #side .sec{font-weight:700;font-size:10px;color:var(--side-label);padding:12px 8px 4px;white-space:nowrap}
+  #side .item{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;position:relative}
   #side .item:hover{background:var(--side-hover)}
   #side .item.active{background:#fff;color:var(--text)}
   #side .item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
@@ -56,7 +56,7 @@ onAuthStateChanged(getAuth(app), user => window.onBellAuth && window.onBellAuth(
   #side .item.expanded .caret{transform:rotate(180deg)}
   #side .subs{display:none}
   #side .subs.open{display:block}
-  #side .sub{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px 0 33px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;position:relative;color:rgba(255,255,255,.88)}
+  #side .sub{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px 0 33px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;position:relative;color:rgba(255,255,255,.88)}
   #side .sub:hover{background:var(--side-hover);color:#fff}
   #side .sub.active{background:#fff;color:var(--text);font-weight:700}
   #side .sub.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
